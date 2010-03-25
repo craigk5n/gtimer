@@ -1,0 +1,22 @@
+/* XPM */
+static char * blank_clock_xpm[] = {
+"15 15 4 1",
+" 	c #FFFFFFFFFFFF",
+".	c #D3D3D3D3D3D3",
+"X	c #888888888888",
+"o	c #000000000000",
+"      .X.      ",
+"    .ooooo.    ",
+"   Xo.   .oX   ",
+"  Xo       oX  ",
+" .o         o. ",
+" o.         .o ",
+".o           o.",
+"Xo           oX",
+".o           o.",
+" o.         .o ",
+" .o         o. ",
+"  Xo       oX  ",
+"   Xo.   .oX   ",
+"    .ooooo.    ",
+"      .X.      "};

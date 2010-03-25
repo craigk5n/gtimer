@@ -1,0 +1,56 @@
+GTimer v1.1.4 - 04 May 1999
+Copyright (C) 1998 Craig Knudsen, cknudsen@radix.net
+http://www.radix.net/~cknudsen/gtimer/
+
+
+COMPILING:
+--------------------------------------------------------------------------
+To build, just type "make".  To install in "/usr/X11R6/bin", type
+"make install".  The "gtk-config" program should be in your path.
+
+The development environment for GTimer is Linux x86 2.0.36, libc6 (glibc),
+and GTK 1.1.13.  It should build without issue on any UN*X that has GTK 1.1.13
+or later.  Send me email if you would like to be notified of future releases.
+
+To run:
+	./gtimer
+
+
+USING:
+--------------------------------------------------------------------------
+Command line options:
+-midnight N	If you work past midnight, then use this to keep hours up
+		until N count toward the previous day.
+		Example:
+		  -midnight 400
+		  All hours up until 4AM will be applied to previous day.
+-nosplash	Do not show the splash screen on app startup.
+-start taskname	Start timing the specified task
+-resume		Start timing the same tasks that were on when the application
+		last exited.
+-version	Display the gtimer version
+-help		Get help on usage
+
+
+TO DO:
+--------------------------------------------------------------------------
+- Add ability to group tasks by a group name.
+- Catch some signals (SIGINT, for example) so we can save date before
+  exiting.  GIMP does this, so it should be possible.
+- Show the GNU license on initial run of the app.
+- Online help.
+- Postscript output for printing rather than plain text.
+- GNOME integration.
+- Make a smaller main window (like gtcd)
+- Optionally store data in MySQL, Oracle, etc. instead of flat files
+- Add a configuration window to set things like print command,
+  idle timeout, etc.
+- Export function (tab-delimited text file)
+- Ability to edit existing annotations
+
+
+
+HISTORY:
+--------------------------------------------------------------------------
+See ChangeLog for development history.
+

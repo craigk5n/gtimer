@@ -1,0 +1,97 @@
+<HTML>
+<HEAD>
+<TITLE>GTimer FAQ</TITLE>
+<META NAME="keywords" VALUE="GTimer, Application Timer, Linux, GTK, FAQ">
+<META NAME="abstract" VALUE="FAQ for GTimer (a GTK-based UNIX/X-Windows application that keeps track of time spent on different tasks)">
+<META NAME="author" VALUE="Craig Knudsen, cknudsen@radix.net">
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+<FONT FACE="Arial, Helvetica">
+<H2>GTimer FAQ</H2>
+
+<UL>
+<LI><A HREF="#gtk">What versions of GTK+ will GTimer compile with?</A>
+<LI><A HREF="#binaries">Can I get a pre-compiled binary?</A>
+<LI><A HREF="#themes">Will it work with GTK+ themes?</A>
+<LI><A HREF="#splash">Can I get rid of the splash screen?</A>
+<LI><A HREF="#idle">Can I adjust the idle time?</A>
+<LI><A HREF="#i18n">How do I get GTimer to work in French/Spanish/Your-Language-Here?</A>
+<LI><A HREF="#hang">GTimer periodically hangs.  What can I do?</A>
+</UL>
+
+<HR><H3><A NAME="gtk">What versions of GTK+ will GTimer compile with?</A></H3>
+<BLOCKQUOTE>
+GTimer should compile with the latest versions of GTK+ in 1.0, 1.1 or 1.2
+series.  It may also compile with older versions, but it's always
+recommended you get the latest version.
+</BLOCKQUOTE>
+
+<HR><H3><A NAME="binaries">Can I get a pre-compiled binary?</A></H3>
+<BLOCKQUOTE>
+I don't provide binaries but you can check with other sites
+(such as "<A HREF="ftp://ftp.freshmeat.net/pub/rpms/gtimer/">freshmeat.net</A>)
+for binaries (but beware: they may be older version of GTimer).
+</BLOCKQUOTE>
+
+<HR><H3><A NAME="themes">Will it work with GTK+ themes?</A></H3>
+<BLOCKQUOTE>
+I don't use themes, but if your version of GTK+ supports themes,
+then GTimer can use themes.
+See <A HREF="http://gtk.themes.org/">gtk.themes.org</A> for more info.
+</BLOCKQUOTE>
+
+<HR><H3><A NAME="splash">Can I get rid of the splash screen?</A></H3>
+<BLOCKQUOTE>
+Use the <TT>-nosplash</TT> option to not display the splash screen.
+</BLOCKQUOTE>
+
+<HR><H3><A NAME="idle">Can I adjust the idle time?</A></H3>
+<BLOCKQUOTE>
+There is no UI for this yet, but you can <B>carefully</B> edit
+the ~/.gtimer/.gtimerrc file and edit the line that follows idle.
+(It's the idle threshold in seconds.)
+</BLOCKQUOTE>
+
+<HR><H3><A NAME="i18n">How do I get GTimer to work in French/Spanish/Your-Language-Here?</A></H3>
+<BLOCKQUOTE>
+GTimer has internationaliztion (I18N) support.  You must have the
+GNU gettext distribution installed.
+You will need to translate the provided messages.po to whatever
+language you want.  Here's an example for French:
+<OL>
+<LI>Either start with messages.po (or create your own with "xgettext *.c")
+<LI>Copy messages.po to the new locale (Example: "cp messages.po fr.po")
+<LI>Now edit the new .po file and replace the msgstr lines with
+    the proper translated text.
+<LI>Now use <TT>msgfmt</TT> to build the .mo file from your .po file.
+    (Example: "msgfmt fr.po -ogtimer.mo")
+<LI>Make sure your LANG environment variable is set to the proper locale.
+<LI>Copy the gtimer.mo file to the proper location.  I'm not if this
+    is the same place all on system.  On my system, the French gtimer.po
+    needs to be:<BR>&nbsp;&nbsp;<TT>/usr/share/locale/fr/LC_MESSAGES/gtimer.mo</TT><BR>
+    If you're not sure where it's looking, on Linux try using strace to
+    see where it's looking:<BR>
+    &nbsp;&nbsp;<TT>strace gtimer |& grep LC_MESSAGES</TT><BR>
+<LI><B>Email me the translation file!</B>  I'll add it to the distribution
+    for others to use.
+</OL>
+</BLOCKQUOTE>
+
+<HR><H3><A NAME="hang">GTimer periodically hangs.  What can I do?</A></H3>
+<BLOCKQUOTE>
+Use the <TT>-noversioncheck</TT> option to keep GTimer for checking
+to see if a new version is available.  It sometimes locks up in the
+HTTP request.
+</BLOCKQUOTE>
+
+<HR>
+<ADDRESS>
+<B>Home Page:</B> <A HREF="http://www.radix.net/~cknudsen/gtimer/">http://www.radix.net/~cknudsen/gtimer/</A><BR>
+<B>Author:</B> <A HREF="http://www.radix.net/~cknudsen/">Craig Knudsen</A>,
+  <A HREF="mailto:cknudsen@radix.net">cknudsen@radix.net</A><BR>
+</ADDRESS>
+</FONT>
+</BODY>
+</HTML>
+
+

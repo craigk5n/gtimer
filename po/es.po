@@ -1,0 +1,526 @@
+msgid ""
+msgstr ""
+"Date: 1999-03-18 17:50:49-0500\n"
+"Last-Translator: Carlos Fernandez <c_fern@yahoo.com>\n"
+"Content-Type: text/plain; charset=\n"
+"Xgettext-Options: \n"
+"Files: annotate.c config.c confirm.c edit.c main.c report.c task.c unhide.c xextras.c\n"
+
+#: annotate.c:106
+msgid "Annotation added"
+msgstr "Nota añadida"
+
+#: annotate.c:148
+msgid "Add Annotation"
+msgstr "Añadir Nota"
+
+#: annotate.c:159
+msgid "Enter annotation for"
+msgstr "Entre nota para"
+
+#: annotate.c:189 edit.c:218 main.c:639 main.c:660 main.c:682 main.c:714 main.c:739 main.c:790 main.c:797 main.c:814 main.c:823 main.c:853 main.c:862 main.c:893 main.c:1048 report.c:311 report.c:359 report.c:371 report.c:379 report.c:446 report.c:537 report.c:1042 report.c:1057 report.c:1091 report.c:1122 report.c:1173 report.c:1513 unhide.c:102 unhide.c:264
+msgid "Ok"
+msgstr ""
+
+#: annotate.c:200 edit.c:229 main.c:797 report.c:455 report.c:1525 unhide.c:276
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: edit.c:106
+msgid "Task updated"
+msgstr "Tarea actualizada"
+
+#: edit.c:133
+msgid "Task added"
+msgstr "Tarea añadida"
+
+#: edit.c:178
+msgid "Edit Task"
+msgstr "Editar Tarea"
+
+#: edit.c:180
+msgid "Add Task"
+msgstr "Añadir Tarea"
+
+#: edit.c:193
+msgid "Task name"
+msgstr "Descripción de la tarea"
+
+#: edit.c:206
+msgid "Unnamed Task"
+msgstr "Tarea Anónima"
+
+#: main.c:423
+msgid "About..."
+msgstr "Acerca de..."
+
+#: main.c:424 report.c:523
+msgid "Save"
+msgstr "Guardar"
+
+#: main.c:425
+msgid "Exit"
+msgstr "Salir"
+
+#: main.c:426 main.c:1810
+msgid "Idle Detect"
+msgstr "Detección de Inactividad"
+
+#: main.c:427
+msgid "Toolbar"
+msgstr "Barra de útiles"
+
+#: main.c:428
+msgid "Animate"
+msgstr "Animar"
+
+#: main.c:429
+msgid "Auto Save"
+msgstr "Autoguardado"
+
+#: main.c:430
+msgid "Start Timing"
+msgstr "Comenzar Cronometraje"
+
+#: main.c:431
+msgid "Stop Timing"
+msgstr "Detener Cronometraje"
+
+#: main.c:432
+msgid "Stop All Timing"
+msgstr "Detener Todo Cronometraje"
+
+#: main.c:433
+msgid "New..."
+msgstr "Nuevo"
+
+#: main.c:434
+msgid "Edit..."
+msgstr "Editar..."
+
+#: main.c:435
+msgid "Annotate..."
+msgstr "Anotar..."
+
+#: main.c:436
+msgid "Hide"
+msgstr "Esconder"
+
+#: main.c:437
+msgid "Unhide..."
+msgstr "Mostrar..."
+
+#: main.c:438
+msgid "Delete"
+msgstr "Borrar"
+
+#: main.c:439
+msgid "Increment 5 seconds"
+msgstr "Incrementar 5 minutos"
+
+#: main.c:440
+msgid "Increment 30 seconds"
+msgstr "Incrementar 30 minutos"
+
+#: main.c:441
+msgid "Decrement 5 seconds"
+msgstr "Decrementar 5 minutos"
+
+#: main.c:442
+msgid "Decrement 30 seconds"
+msgstr "Decrementar 30 minutos"
+
+#: main.c:443
+msgid "Set to Zero"
+msgstr "Fijar a Cero"
+
+#: main.c:444
+msgid "Daily..."
+msgstr "Diario..."
+
+#: main.c:445
+msgid "Weekly..."
+msgstr "Semanal..."
+
+#: main.c:446
+msgid "Monthly..."
+msgstr "Mensual..."
+
+#: main.c:447
+msgid "Yearly..."
+msgstr "Anual..."
+
+#: main.c:450
+msgid "Start Timing the Selected Task"
+msgstr "Comenzar Cronometraje de la Tarea Escogida"
+
+#: main.c:452
+msgid "Stop Timing the Selected Task"
+msgstr "Detener Cronometraje de la Tarea Escogida"
+
+#: main.c:454
+msgid "Stop Timing All Tasks"
+msgstr "Detener Cronometraje de Todas las Tareas"
+
+#: main.c:456
+msgid "Add Annotation to Selected Task"
+msgstr "Añadir Nota a la Tarea Escogida"
+
+#: main.c:458
+msgid "Add New Task"
+msgstr "Añadir Tarea Nueva"
+
+#: main.c:460
+msgid "Edit Name of the Selected Task"
+msgstr "Editar Descripción de la Tarea Escogida"
+
+#: main.c:618
+msgid "All data saved"
+msgstr "Todos los datos guardados"
+
+#: main.c:630 main.c:631
+msgid "Version"
+msgstr "Versión"
+
+#: main.c:633
+msgid "Author"
+msgstr "Autor"
+
+#: main.c:637
+msgid "About"
+msgstr "Acerca de"
+
+#: main.c:658 main.c:680 main.c:712 main.c:737 main.c:788 main.c:812 main.c:821 main.c:851 main.c:860 main.c:891 main.c:1046 main.c:2094 main.c:2124 main.c:2139 main.c:2145 report.c:308 report.c:311 report.c:358 report.c:368 report.c:371 report.c:379 report.c:1040 report.c:1056 report.c:1089 report.c:1120 report.c:1171 unhide.c:100
+msgid "Error"
+msgstr "Error"
+
+#: main.c:659
+msgid ""
+"You have not selected\n"
+"a task to edit."
+msgstr "No ha escogido\n"
+"una tarea para editar."
+
+#: main.c:681
+msgid ""
+"You have not selected\n"
+"a task to hide."
+msgstr "No ha escogido\n"
+"una tarea para esconder."
+
+#: main.c:697
+msgid "Task hidden"
+msgstr "Tarea escondida"
+
+#: main.c:713
+msgid "There are no hidden tasks."
+msgstr "No hay tareas escondidas."
+
+#: main.c:735
+msgid "Error deleting task"
+msgstr "Error al borrar tarea"
+
+#: main.c:774
+msgid "Task removed"
+msgstr "Tarea removida"
+
+#: main.c:789
+msgid ""
+"You have not selected\n"
+"a task to delete."
+msgstr "No ha escogido\n"
+"una tarea para borrar."
+
+#: main.c:795
+msgid "Delete Task?"
+msgstr "¿Borrar la Tarea?"
+
+#: main.c:796
+msgid ""
+"Are you sure you want\n"
+"to delete this task?"
+msgstr "¿Está seguro que quiere\n"
+"borrar esta tarea?"
+
+#: main.c:813
+msgid ""
+"You have not selected\n"
+"a task to start timing."
+msgstr "No ha escogido una tarea\n"
+"para comenzar a cronometrar."
+
+#: main.c:822
+msgid "Task is already being timed."
+msgstr "Esta tarea ya está siendo cronometrada."
+
+#: main.c:852
+msgid ""
+"You have not selected\n"
+"a task to stop timing."
+msgstr "No ha escogido una tarea\n"
+"para detener su cronometraje."
+
+#: main.c:861
+msgid "Task is not being timed."
+msgstr "Esta tarea no está siendo cronometrada."
+
+#: main.c:892
+msgid ""
+"You have not selected\n"
+"a task to annotate."
+msgstr "No ha escogido\n"
+"una tarea para anotar."
+
+#: main.c:1047
+msgid ""
+"You have not selected\n"
+"a task to adjust the time for."
+msgstr "No ha escogido una\n"
+"tarea para ajustarle el tiempo."
+
+#: main.c:1347
+msgid "File"
+msgstr "Archivo"
+
+#: main.c:1381
+msgid "Options"
+msgstr "Opciones"
+
+#: main.c:1409 main.c:2305
+msgid "Task"
+msgstr "Tarea"
+
+#: main.c:1419 report.c:482 report.c:1224 report.c:1410
+msgid "Report"
+msgstr "Informe"
+
+#: main.c:1605
+msgid "Today"
+msgstr "Hoy"
+
+#: main.c:1805
+msgid "You have been idle for"
+msgstr "Ud. ha estado inactivo por"
+
+#: main.c:1806
+msgid "minutes"
+msgstr "minutos"
+
+#: main.c:1806
+msgid "since"
+msgstr "desde"
+
+#: main.c:1808
+msgid ""
+"Do you wish to revert\n"
+"to before the idle?"
+msgstr "¿Desea revertir a\n"
+"como antes de la inactividad?"
+
+#: main.c:1811
+msgid "Revert"
+msgstr "Revertir"
+
+#: main.c:1811
+msgid "Continue Timing"
+msgstr "Continuar Cronometraje"
+
+#: main.c:1989
+msgid "Welcome to"
+msgstr "Bienvevenido a"
+
+#: main.c:2016
+msgid "GTK+ runtime"
+msgstr "Ambiente de ejecución GTK+"
+
+#: main.c:2018
+msgid "Home page"
+msgstr "Página web"
+
+#: main.c:2024
+msgid "options"
+msgstr "opciones"
+
+#: main.c:2026
+msgid "don't display the splash screen"
+msgstr "no mostrar la imagen de bienvenida"
+
+#: main.c:2028
+msgid "display this help info"
+msgstr "mostrar la información de ayuda"
+
+#: main.c:2030
+msgid "display the version"
+msgstr "mostrar la versión"
+
+#: main.c:2032
+msgid "specify the midnight offset"
+msgstr "Especificar desplazamiento de medianoche"
+
+#: main.c:2034
+msgid "start timing the specified task"
+msgstr "comenzar cronometraje de la tarea escogida"
+
+#: main.c:2094
+msgid "unable to create directory"
+msgstr "incapaz de crear directorio"
+
+#: main.c:2124 main.c:2139
+msgid "requires an argument"
+msgstr "requiere un argumento"
+
+#: main.c:2145
+msgid "requires a number"
+msgstr "requiere un número"
+
+#: main.c:2146
+msgid "not"
+msgstr "no"
+
+#: main.c:2157
+msgid "Invalid offset for"
+msgstr "Ajuste incorrecto para"
+
+#: main.c:2159
+msgid "Format should be"
+msgstr "El formato debe ser"
+
+#: main.c:2181
+msgid "Ingoring unknown option"
+msgstr "Ignorando opción desconocida"
+
+#: main.c:2305
+msgid "not found"
+msgstr "no fue encontrado"
+
+#: report.c:309 report.c:369
+msgid "writing to file"
+msgstr "escribiendo a archivo"
+
+#: report.c:332
+msgid "Save Report"
+msgstr "Guardar Informe"
+
+#: report.c:359
+msgid "You must enter a print command"
+msgstr "Debe entrar un comando de impresión"
+
+#: report.c:379
+msgid "Error printing"
+msgstr "Error al imprimir"
+
+#: report.c:416
+msgid "Print Report"
+msgstr "Imprimir Informe"
+
+#: report.c:433
+msgid "Print Command"
+msgstr "Comando de impresión"
+
+#: report.c:530
+msgid "Print"
+msgstr "Imprimir"
+
+#: report.c:720 report.c:725
+msgid "Total"
+msgstr "Total"
+
+#: report.c:739 report.c:746
+msgid "Week"
+msgstr "Semana"
+
+#: report.c:740 report.c:747
+msgid "to"
+msgstr "a"
+
+#: report.c:814 report.c:819
+msgid "Month"
+msgstr "Mes"
+
+#: report.c:881 report.c:886
+msgid "Year"
+msgstr "Año"
+
+#: report.c:946 report.c:951
+msgid "Totals"
+msgstr "Totales"
+
+#: report.c:1041
+msgid ""
+"Could not find \"netscape\"\n"
+"in your path."
+msgstr "No se pudo encontrar a \"netscape\"\n"
+"en su camino de búsqueda de programas."
+
+#: report.c:1056
+msgid "Error communicating with Netscape."
+msgstr "Error comunicando con Netscape."
+
+#: report.c:1090 unhide.c:101
+msgid "You have not selected any tasks"
+msgstr "No ha escogido ninguna tarea"
+
+#: report.c:1121
+msgid ""
+"You must select either \"include hours\"\n"
+"or \"include annotations\"."
+msgstr "Debe escoger \"incluir horas\"\n"
+"o \"incluir notas\"."
+
+#: report.c:1172
+msgid "Error opening temporary file"
+msgstr "Error al abrir archivo temporero"
+
+#: report.c:1242
+msgid "Generated by"
+msgstr "Generado por"
+
+#: report.c:1257
+msgid "Error reading"
+msgstr "Error al leer"
+
+#: report.c:1438
+msgid "Format: "
+msgstr "Formato: "
+
+#: report.c:1450
+msgid "Data: "
+msgstr "Datos: "
+
+#: report.c:1464 unhide.c:209
+msgid "Tasks to include:"
+msgstr "Tareas a incluir:"
+
+#: report.c:1534 unhide.c:285
+msgid "Select all"
+msgstr "Escoger todo"
+
+#: report.c:1542 unhide.c:293
+msgid "Select none"
+msgstr "Escoger nada"
+
+#: task.c:532
+msgid "System Error"
+msgstr "Error del sistema"
+
+#: task.c:535
+msgid "Invalid task data file format"
+msgstr "Formato de archivo de tareas incorrecto"
+
+#: task.c:537
+msgid "Unknown error"
+msgstr "Error desconocido"
+
+#: unhide.c:203
+msgid "Unhide"
+msgstr "Mostrar"
+
+#: xextras.c:61 xextras.c:73
+msgid "Received X error.  See ya!"
+msgstr "Error X recibido. ¡Hasta luego!"
+# msgid "GTimer: Idle Detect"
+# msgstr "GTimer: Detección de Inactividad"
+# 
+# msgid "Confirm: Delete Task"
+# msgstr "Confirmez: Borrar Tarea"
+# 

@@ -1,0 +1,526 @@
+msgid ""
+msgstr ""
+"Date: 1999-03-18 17:50:49-0500\n"
+"From: Craig Knudsen <cknudsen@radix.net>\n"
+"Content-Type: text/plain; charset=\n"
+"Xgettext-Options: \n"
+"Files: annotate.c config.c confirm.c edit.c main.c report.c task.c unhide.c xextras.c\n"
+
+#: annotate.c:106
+msgid "Annotation added"
+msgstr "Annotation ajoutée"
+
+#: annotate.c:148
+msgid "Add Annotation"
+msgstr "Ajoutez L'Annotation"
+
+#: annotate.c:159
+msgid "Enter annotation for"
+msgstr "Écrivez l'annotation pour"
+
+#: annotate.c:189 edit.c:218 main.c:639 main.c:660 main.c:682 main.c:714 main.c:739 main.c:790 main.c:797 main.c:814 main.c:823 main.c:853 main.c:862 main.c:893 main.c:1048 report.c:311 report.c:359 report.c:371 report.c:379 report.c:446 report.c:537 report.c:1042 report.c:1057 report.c:1091 report.c:1122 report.c:1173 report.c:1513 unhide.c:102 unhide.c:264
+msgid "Ok"
+msgstr ""
+
+#: annotate.c:200 edit.c:229 main.c:797 report.c:455 report.c:1525 unhide.c:276
+msgid "Cancel"
+msgstr "Annulent"
+
+#: edit.c:106
+msgid "Task updated"
+msgstr "Tâche mise à jour"
+
+#: edit.c:133
+msgid "Task added"
+msgstr "La tâche a ajouté"
+
+#: edit.c:178
+msgid "Edit Task"
+msgstr "Éditez La Tâche"
+
+#: edit.c:180
+msgid "Add Task"
+msgstr "Ajoutez La Tâche"
+
+#: edit.c:193
+msgid "Task name"
+msgstr "Nom de tâche"
+
+#: edit.c:206
+msgid "Unnamed Task"
+msgstr "Anonyme Tâche"
+
+#: main.c:423
+msgid "About..."
+msgstr "Environ"
+
+#: main.c:424 report.c:523
+msgid "Save"
+msgstr "Économiser"
+
+#: main.c:425
+msgid "Exit"
+msgstr "Quittent"
+
+#: main.c:426 main.c:1810
+msgid "Idle Detect"
+msgstr "Le Ralenti Détectent"
+
+#: main.c:427
+msgid "Toolbar"
+msgstr ""
+
+#: main.c:428
+msgid "Animate"
+msgstr ""
+
+#: main.c:429
+msgid "Auto Save"
+msgstr "Automatique Économiser"
+
+#: main.c:430
+msgid "Start Timing"
+msgstr "Commencez À chronométrer"
+
+#: main.c:431
+msgid "Stop Timing"
+msgstr "Cessez De chronométrer"
+
+#: main.c:432
+msgid "Stop All Timing"
+msgstr "Arrêtez Toute la Synchronisation"
+
+#: main.c:433
+msgid "New..."
+msgstr "Nouveau"
+
+#: main.c:434
+msgid "Edit..."
+msgstr ""
+
+#: main.c:435
+msgid "Annotate..."
+msgstr "Annotent..."
+
+#: main.c:436
+msgid "Hide"
+msgstr "Peau"
+
+#: main.c:437
+msgid "Unhide..."
+msgstr "Pas Peau"
+
+#: main.c:438
+msgid "Delete"
+msgstr "Effacement"
+
+#: main.c:439
+msgid "Increment 5 seconds"
+msgstr "Incrément 5 secondes"
+
+#: main.c:440
+msgid "Increment 30 seconds"
+msgstr "Incrément 30 secondes"
+
+#: main.c:441
+msgid "Decrement 5 seconds"
+msgstr "Décroissance 5 secondes"
+
+#: main.c:442
+msgid "Decrement 30 seconds"
+msgstr "Décroissance 30 secondes"
+
+#: main.c:443
+msgid "Set to Zero"
+msgstr "Placez à Zéro"
+
+#: main.c:444
+msgid "Daily..."
+msgstr "Quotidien..."
+
+#: main.c:445
+msgid "Weekly..."
+msgstr "Hebdomadaire..."
+
+#: main.c:446
+msgid "Monthly..."
+msgstr "Mensuel..."
+
+#: main.c:447
+msgid "Yearly..."
+msgstr "Annuellement..."
+
+#: main.c:450
+msgid "Start Timing the Selected Task"
+msgstr "Commencez à chronométrer choisie la tâche"
+
+#: main.c:452
+msgid "Stop Timing the Selected Task"
+msgstr "Cessez de chronométrer choisie la tâche"
+
+#: main.c:454
+msgid "Stop Timing All Tasks"
+msgstr "Cessez De chronométrer Toutes les Tâches"
+
+#: main.c:456
+msgid "Add Annotation to Selected Task"
+msgstr "Ajoutez l'annotation choisie à la tâche"
+
+#: main.c:458
+msgid "Add New Task"
+msgstr "Ajoutez La Nouvelle Tâche"
+
+#: main.c:460
+msgid "Edit Name of the Selected Task"
+msgstr "Éditez le nom choisie de la tâche"
+
+#: main.c:618
+msgid "All data saved"
+msgstr "Toutes les données économisées"
+
+#: main.c:630 main.c:631
+msgid "Version"
+msgstr ""
+
+#: main.c:633
+msgid "Author"
+msgstr "Auteur"
+
+#: main.c:637
+msgid "About"
+msgstr "Au sujet de"
+
+#: main.c:658 main.c:680 main.c:712 main.c:737 main.c:788 main.c:812 main.c:821 main.c:851 main.c:860 main.c:891 main.c:1046 main.c:2094 main.c:2124 main.c:2139 main.c:2145 report.c:308 report.c:311 report.c:358 report.c:368 report.c:371 report.c:379 report.c:1040 report.c:1056 report.c:1089 report.c:1120 report.c:1171 unhide.c:100
+msgid "Error"
+msgstr "Erreur"
+
+#: main.c:659
+msgid ""
+"You have not selected\n"
+"a task to edit."
+msgstr "Vous n'avez pas choisi\n"
+"une tâche d'éditer"
+
+#: main.c:681
+msgid ""
+"You have not selected\n"
+"a task to hide."
+msgstr "Vous n'avez pas choisi une\n"
+"tâche de se cacher."
+
+#: main.c:697
+msgid "Task hidden"
+msgstr "Tâche cachée"
+
+#: main.c:713
+msgid "There are no hidden tasks."
+msgstr "Il n'y a aucune cachée tâche"
+
+#: main.c:735
+msgid "Error deleting task"
+msgstr "Tâche d' effacer d'erreur"
+
+#: main.c:774
+msgid "Task removed"
+msgstr "Tâche retirée"
+
+#: main.c:789
+msgid ""
+"You have not selected\n"
+"a task to delete."
+msgstr "Vous n'avez pas choisi\n"
+"une tâche d'effacer."
+
+#: main.c:795
+msgid "Delete Task?"
+msgstr ""
+
+#: main.c:796
+msgid ""
+"Are you sure you want\n"
+"to delete this task?"
+msgstr "Êtes-vous sûr vous voulez-vous\n"
+"effacer cette tâche?"
+
+#: main.c:813
+msgid ""
+"You have not selected\n"
+"a task to start timing."
+msgstr "Vous n'avez pas choisi une\n"
+"tâche de commencer à chronométrer."
+
+#: main.c:822
+msgid "Task is already being timed."
+msgstr "La tâche déjà est chronométrée"
+
+#: main.c:852
+msgid ""
+"You have not selected\n"
+"a task to stop timing."
+msgstr "Vous n'avez pas choisi une\n"
+"tâche d'arrêter le timin"
+
+#: main.c:861
+msgid "Task is not being timed."
+msgstr "La tâche n'est pas chronométrée."
+
+#: main.c:892
+msgid ""
+"You have not selected\n"
+"a task to annotate."
+msgstr "Vous n'avez pas choisi\n"
+"une tâche d'annoter"
+
+#: main.c:1047
+msgid ""
+"You have not selected\n"
+"a task to adjust the time for."
+msgstr "Vous n'avez pas choisi une\n"
+"tâche d'ajuster le temps pour"
+
+#: main.c:1347
+msgid "File"
+msgstr "Fichier"
+
+#: main.c:1381
+msgid "Options"
+msgstr "Options"
+
+#: main.c:1409 main.c:2305
+msgid "Task"
+msgstr "Tâche"
+
+#: main.c:1419 report.c:482 report.c:1224 report.c:1410
+msgid "Report"
+msgstr "Enregistrent"
+
+#: main.c:1605
+msgid "Today"
+msgstr "Aujourd'hui"
+
+#: main.c:1805
+msgid "You have been idle for"
+msgstr ""
+
+#: main.c:1806
+msgid "minutes"
+msgstr "minutes"
+
+#: main.c:1806
+msgid "since"
+msgstr "depuis"
+
+#: main.c:1808
+msgid ""
+"Do you wish to revert\n"
+"to before the idle?"
+msgstr "Souhaitez-vous retourner\n"
+"à avant le ralenti?"
+
+#: main.c:1811
+msgid "Revert"
+msgstr "Retournent"
+
+#: main.c:1811
+msgid "Continue Timing"
+msgstr "Continuez De chronométrer"
+
+#: main.c:1989
+msgid "Welcome to"
+msgstr "Bienvenue à"
+
+#: main.c:2016
+msgid "GTK+ runtime"
+msgstr ""
+
+#: main.c:2018
+msgid "Home page"
+msgstr ""
+
+#: main.c:2024
+msgid "options"
+msgstr ""
+
+#: main.c:2026
+msgid "don't display the splash screen"
+msgstr ""
+
+#: main.c:2028
+msgid "display this help info"
+msgstr ""
+
+#: main.c:2030
+msgid "display the version"
+msgstr ""
+
+#: main.c:2032
+msgid "specify the midnight offset"
+msgstr ""
+
+#: main.c:2034
+msgid "start timing the specified task"
+msgstr ""
+
+#: main.c:2094
+msgid "unable to create directory"
+msgstr "incapable de créer le répertoire"
+
+#: main.c:2124 main.c:2139
+msgid "requires an argument"
+msgstr "exige un argument"
+
+#: main.c:2145
+msgid "requires a number"
+msgstr "exige un nombre"
+
+#: main.c:2146
+msgid "not"
+msgstr "pas"
+
+#: main.c:2157
+msgid "Invalid offset for"
+msgstr "Décalage incorrect pour"
+
+#: main.c:2159
+msgid "Format should be"
+msgstr "Le format devrait être"
+
+#: main.c:2181
+msgid "Ingoring unknown option"
+msgstr "Option inconnue d'Ingoring"
+
+#: main.c:2305
+msgid "not found"
+msgstr ""
+
+#: report.c:309 report.c:369
+msgid "writing to file"
+msgstr "inscription au fichier"
+
+#: report.c:332
+msgid "Save Report"
+msgstr "Économiser L'État"
+
+#: report.c:359
+msgid "You must enter a print command"
+msgstr "Vous devez écrire une commande print"
+
+#: report.c:379
+msgid "Error printing"
+msgstr "Impression des erreurs"
+
+#: report.c:416
+msgid "Print Report"
+msgstr "État D'Impression"
+
+#: report.c:433
+msgid "Print Command"
+msgstr "Commande print"
+
+#: report.c:530
+msgid "Print"
+msgstr "Print"
+
+#: report.c:720 report.c:725
+msgid "Total"
+msgstr "Total"
+
+#: report.c:739 report.c:746
+msgid "Week"
+msgstr "Semaine"
+
+#: report.c:740 report.c:747
+msgid "to"
+msgstr "au"
+
+#: report.c:814 report.c:819
+msgid "Month"
+msgstr "Mois"
+
+#: report.c:881 report.c:886
+msgid "Year"
+msgstr "Année"
+
+#: report.c:946 report.c:951
+msgid "Totals"
+msgstr "Totaux"
+
+#: report.c:1041
+msgid ""
+"Could not find \"netscape\"\n"
+"in your path."
+msgstr "N'a pas pu trouver \"netscape\"\n"
+"dans votre voie d'accès."
+
+#: report.c:1056
+msgid "Error communicating with Netscape."
+msgstr "Erreur communiquant avec Netscape."
+
+#: report.c:1090 unhide.c:101
+msgid "You have not selected any tasks"
+msgstr "Vous n'avez choisi aucune tâche"
+
+#: report.c:1121
+msgid ""
+"You must select either \"include hours\"\n"
+"or \"include annotations\"."
+msgstr "Vous devez choisir ou \"incluez heures\"\n"
+"ou \"incluez annotations\"."
+
+#: report.c:1172
+msgid "Error opening temporary file"
+msgstr "Erreur ouvrant temporaire le fichier"
+
+#: report.c:1242
+msgid "Generated by"
+msgstr "Produit par"
+
+#: report.c:1257
+msgid "Error reading"
+msgstr "Relevé d'erreurs"
+
+#: report.c:1438
+msgid "Format: "
+msgstr "Format: "
+
+#: report.c:1450
+msgid "Data: "
+msgstr "Données: "
+
+#: report.c:1464 unhide.c:209
+msgid "Tasks to include:"
+msgstr "Tâches d'inclure:"
+
+#: report.c:1534 unhide.c:285
+msgid "Select all"
+msgstr "Choisissez tout"
+
+#: report.c:1542 unhide.c:293
+msgid "Select none"
+msgstr "Choisi aucun"
+
+#: task.c:532
+msgid "System Error"
+msgstr "Erreur système"
+
+#: task.c:535
+msgid "Invalid task data file format"
+msgstr "Format incorrect de fichier de données de tâche"
+
+#: task.c:537
+msgid "Unknown error"
+msgstr "Inconnue erreur"
+
+#: unhide.c:203
+msgid "Unhide"
+msgstr "Ne cachez pas"
+
+#: xextras.c:61 xextras.c:73
+msgid "Received X error.  See ya!"
+msgstr "Erreur reçue de X. Voir le ya!"
+# msgid "GTimer: Idle Detect"
+# msgstr "GTimer: Le Ralenti Détectent"
+# 
+# msgid "Confirm: Delete Task"
+# msgstr "Confirmez: Effacez La Tâche"
+# 

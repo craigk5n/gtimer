@@ -1,0 +1,148 @@
+09 Mar 2003:
+  - Release 1.1.6
+    + Added -resume command line option.  This will start time all tasks
+      that were being timed when the application exited last.
+    + Projects are now associated with a project.  The project is now the
+      first column in the main window.
+    + Added option to round minutes to nearest minute, 5 minutes, etc
+      in reports window
+    + Added small css stylesheet to report html output.
+    + Added "Last Two Weeks", "This Week & Last Week" reports
+    + Reread gtkrc if -dir option is supplied
+    + Modified http function to use "Host:" required by web sites
+      that used virtual hosts, like www.cknudsen.com.  Also improved
+      error handling a little bit.
+09 Mar 2000:
+  - Release 1.1.5
+    + Improved idle handling.  The task list is no longer re-sorted when
+      selecting "Revert."  Added a new "Resume" option that will toss
+      out the idle time but keep timing whatever tasks are being timed.
+    + Added tool to check for new version.  The app will automatically
+      check for a new version every 30 days.
+    + Added ability to view ChangeLog from Help menu
+04 May 1999:
+  - Release 1.1.4
+    + Oops.  Fixed typo is task menu pulldown that said "seconds" instead
+      of "minutes."
+03 May 1999:
+  - Release 1.1.3
+    + Fixed bug where \n chars could be included at the end of a task name
+    + Fixed bug where adding new tasks messes up the hide/unhide stuff
+    + Fixed bug where -nosplash would cause the main window
+      to not remember the correct window size.
+    + Added support for the X screen saver extension so idle detection
+      will now sense keyboard events instead of just mouse events
+    + Added support for I18N but need translators!
+    + Made some windows transient (for GTK+ 1.1/1.2 only) instead of
+      all toplevels
+    + Made animated clock optional
+    + Made toolbar optional
+    + Allowed main menus to be tearoffs (for GTK+ 1.1/1.2 only)
+    + Added -start option allowing you to specify one or more tasks
+      to start timing when the app starts
+    + Added support for -version and -help options
+    + Added missing install-sh file to distribution
+    + Added FAQ.html to distribution
+    + Added portions of a Win32 port patch
+17 Mar 1999:
+  - Release 1.1.2
+    + Added autoconf (configure) support
+    + Added back support for GTK 1.0 (and still works with GTK 1.1/1.2)
+24 Feb 1999:
+  - Release 1.1.1
+    + Added task unhide function to along with the hide function (added
+      in a previous release).
+    + Added support for accelerator keys.  (Thanks to Matt Martin
+      <mmartin@Calvin.SFC.Lehigh.Edu> for the original code.)
+    + Fixed support for double-clicking to switch to timing only
+      the newly selected task (GTK 1.1 problem).
+    + Fixed support for the task pulldown menu available by right-clicking
+      on a task in the main window (GTK 1.1 problem).
+04 Feb 1999:
+  - Release 1.1.0
+    + Now requires GTK 1.1.X
+    + Remembers width/height of main window as well as width of each
+      column in the task list of the main window.
+    + Double-click on a task to stop timing all other tasks and begin
+      timing the selected task
+    + Fixed bug for "last month" reports when run in January.
+10 May 1998:
+  - Release 0.98
+    + Added #ifdef for an API change in 1.0.1
+      thanks Stephen Robert Norris (srn@flibble.psrg.cs.usyd.edu.AU)
+    + Oops.  Forgot to include xextras.c in the distribution.
+10 May 1998:
+  - Release 0.97
+    + Added idle detect.  Enabled/Disabled from the "Options" pulldown
+      menu.  Will prompt user after 5 minutes of no mouse movements.
+      (Would be nice to watch keyboard, too...  maybe that's next.)
+    + Added autosave.  Enabled/Disabled from the "Options" pulldown menu.
+      Will save every 15 minutes (if changes are made and the idle
+      detection window is not up.)
+    + Set the application's icon from within the application.  There's
+      a different icon depending on whether or not any tasks are being
+      timed.
+    + Added handler for X I/O errors.  Data is now saved on X I/O
+      errors (like xkill).
+    + Fixed vertical resize problem on main window (status bar).
+06 April 1998:
+  - Release 0.96
+    + Added support for HTML reports (requires 'netscape' somewhere in
+      your path)
+    + Save configuration on exit (sort mode, etc.)
+    + Added print option from reports
+    + Enabled word wrap on annotation entry (required GTK-0.99.9)
+    + Enabled word wrap on report display (required GTK-0.99.9)
+    + Added total time for the day at the bottom of the main window
+    + Updated toolbar icons (reduced number of colors for better use
+      on 8-bit displays: should use only 28 colors other than b&w)
+    + Fixed bug that caused gargbage characters to appear at the end of
+      some annotations (just use vi to clean up the .ann files of this
+      has happened to you)
+    + Added a brief man page
+    + Set default for new tasks names as "Unnamed Task" and set focus
+      to the text entry widget
+    + Added a splash screen on app startup (can be disabled with
+      -nosplash argument)
+24 March 1998:
+  - Release 0.95
+    + Sort tasks by clicking on column headers.
+    + Added support for multiline annotations.
+    + Replaced label widget with text widget in the report display
+      window.  (This allows for X copy/paste).
+    + Added "Annotate" to Task pulldown menu.
+    + Fixed various memory leaks/bugs.
+    + Fixed 0.94 bug where stop button tried to start timing the
+      selected task.
+    + Fixed all weekdays showing up as "Mon" in some reports.
+    + Set application class to "GTimer.gtimer".  This should help with
+      window managers (such as WindowMaker).
+    + Added icon in toolbar for editing task names.
+    + Added icon in toolbar for adding new tasks.
+18 March 1998:
+  - Release 0.94
+    + Renamed application "GTimer" from "TaskTimer" after being notified
+      that "TaskTimer" is a registered trademark of Time/Systems
+      International.
+    + Added support for annotations that can be displayed in reports.
+    + Used a memory debugging library to remove some memory leaks.
+    + Added pulldown menus for right mouse click on a task.
+      [Code provided by Zach Beane (xach@mint.net)]
+    + Double click on a task to edit the task.
+      [Code provided by Zach Beane (xach@mint.net)]
+    + Changed font in report window to be fixed size for better display.
+13 March 1998:
+  - Release 0.93
+    + Rearranged UI: Added "Task" and "Report" pulldown menus and toolbar
+      with icons.
+    + Added saving of reports to a file.
+    + Reports now use H:MM:SS time rather than H:MM.
+    + Updated confirm and error icons.
+    + Fixed handling of date change at midnight.
+10 March 1998:
+  - Bugfix release 0.91
+    + comment out tooltips so it will compile on GTK-0.99.5
+    + Create ~/.gtimer if it does not exist
+      (Thanks Zach Beane <xach@mint.net>)
+09 March 1998:
+  - Initial Release 0.90

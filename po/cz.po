@@ -1,0 +1,546 @@
+# Message catalog for GTimer.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# David Sauer <xsauer@fel.cvut.cz>, 1999.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: GTimer 1.14\n"
+"POT-Creation-Date: 1999-05-04 21:41+0200\n"
+"PO-Revision-Date: 1999-05-04 20:30 +0200\n"
+"Last-Translator: David Sauer <xsauer@fel.cvut.cz>\n"
+"Language-Team: czech <cs@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-2\n"
+"Content-Transfer-Encoding: 8-bit\n"
+
+#: annotate.c:106
+msgid "Annotation added"
+msgstr "Poznámka pøidána"
+
+#: annotate.c:148
+msgid "Add Annotation"
+msgstr "Pøidat poznámku"
+
+#: annotate.c:159
+msgid "Enter annotation for"
+msgstr "Zadejte poznámku pro"
+
+#: annotate.c:189 edit.c:218 main.c:641 main.c:662 main.c:684 main.c:716
+#: main.c:741 main.c:792 main.c:799 main.c:816 main.c:825 main.c:855
+#: main.c:864 main.c:895 main.c:1050 report.c:311 report.c:359 report.c:371
+#: report.c:379 report.c:446 report.c:537 report.c:1042 report.c:1057
+#: report.c:1091 report.c:1122 report.c:1173 report.c:1513 unhide.c:102
+#: unhide.c:264
+msgid "Ok"
+msgstr "Ok"
+
+#: annotate.c:200 edit.c:229 main.c:799 report.c:455 report.c:1525
+#: unhide.c:276
+msgid "Cancel"
+msgstr "Zru¹it"
+
+#: edit.c:106
+msgid "Task updated"
+msgstr "Úloha aktualizována"
+
+#: edit.c:133
+msgid "Task added"
+msgstr "Úloha pøidána"
+
+#: edit.c:178
+msgid "Edit Task"
+msgstr "Editovat úlohu"
+
+#: edit.c:180
+msgid "Add Task"
+msgstr "Pøidat úlohu"
+
+#: edit.c:193
+msgid "Task name"
+msgstr "Jméno úlohy"
+
+#: edit.c:206
+msgid "Unnamed Task"
+msgstr "Nepojmenovaná úloha"
+
+#: main.c:425
+msgid "About..."
+msgstr "O programu..."
+
+#: main.c:426 report.c:523
+msgid "Save"
+msgstr "Ulo¾it"
+
+#: main.c:427
+msgid "Exit"
+msgstr "Konec"
+
+#: main.c:428 main.c:1812
+msgid "Idle Detect"
+msgstr "Detekce neaktivity"
+
+#: main.c:429
+msgid "Toolbar"
+msgstr "Nástrojová li¹ta"
+
+#: main.c:430
+msgid "Animate"
+msgstr "Animovat"
+
+#: main.c:431
+msgid "Auto Save"
+msgstr "Automaticky ukládat"
+
+#: main.c:432
+msgid "Start Timing"
+msgstr "Spustit èasovaè"
+
+#: main.c:433
+msgid "Stop Timing"
+msgstr "Zastavit èasovaè"
+
+#: main.c:434
+msgid "Stop All Timing"
+msgstr "Zastavit v¹echny èasovaèe"
+
+#: main.c:435
+msgid "New..."
+msgstr "Nová..."
+
+#: main.c:436
+msgid "Edit..."
+msgstr "Editovat..."
+
+#: main.c:437
+msgid "Annotate..."
+msgstr "Pøidat poznámku..."
+
+#: main.c:438
+msgid "Hide"
+msgstr "Ukrýt"
+
+#: main.c:439
+msgid "Unhide..."
+msgstr "Ukázat"
+
+#: main.c:440
+msgid "Delete"
+msgstr "Smazat"
+
+#: main.c:441
+msgid "Increment 5 minutes"
+msgstr "Pøidat 5 minut"
+
+#: main.c:442
+msgid "Increment 30 minutes"
+msgstr "Pøidat 30 minut"
+
+#: main.c:443
+msgid "Decrement 5 minutes"
+msgstr "Odeèíst 5 minut"
+
+#: main.c:444
+msgid "Decrement 30 minutes"
+msgstr "Odeèíst 30 minut"
+
+#: main.c:445
+msgid "Set to Zero"
+msgstr "Vynulovat"
+
+#: main.c:446
+msgid "Daily..."
+msgstr "Denní..."
+
+#: main.c:447
+msgid "Weekly..."
+msgstr "Týdenní..."
+
+#: main.c:448
+msgid "Monthly..."
+msgstr "Mìsíèní..."
+
+#: main.c:449
+msgid "Yearly..."
+msgstr "Roèní..."
+
+#: main.c:452
+msgid "Start Timing the Selected Task"
+msgstr "Spustit èasovaè pro vybranou úlohu"
+
+#: main.c:454
+msgid "Stop Timing the Selected Task"
+msgstr "Zastavit èasovaè pro vybranou úlohu"
+
+#: main.c:456
+msgid "Stop Timing All Tasks"
+msgstr "Ukonèit èasování pro v¹echny úlohy"
+
+#: main.c:458
+msgid "Add Annotation to Selected Task"
+msgstr "Pøidat poznámku k vybrané úloze"
+
+#: main.c:460
+msgid "Add New Task"
+msgstr "Pøidat novou úlohu"
+
+#: main.c:462
+msgid "Edit Name of the Selected Task"
+msgstr "Editovat jméno vybrané úlohy"
+
+#: main.c:620
+msgid "All data saved"
+msgstr "V¹echna data ulo¾ena"
+
+#: main.c:632 main.c:633
+msgid "Version"
+msgstr "Verze"
+
+#: main.c:635
+msgid "Author"
+msgstr "Autor"
+
+#: main.c:639
+msgid "About"
+msgstr "O programu"
+
+#: main.c:660 main.c:682 main.c:714 main.c:739 main.c:790 main.c:814
+#: main.c:823 main.c:853 main.c:862 main.c:893 main.c:1048 main.c:2096
+#: main.c:2126 main.c:2141 main.c:2147 report.c:308 report.c:311 report.c:358
+#: report.c:368 report.c:371 report.c:379 report.c:1040 report.c:1056
+#: report.c:1089 report.c:1120 report.c:1171 unhide.c:100
+msgid "Error"
+msgstr "Chyba"
+
+#: main.c:661
+msgid ""
+"You have not selected\n"
+"a task to edit."
+msgstr ""
+"K editaci musíte vybrat\n"
+" nìjakou úlohu"
+
+#: main.c:683
+msgid ""
+"You have not selected\n"
+"a task to hide."
+msgstr ""
+"Vyberte úlohu, kterou\n"
+"chcete skrýt."
+
+#: main.c:699
+msgid "Task hidden"
+msgstr "Úloha ukryta"
+
+#: main.c:715
+msgid "There are no hidden tasks."
+msgstr "®ádná úloha není skryta."
+
+#: main.c:737
+msgid "Error deleting task"
+msgstr "Chyba pøi výmazu úlohy"
+
+#: main.c:776
+msgid "Task removed"
+msgstr "Úloha odstranìna"
+
+#: main.c:791
+msgid ""
+"You have not selected\n"
+"a task to delete."
+msgstr ""
+"Nejprve vyberte úlohu,\n"
+"kterou chcete smazat."
+
+#: main.c:797
+msgid "Delete Task?"
+msgstr "Smazat úlohu?"
+
+#: main.c:798
+msgid ""
+"Are you sure you want\n"
+"to delete this task?"
+msgstr ""
+"Opravdu chcete smazat\n"
+"tuto úlohu?"
+
+#: main.c:815
+msgid ""
+"You have not selected\n"
+"a task to start timing."
+msgstr ""
+"Pro start èasovaèe\n"
+"neprve vyberte úlohu."
+
+#: main.c:824
+msgid "Task is already being timed."
+msgstr "Èasovaè úlohy ji¾ bì¾í."
+
+#: main.c:854
+msgid ""
+"You have not selected\n"
+"a task to stop timing."
+msgstr ""
+"Nejprve vyberte úlohu,\n"
+"její¾ èasování chcete ukonèit."
+
+#: main.c:863
+msgid "Task is not being timed."
+msgstr "Úloha není èasována."
+
+#: main.c:894
+msgid ""
+"You have not selected\n"
+"a task to annotate."
+msgstr ""
+"Nejprve vyberte úlohu, pro kterou\n"
+" chcete pøidat poznámku."
+
+#: main.c:1049
+msgid ""
+"You have not selected\n"
+"a task to adjust the time for."
+msgstr ""
+"Pokud chcete upravit èas úlohy,\n"
+"nejprve nìjakou úlohu vyberte."
+
+#: main.c:1349
+msgid "File"
+msgstr "Soubor"
+
+#: main.c:1383
+msgid "Options"
+msgstr "Nastavení"
+
+#: main.c:1411 main.c:2307
+msgid "Task"
+msgstr "Úloha"
+
+#: main.c:1421 report.c:482 report.c:1224 report.c:1410
+msgid "Report"
+msgstr "Zpráva"
+
+#: main.c:1607
+msgid "Today"
+msgstr "Dnes"
+
+#: main.c:1807
+msgid "You have been idle for"
+msgstr "Nic jste nenapsal(a) bìhem posledních"
+
+#: main.c:1808
+msgid "minutes"
+msgstr "minut"
+
+#: main.c:1808
+msgid "since"
+msgstr "od"
+
+#: main.c:1810
+msgid ""
+"Do you wish to revert\n"
+"to before the idle?"
+msgstr ""
+"Chcete se vrátit do doby, ne¾\n"
+"byla pøeru¹ena práce?"
+
+#: main.c:1813
+msgid "Revert"
+msgstr "Zpìt"
+
+#: main.c:1813
+msgid "Continue Timing"
+msgstr "Pokraèovat v èasování"
+
+#: main.c:1991
+msgid "Welcome to"
+msgstr "Vítejte do programu"
+
+#: main.c:2018
+msgid "GTK+ runtime"
+msgstr "prostøedí GTK+"
+
+#: main.c:2020
+msgid "Home page"
+msgstr "Domácí stránka"
+
+#: main.c:2026
+msgid "options"
+msgstr "nastavení"
+
+#: main.c:2028
+msgid "don't display the splash screen"
+msgstr "nezobrazovat uvítací obrazovku"
+
+#: main.c:2030
+msgid "display this help info"
+msgstr "zobrazit tuto informaci o nápovìdì"
+
+#: main.c:2032
+msgid "display the version"
+msgstr "zobrazit verzi"
+
+#: main.c:2034
+msgid "specify the midnight offset"
+msgstr "zadejte posunutí pùlnoci"
+
+#: main.c:2036
+msgid "start timing the specified task"
+msgstr "spustit èasovaè pro danou úlohu"
+
+#: main.c:2096
+msgid "unable to create directory"
+msgstr "nelze vytvoøit adresáø"
+
+#: main.c:2126 main.c:2141
+msgid "requires an argument"
+msgstr "vy¾aduje argument"
+
+#: main.c:2147
+msgid "requires a number"
+msgstr "vy¾aduje èíslo"
+
+#: main.c:2148
+msgid "not"
+msgstr ""
+
+#: main.c:2159
+msgid "Invalid offset for"
+msgstr "Chybný ofset pro"
+
+#: main.c:2161
+msgid "Format should be"
+msgstr "Formát má být"
+
+#: main.c:2183
+msgid "Ingoring unknown option"
+msgstr "Neznámá volba je ignorována"
+
+#: main.c:2307
+msgid "not found"
+msgstr "nenalezeno"
+
+#: report.c:309 report.c:369
+msgid "writing to file"
+msgstr "zápis do souboru"
+
+#: report.c:332
+msgid "Save Report"
+msgstr "Ulo¾it zprávu"
+
+#: report.c:359
+msgid "You must enter a print command"
+msgstr "Musíte zadat pøíkaz pro tisk"
+
+#: report.c:379
+msgid "Error printing"
+msgstr "Chyba pøi tisku"
+
+#: report.c:416
+msgid "Print Report"
+msgstr "Vytisknou zprávu"
+
+#: report.c:433
+msgid "Print Command"
+msgstr "Pøíkaz tisku"
+
+#: report.c:530
+msgid "Print"
+msgstr "Tisk"
+
+#: report.c:720 report.c:725
+msgid "Total"
+msgstr "Celkem"
+
+#: report.c:739 report.c:746
+msgid "Week"
+msgstr "Týden"
+
+#: report.c:740 report.c:747
+msgid "to"
+msgstr "do"
+
+#: report.c:814 report.c:819
+msgid "Month"
+msgstr "Mìsic"
+
+#: report.c:881 report.c:886
+msgid "Year"
+msgstr "Rok"
+
+#: report.c:946 report.c:951
+msgid "Totals"
+msgstr "Celkem"
+
+#: report.c:1041
+msgid ""
+"Could not find \"netscape\"\n"
+"in your path."
+msgstr ""
+"V prohledávaných adresáøích \n"
+"nelze najít \"netscape\"."
+
+#: report.c:1056
+msgid "Error communicating with Netscape."
+msgstr "Chyba pøi komunikaci s netscape."
+
+#: report.c:1090 unhide.c:101
+msgid "You have not selected any tasks"
+msgstr "Nemáte vybránu ¾ádnou úlohu"
+
+#: report.c:1121
+msgid ""
+"You must select either \"include hours\"\n"
+"or \"include annotations\"."
+msgstr ""
+
+#: report.c:1172
+msgid "Error opening temporary file"
+msgstr "Chyba pøi otevøení doèasného souboru"
+
+#: report.c:1242
+msgid "Generated by"
+msgstr "Vytvoøeno programem"
+
+#: report.c:1257
+msgid "Error reading"
+msgstr "Chyba ètení"
+
+#: report.c:1438
+msgid "Format: "
+msgstr "Formát: "
+
+#: report.c:1450
+msgid "Data: "
+msgstr "Data: "
+
+#: report.c:1464 unhide.c:209
+msgid "Tasks to include:"
+msgstr "Zapoèítávané úlohy:"
+
+#: report.c:1534 unhide.c:285
+msgid "Select all"
+msgstr "Vybrat v¹echny"
+
+#: report.c:1542 unhide.c:293
+msgid "Select none"
+msgstr "Zru¹it celý výbìr"
+
+#: task.c:532
+msgid "System Error"
+msgstr "Chyba systému"
+
+#: task.c:535
+msgid "Invalid task data file format"
+msgstr "Chybný formát souboru s daty úloh"
+
+#: task.c:537
+msgid "Unknown error"
+msgstr "Neznámá chyba"
+
+#: unhide.c:203
+msgid "Unhide"
+msgstr "Ukázat"
+
+#: xextras.c:61 xextras.c:73
+msgid "Received X error.  See ya!"
+msgstr "Chyba X Window. Sbohem!"
