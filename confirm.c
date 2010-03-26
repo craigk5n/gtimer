@@ -168,7 +168,8 @@ char *callback_data;
   gtk_grab_add ( window );
   gtk_widget_realize ( window );
 
-#if GTK_VERSION >= 10100
+#if OLD_GTK
+#else
   if ( is_modal )
     gtk_window_set_transient_for ( GTK_WINDOW ( window ),
       GTK_WINDOW ( main_window ) );

@@ -21,6 +21,8 @@
  *	Suite 330, Boston, MA  02111-1307, USA
  *
  * History:
+ *	18-Apr-2005	Fix memory clobber when saving projects.  Based on
+ *			debugging work by Ove Kaaven.
  *	20-Feb-2003	Created
  *
  */
@@ -45,17 +47,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifdef HAVE_LIBINTL_H
-#include <libintl.h>
-#else
-#define gettext(a)	a
-#endif
-
 #include "project.h"
 
 #ifdef GTIMER_MEMDEBUG
 #include "memdebug/memdebug.h"
 #endif
+
+// PV: Internationalization
+#include "gtimeri18n.h"
 
 static int num_projects = 0;
 static Project **projects = NULL;
@@ -241,7 +240,7 @@ char *projectdir;
   FILE *fp;
   int loop;
 
-  path = (char *) malloc ( strlen ( projectdir ) + 10 );
+  path = (char *) malloc ( strlen ( projectdir ) + 20 );
   sprintf ( path, "%s/%d.project", projectdir, project->number );
 
   fp = fopen ( path, "w" );

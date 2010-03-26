@@ -42,11 +42,7 @@
 #include <X11/extensions/scrnsaver.h>
 #endif
 
-#ifdef HAVE_LIBINTL_H
-#include <libintl.h>
-#else
-#define gettext(a)      a
-#endif
+#include "gtimeri18n.h"
 
 extern void save_all ();
 

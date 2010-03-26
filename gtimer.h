@@ -30,7 +30,6 @@
  *	http://www.cknudsen.com/gtimer/
  *
  * History:
- *	09-Mar-2003	Changed release to 1.1.6
  *	09-Mar-2000	Changed release to 1.1.5
  *	09-Mar-2000	Added args to confirm_create_window()
  *	04-May-1999	Changed release to 1.1.4
@@ -58,19 +57,26 @@
 
 /* Note: we could use "VERSION" produced from autoconf, but I like
    to also have the version date, so I'll just edit this by hand. */
-#define GTIMER_VERSION		"1.1.6"
-#define GTIMER_VERSION_DATE	"09 Mar 2003"
-#define GTIMER_URL		"http://www.cknudsen.com/gtimer/"
-#define GTIMER_COPYRIGHT	"Copyright (C) 2000-2003 Craig Knudsen"
+#define GTIMER_VERSION		"2.0.0"
+#define GTIMER_VERSION_DATE	"25 Mar 2010" /*"19 Mar 2003"*/
+#define GTIMER_URL		"http://www.k5n.us/gtimer.php"
+#define GTIMER_COPYRIGHT	"Copyright (C) 2000-2010 Craig Knudsen"
 
 #define GTIMER_STATUS_ID	"status-update"
 
 #define GTIMER_TASK_OPTION_HIDDEN	0x0001
 
 /* URL to check for new version */
-#define GTIMER_VERSION_CHECK_SERVER	"www.cknudsen.com"
+#define GTIMER_VERSION_CHECK_SERVER	"www.k5n.us"
 #define GTIMER_VERSION_CHECK_PORT	80
-#define GTIMER_VERSION_CHECK_PATH	"/gtimer/latest_version.txt"
+#define GTIMER_VERSION_CHECK_PATH	"/gtimer_latest_version.txt"
+
+// PV:
+#define MAX_NUMBER_OF_ACTIONS	30
+
+
+// PV: Internationalization
+#include "gtimeri18n.h"
 
 typedef enum {
   CONFIRM_ABOUT,
@@ -81,6 +87,7 @@ typedef enum {
 } enum_confirm_type;
 
 typedef enum {
+  REPORT_TYPE_NONE,        /* PV: + */
   REPORT_TYPE_DAILY,
   REPORT_TYPE_WEEKLY,
   REPORT_TYPE_MONTHLY,
@@ -128,6 +135,8 @@ GtkWidget *create_unhide_window ( );
 
 void display_changelog ( );
 
+void showMessage ( char *msg );
+
 GtkWidget *create_confirm_window (
   enum_confirm_type type,
   char *title,
@@ -154,7 +163,24 @@ GtkWidget *create_confirm_toplevel (
   char *callback_data
 );
 
+char *get_client_path ( char *file );
+
 #endif /* __GTK_H__ */
-  
+
+#ifdef GTK_MAJOR_VERSION
+#if ( GTK_MAJOR_VERSION < 1 ) || \
+  ( GTK_MAJOR_VERSION == 1 && GTK_MINOR_VERSION <= 1 )
+#define OLD_GTK         1
+#else
+#define OLD_GTK         0
+#endif
+#endif
+
+
+// PV: debug version
+// #define PV_DEBUG	1
+
+
+
 #endif /* _GTIMER_H */
 

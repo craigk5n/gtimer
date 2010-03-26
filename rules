@@ -1,0 +1,91 @@
+#!/usr/bin/make -f
+# Made with the aid of dh_make, by Craig Small
+# Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
+# Some lines taken from debmake, by Cristoph Lameter.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# Yes, we use the Debian Build System.  We won't as soon as it's easy to make
+# the change.  I'm hoping for a new upstream release as a good opportunity to
+# switch to quilt or Git.
+TAR_DIR=gtimer-1.1.6
+include /usr/share/dbs/dbs-build.mk
+
+CFLAGS=-DLANG_EN -g -Wall
+ifneq (,$(filter noopt,$(DEB_BUILD_OPTIONS)))
+    CFLAGS += -O0
+else
+    CFLAGS += -O2
+endif
+
+# Tell Autoconf the correct system types.
+DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
+    SYSTEM = --build $(DEB_HOST_GNU_TYPE)
+else
+    SYSTEM = --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
+endif
+
+# Comply with Policy 4.14.
+patch: $(patched)
+
+configure: configure-stamp
+configure-stamp: $(patched)
+	sed -e "s,@BUILD_TREE@,$(BUILD_TREE)," debian/gtimer.install.in \
+	    > debian/gtimer.install
+	cd $(BUILD_TREE) && ./configure --prefix=/usr \
+	    --mandir=/usr/share/man $(SYSTEM)
+	cd $(BUILD_TREE) && mv po/cz.po po/cs.po
+	touch configure-stamp
+
+build: build-arch build-indep
+build-arch: build-arch-stamp
+build-indep:
+build-arch-stamp: configure-stamp
+	dh_testdir
+	cd $(BUILD_TREE) && $(MAKE) 
+	touch build-arch-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f configure-stamp build-arch-stamp install-stamp
+	rm -rf $(STAMP_DIR) $(SOURCE_DIR)
+	dh_clean debian/gtimer.install
+
+install: install-stamp
+install-stamp: build-arch-stamp
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+	cd $(BUILD_TREE) && $(MAKE) prefix=$(CURDIR)/debian/tmp/usr install
+	dh_install
+	touch install-stamp
+
+# Build architecture-dependent files here.
+binary: binary-arch binary-indep
+binary-indep:
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs $(BUILD_TREE)/ChangeLog 
+	dh_installdocs $(BUILD_TREE)/README $(BUILD_TREE)/FAQ.html \
+	    $(BUILD_TREE)/AUTHORS
+	dh_installmenu
+	dh_installman $(BUILD_TREE)/gtimer.1
+	dh_desktop
+	dh_strip
+	dh_link
+	dh_compress -X doc/gtimer/contrib
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+.PHONY: binary binary-arch binary-indep build build-arch build-indep configure
+.PHONY: clean install

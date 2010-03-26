@@ -25,6 +25,7 @@
  *	http://www.cknudsen.com/gtimer/
  *
  * History:
+ *	17-Apr-2005	Added configurability of the browser. (Russ Allbery)
  *	04-Apr-98	Created
  *			(Code stolen from another project/program I wrote.)
  *
@@ -56,6 +57,7 @@
 #define CONFIG_MAIN_WINDOW_TOTAL_WIDTH	"list_total_width"
 #define CONFIG_NEXT_VERSION_CHECK	"next_version_check"
 #define CONFIG_LAST_TIMED_TASKS		"timed_tasks"
+#define CONFIG_BROWSER			"browser"
 
 /* default values */
 #ifdef CONFIG_DEFAULTS
@@ -72,6 +74,9 @@ static char *default_config[] = {
   CONFIG_MAIN_WINDOW_WIDTH, "500",
   CONFIG_MAIN_WINDOW_HEIGHT, "400",
   CONFIG_NEXT_VERSION_CHECK, "0",
+
+  /* rra 2005-07-15: Changed to sensible-browser for Debian. */
+  CONFIG_BROWSER, "sensible-browser",
   NULL,
 };
 #endif

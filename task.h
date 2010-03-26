@@ -20,6 +20,8 @@
  *	Free Software Foundation, Inc., 59 Temple Place,
  *	Suite 330, Boston, MA  02111-1307, USA
  *
+ *	17-Apr-2005	Add support for subtracting a particular offset
+ *			off of timers.  (Russ Allbery)
  */
 
 
@@ -63,8 +65,9 @@ typedef struct {
 void taskAdd ( Task *task );
 int taskSave ( Task *task, char *taskdir );
 int taskSaveAll ( char *taskdir );
-void taskMark ( Task *task );
-void taskMarkAll ();
+/* rra 2005-04-17 - add an offset to subtract from running times */
+void taskMark ( Task *task, int offset );
+void taskMarkAll ( int offset );
 void taskRestore ( Task *task );
 void taskRestoreAll ();
 void taskClearAll ();

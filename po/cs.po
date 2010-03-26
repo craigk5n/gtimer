@@ -1,34 +1,36 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Czech translations for gtimer package.
+# Copyright (C) 2008 THE gtimer'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the gtimer package.
+# Pavel Vávra <cz-plamen@users.sourceforge.net>, 2008.
 #
-#, fuzzy
+# Based on translations of David Sauer <xsauer@fel.cvut.cz>, 1999
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: gtimer 1.1.7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-03-26 12:26-0400\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Craig Knudsen <craig@k5n.us>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"POT-Creation-Date: 2008-09-17 23:48+0200\n"
+"PO-Revision-Date: 2008-09-15 22:35+0200\n"
+"Last-Translator: Pavel Vávra <cz-plamen@sourceforge.net>\n"
+"Language-Team: Czech\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 
 #: annotate.c:99
 msgid "Annotation added"
-msgstr ""
+msgstr "Poznáka přidána"
 
 #: annotate.c:141
 msgid "Add Annotation"
-msgstr ""
+msgstr "Přidat poznámku"
 
 #: annotate.c:152
 msgid "Enter annotation for"
-msgstr ""
+msgstr "Zadejte poznámku pro"
 
-#: annotate.c:172 changelog.c:133 edit.c:231 edit.c:488 edit.c:600 main.c:923
+#: annotate.c:172 edit.c:231 edit.c:488 edit.c:600 changelog.c:128 main.c:923
 #: main.c:948 main.c:972 main.c:992 main.c:1021 main.c:1046 main.c:1094
 #: main.c:1101 main.c:1116 main.c:1125 main.c:1154 main.c:1163 main.c:1193
 #: main.c:1335 main.c:1343 main.c:1424 main.c:1589 main.c:1712 main.c:1720
@@ -37,520 +39,538 @@ msgstr ""
 #: report.c:1335 report.c:1391 report.c:1422 report.c:1498 report.c:1958
 #: unhide.c:115 unhide.c:286
 msgid "Ok"
-msgstr ""
+msgstr "Ok"
 
 #: annotate.c:183 edit.c:242 edit.c:499 edit.c:608 main.c:1101 report.c:530
 #: report.c:1970 unhide.c:298
 msgid "Cancel"
-msgstr ""
-
-#: changelog.c:97
-msgid "Change Log"
-msgstr ""
+msgstr "Zrušit"
 
 #: edit.c:117
 msgid "Project updated"
-msgstr ""
+msgstr "Projekt zaktualizován"
 
 #: edit.c:134
 msgid "Project added"
-msgstr ""
+msgstr "Přidán nový projekt"
 
 #: edit.c:189 main.c:406
 msgid "Edit Project"
-msgstr ""
+msgstr "Změna názvu projektu"
 
 #: edit.c:191
 msgid "Add Project"
-msgstr ""
+msgstr "Přidání projektu"
 
 #: edit.c:204
 msgid "Project name"
-msgstr ""
+msgstr "Jméno projektu"
 
 #: edit.c:218 edit.c:220
 msgid "Unnamed Project"
-msgstr ""
+msgstr "Nepojmenovaný projekt"
 
 #: edit.c:329 edit.c:358
 msgid "Task updated"
-msgstr ""
+msgstr "Úloha aktualizována"
 
 #: edit.c:406
 msgid "Edit Task"
-msgstr ""
+msgstr "Změna úlohy"
 
 #: edit.c:408
 msgid "Add Task"
-msgstr ""
+msgstr "Přidání úlohy"
 
 #: edit.c:427
 msgid "Project "
-msgstr ""
+msgstr "Projekt "
 
 #: edit.c:460
 msgid "Task name"
-msgstr ""
+msgstr "Jméno úlohy"
 
 #: edit.c:475 edit.c:477
 msgid "Unnamed Task"
-msgstr ""
+msgstr "Nepojmenovaná úloha"
 
 #: edit.c:559
 msgid "Change Browser"
-msgstr ""
+msgstr "Změna prohlížeče webu"
 
 #: edit.c:580
 msgid "Command"
-msgstr ""
+msgstr "Příkaz"
+
+#: changelog.c:92
+msgid "Change Log"
+msgstr "Zobrazit Change log (anglicky)"
 
 #: main.c:349
 msgid "MM|_File"
-msgstr ""
+msgstr "MM|_Soubor"
 
 #: main.c:350
 msgid "MM|_Edit"
-msgstr ""
+msgstr "MM|Úp_ravy"
 
 #: main.c:351
 msgid "MM|_Options"
-msgstr ""
+msgstr "MM|_Nastavení"
 
 #: main.c:352
 msgid "MM|_Task"
-msgstr ""
+msgstr "MM|Ú_loha"
 
 #: main.c:353
 msgid "MM|_Project"
-msgstr ""
+msgstr "MM|_Projekt"
 
 #: main.c:354
 msgid "MM|_Report"
-msgstr ""
+msgstr "MM|_Výkaz"
 
 #: main.c:355
 msgid "MM|_Tools"
-msgstr ""
+msgstr "MM|Nás_troje"
 
 #: main.c:356
 msgid "MM|_Help"
-msgstr ""
+msgstr "MM|Nápověd_a"
 
 #: main.c:357
 msgid "FM|_Save"
-msgstr ""
+msgstr "FM|_Uložit"
 
 #: main.c:358
 msgid "Save actual state"
-msgstr ""
+msgstr "Uložit momentální stav"
 
 #: main.c:359
 msgid "FM|_Exit"
-msgstr ""
+msgstr "FM|U_končit"
 
 #: main.c:360
 msgid "Exit program"
-msgstr ""
+msgstr "Ukončit program"
 
 #: main.c:361
 msgid "EM|C_ut Time"
-msgstr ""
+msgstr "EM|_Vyjmout čas"
 
 #: main.c:362
 msgid "Cut actual time from line to buffer"
-msgstr ""
+msgstr "Vyjmout dnešní čas z aktuální řádky do bufferu"
 
 #: main.c:363
 msgid "EM|_Copy Time"
-msgstr ""
+msgstr "EM|_Kopírovat"
 
 #: main.c:364
 msgid "Copy actual time from line to buffer"
-msgstr ""
+msgstr "Zkopírovat dnešní čas z aktuální řádky do bufferu"
 
 #: main.c:365
 msgid "EM|_Paste Time"
-msgstr ""
+msgstr "EM|V_ložit čas"
 
 #: main.c:366
 msgid "Paste actual time from buffer to actual line"
-msgstr ""
+msgstr "Přidat čas z bufferu na aktuální řádku"
 
 #: main.c:367
 msgid "EM|Clear _Buffer"
-msgstr ""
+msgstr "EM|_Smazat buffer"
 
 #: main.c:368
 msgid "Clear buffer"
-msgstr ""
+msgstr "Vynulovat časový buffer"
 
 #: main.c:369
 msgid "OM|_Browser ..."
-msgstr ""
+msgstr "OM|_Prohlížeč"
 
 #: main.c:370
 msgid "Set your preferred web browser"
-msgstr ""
+msgstr "Nastavit používaný prohlížeč www"
 
 #: main.c:371
 msgid "TM|_Start Timing"
-msgstr ""
+msgstr "TM|_Měření"
 
 #: main.c:372
 msgid "Start timing of selected task"
-msgstr ""
+msgstr "Zapnutí měření času vybrané úlohy"
 
 #: main.c:373
 msgid "TM|S_top Timing"
-msgstr ""
+msgstr "TM|Zas_tavit"
 
 #: main.c:374
 msgid "Stop timing of selected task"
-msgstr ""
+msgstr "Zastavení měření času vybrané úlohy"
 
 #: main.c:375
 msgid "TM|Stop A_ll Timing"
-msgstr ""
+msgstr "TM|Zastavit _vše"
 
 #: main.c:376
 msgid "Stop timing of all running tasks"
-msgstr ""
+msgstr "Zastavení měření času pro všechny úlohy"
 
 #: main.c:377
 msgid "TM|_New..."
-msgstr ""
+msgstr "TM|_Nová..."
 
 #: main.c:378
 msgid "Create new task"
-msgstr ""
+msgstr "Vytvořit novou úlohu"
 
 #: main.c:379
 msgid "TM|_Edit... "
-msgstr ""
+msgstr "TM|Up_ravit..."
 
 #: main.c:380
 msgid "Edit selected task"
-msgstr ""
+msgstr "Upravit existující úlohu"
 
 #: main.c:381
 msgid "TM|_Annotate..."
-msgstr ""
+msgstr "TM|_Poznámka..."
 
 #: main.c:382 main.c:388
 msgid "Add annotation"
-msgstr ""
+msgstr "Přidat poznámku"
 
 #: main.c:383
 msgid "TM|_Hide"
-msgstr ""
+msgstr "TM|_Skrýt"
 
 #: main.c:384
 msgid "Hide task"
-msgstr ""
+msgstr "Skrýt úlohu"
 
 #: main.c:385
 msgid "TM|_Unhide... "
-msgstr ""
+msgstr "TM|Z_obrazit"
 
 #: main.c:386
 msgid "Unhide tasks"
-msgstr ""
+msgstr "Zobrazit skryté úlohy"
 
 #: main.c:387
 msgid "TM|_Delete"
-msgstr ""
+msgstr "TM|Vým_az"
 
 #: main.c:389
 msgid "TM|_Increment 1 minute"
-msgstr ""
+msgstr "TM|Př_ičtení 1 minuty"
 
 #: main.c:390 main.c:392 main.c:394
 msgid "Increment time"
-msgstr ""
+msgstr "Přidání času"
 
 #: main.c:391
 msgid "TM|I_ncrement 5 minutes"
-msgstr ""
+msgstr "TM|Přičt_ení 5 minut"
 
 #: main.c:393
 msgid "TM|In_crement 30 minute"
-msgstr ""
+msgstr "TM|Přičtení 30 min_ut"
 
 #: main.c:395
 msgid "TM|Decrement _1 minute"
-msgstr ""
+msgstr "TM|Odečtení _1 minuty"
 
 #: main.c:396 main.c:398 main.c:400
 msgid "Decrement time"
-msgstr ""
+msgstr "Odebrání času"
 
 #: main.c:397
 msgid "TM|Decrement _5 minutes"
-msgstr ""
+msgstr "TM|Odečtení _5 minut"
 
 #: main.c:399
 msgid "TM|Decrement _30 minutes"
-msgstr ""
+msgstr "TM|Odečtení _30 minut"
 
 #: main.c:401
 msgid "TM|Set to _Zero"
-msgstr ""
+msgstr "TM|_Znulovat"
 
 #: main.c:402
 msgid "Clear time of selected task"
-msgstr ""
+msgstr "Znulovat dnešní čas vybrané úlohy"
 
 #: main.c:403
 msgid "PM|_New..."
-msgstr ""
+msgstr "PM|_Nový..."
 
 #: main.c:404
 msgid "New Project"
-msgstr ""
+msgstr "Nový projekt"
 
 #: main.c:405
 msgid "PM|_Edit..."
-msgstr ""
+msgstr "PM|Up_ravit..."
 
 #: main.c:407
 msgid "RM|_Daily..."
-msgstr ""
+msgstr "RM|_Denní"
 
 #: main.c:408
 msgid "Daily Report"
-msgstr ""
+msgstr "Výkaz prace po dnech"
 
 #: main.c:409
 msgid "RM|_Weekly..."
-msgstr ""
+msgstr "RM|_Týdenní"
 
 #: main.c:410
 msgid "Weekly Report"
-msgstr ""
+msgstr "Výkaz prace po týdnech"
 
 #: main.c:411
 msgid "RM|_Monthly..."
-msgstr ""
+msgstr "RM|_Měsíční"
 
 #: main.c:412
 msgid "Monthly Report"
-msgstr ""
+msgstr "Výkaz prace po měsících"
 
 #: main.c:413
 msgid "RM|_Yearly..."
-msgstr ""
+msgstr "RM|_Roční"
 
 #: main.c:414
 msgid "Yearly Report"
-msgstr ""
+msgstr "Roční výkaz práce"
 
 #: main.c:415
 msgid "TL|_Check for New Version..."
-msgstr ""
+msgstr "TL|_Kontrola nové verze"
 
 #: main.c:416
 msgid "Keep your program updated"
-msgstr ""
+msgstr "Informovat o nové verzi"
 
 #: main.c:417
 msgid "HM|_About..."
-msgstr ""
+msgstr "HM|_O programu"
 
 #: main.c:418 main.c:921
 msgid "About"
-msgstr ""
+msgstr "Informace o programu"
 
 #: main.c:419
 msgid "HM|View _Change log..."
-msgstr ""
+msgstr "HM|Zobrazit _Change log"
 
 #: main.c:420
 msgid "Changelog"
-msgstr ""
+msgstr "Zobrazit Change log (anglicky)"
 
 #: main.c:421
 msgid "HM|Visit _Website..."
-msgstr ""
+msgstr "HM|Prohlédnout _web programu"
 
 #: main.c:422
 msgid "Open web browser"
-msgstr ""
+msgstr "Otevřít www prohlížeč"
 
 #: main.c:433
 msgid "OM|_Toolbar"
-msgstr ""
+msgstr "OM|_Nástroje"
 
 #: main.c:435
 msgid "OM|_Animate"
-msgstr ""
+msgstr "OM|_Animace"
 
 #: main.c:437
 msgid "OM|_Idle Detect"
-msgstr ""
+msgstr "OM|_Detekce neaktivity"
 
 #: main.c:439
 msgid "OM|Auto _Save"
-msgstr ""
+msgstr "OM|Automaticky _ukládat"
 
 #: main.c:555
 msgid "Start"
-msgstr ""
+msgstr "Start"
 
 #: main.c:556
 msgid "Start Timing the Selected Task"
-msgstr ""
+msgstr "Zapnutí měření času vybrané úlohy"
 
 #: main.c:559
 msgid "Stop"
-msgstr ""
+msgstr "Stop"
 
 #: main.c:560
 msgid "Stop Timing the Selected Task"
-msgstr ""
+msgstr "Zastavení měření času vybrané úlohy"
 
 #: main.c:563
 msgid "Stop All"
-msgstr ""
+msgstr "Stop vše"
 
 #: main.c:564
 msgid "Stop Timing All Tasks"
-msgstr ""
+msgstr "Zastavení měření času pro všechny úlohy"
 
 #: main.c:567
 msgid "Annotate"
-msgstr ""
+msgstr "Poznámka"
 
 #: main.c:568
 msgid "Add Annotation to Selected Task"
-msgstr ""
+msgstr "Přidat poznámku k vybrané úloze"
 
 #: main.c:571
 msgid "Add"
-msgstr ""
+msgstr "Úloha"
 
 #: main.c:572
 msgid "Add New Task"
-msgstr ""
+msgstr "Nová úloha"
 
 #: main.c:575
 msgid "Edit"
-msgstr ""
+msgstr "Změna"
 
 #: main.c:576
 msgid "Edit Name of the Selected Task"
-msgstr ""
+msgstr "Změna názvu vybrané úlohy"
 
 #: main.c:904
 msgid "All data saved"
-msgstr ""
+msgstr "Data jsou uložena"
 
 #: main.c:914 main.c:915 main.c:1727 main.c:1732 main.c:1743
 msgid "Version"
-msgstr ""
+msgstr "Verze"
 
 #: main.c:917
 msgid "Author"
-msgstr ""
+msgstr "Autor"
 
 #: main.c:947 main.c:970 main.c:990 main.c:1019 main.c:1044 main.c:1092
 #: main.c:1114 main.c:1123 main.c:1152 main.c:1161 main.c:1191 main.c:1333
 #: main.c:1341 main.c:1422 main.c:1587 main.c:1710 main.c:1718 main.c:1781
-#: main.c:1795 main.c:2838 main.c:2867 main.c:2873 main.c:2896 main.c:2902
+#: main.c:1795 main.c:2833 main.c:2862 main.c:2868 main.c:2891 main.c:2897
 #: report.c:378 report.c:381 report.c:434 report.c:444 report.c:446
 #: report.c:455 report.c:1314 report.c:1334 report.c:1389 report.c:1420
 #: report.c:1496 unhide.c:113
 msgid "Error"
-msgstr ""
+msgstr "Chyba"
 
 #: main.c:947 report.c:1334
 msgid "Error communicating with browser."
-msgstr ""
+msgstr "Chyba při komunikaci s nastaveným prohlížečem."
 
 #: main.c:971
 msgid ""
 "You have not selected\n"
 "a task to edit."
 msgstr ""
+"Vyberte úlohu, kterou\n"
+"chcete změnit."
 
 #: main.c:991
 msgid ""
 "You have not selected\n"
 "a task to hide."
 msgstr ""
+"Vyberte úlohu, kterou\n"
+"chcete skrýt."
 
 #: main.c:1006
 msgid "Task hidden"
-msgstr ""
+msgstr "Úloha je skryta"
 
 #: main.c:1020
 msgid "There are no hidden tasks."
-msgstr ""
+msgstr "Žádná úloha není skryta"
 
 #: main.c:1042
 msgid "Error deleting task"
-msgstr ""
+msgstr "Chyba při výmazu úlohy"
 
 #: main.c:1080
 msgid "Task removed"
-msgstr ""
+msgstr "Úloha byla vymazána"
 
 #: main.c:1093
 msgid ""
 "You have not selected\n"
 "a task to delete."
 msgstr ""
+"Vyberte úlohu, kterou\n"
+"chcete vymazat."
 
 #: main.c:1099
 msgid "Delete Task?"
-msgstr ""
+msgstr "Vymazat úlohu?"
 
 #: main.c:1100
 msgid ""
 "Are you sure you want\n"
 "to delete this task?"
 msgstr ""
+"Opravdu chcete \n"
+"vymazat úlohu?"
 
 #: main.c:1115
 msgid ""
 "You have not selected\n"
 "a task to start timing."
 msgstr ""
+"Vyberte úlohu, kterou\n"
+"chcete měřit."
 
 #: main.c:1124
 msgid "Task is already being timed."
-msgstr ""
+msgstr "Úloha je již měřena."
 
 #: main.c:1153
 msgid ""
 "You have not selected\n"
 "a task to stop timing."
 msgstr ""
+"Vyberte úlohu, kterou\n"
+"chcete zastavit."
 
 #: main.c:1162
 msgid "Task is not being timed."
-msgstr ""
+msgstr "Úloha neběží."
 
 #: main.c:1192
 msgid ""
 "You have not selected\n"
 "a task to annotate."
 msgstr ""
+"Vyberte úlohu, ke které\n"
+"chcete vložit poznámku."
 
 #: main.c:1334
 msgid ""
 "You have not selected\n"
 "a task."
 msgstr ""
+"Vyberte úlohu.\n"
+" "
 
 #: main.c:1342
 msgid ""
 "The selected task does not\n"
 "have a project."
 msgstr ""
+"Vybraná úloha npatří\n"
+"žádnému projektu"
 
 #: main.c:1410
 msgid "Cut/Paste buffer is"
-msgstr ""
+msgstr "Cut/Paste buffer:"
 
 #: main.c:1423
 msgid ""
@@ -560,194 +580,198 @@ msgstr ""
 
 #: main.c:1588
 msgid "You have not selected a task."
-msgstr ""
+msgstr "Není vybrána úloha."
 
 #: main.c:1711
 msgid "This service is no longer available."
-msgstr ""
+msgstr "Tato služba již nefunguje"
 
 #: main.c:1719
 msgid "Unable to determine available GTimer version."
-msgstr ""
+msgstr "Nemohu zjistit dostupnou verzi Gtimeru"
 
 #: main.c:1728
 msgid "You have the most recent version of GTimer."
-msgstr ""
+msgstr "Toto je aktuální verze programu."
 
 #: main.c:1733
 msgid ""
 "Strange....  You seem to have a more recent version\n"
 "of GTimer than is available on the server."
 msgstr ""
+"Hmm .... to vypadá, že tato verze programu je novější,\n"
+"než ta, která je k dispozici na serveru."
 
 #: main.c:1738
 msgid "There is a new version of GTimer available"
-msgstr ""
+msgstr "Již byla vydána novější verze Gtimeru"
 
 #: main.c:1740
 msgid "You can download it at"
-msgstr ""
+msgstr "Ta je k dispozici na"
 
 #: main.c:1776
 msgid ""
 "An error occurred while\n"
 "checking for a new version."
 msgstr ""
+"Během kontroly nové verze\n"
+"došlo k nějaké chybě ... "
 
 #: main.c:1778 main.c:1792
 msgid "HTTP Error"
-msgstr ""
+msgstr "Chyba protokolu http"
 
 #: main.c:1871
 msgid "Sorted by project creation date"
-msgstr ""
+msgstr "Řazeno podle času založení projektu"
 
 #: main.c:1875
 msgid "Sorted by project name"
-msgstr ""
+msgstr "Řazeno dle jména projektu"
 
 #: main.c:1882
 msgid "Sorted by task name"
-msgstr ""
+msgstr "Řazeno dle jména úlohy"
 
 #: main.c:1886
 msgid "Sorted by task creation date"
-msgstr ""
+msgstr "Řazeno podle času založení úlohy"
 
 #: main.c:1892
 msgid "Sorted by time for today"
-msgstr ""
+msgstr "Řazeno dle dnešního času"
 
 #: main.c:1898
 msgid "Sorted by total time"
-msgstr ""
+msgstr "Řazeno dle celkového času"
 
-#: main.c:2058
+#: main.c:2054
 #, c-format
 msgid "Building menu Failed: %s \n"
-msgstr ""
+msgstr "Chyba při tvorbě menu: %s \n"
 
-#: main.c:2234 report.c:163
+#: main.c:2230 report.c:163
 msgid "Today"
-msgstr ""
+msgstr "Dnes"
 
-#: main.c:2492
+#: main.c:2488
 msgid "You have been idle for"
 msgstr ""
 
-#: main.c:2493
+#: main.c:2489
 msgid "minutes"
 msgstr ""
 
-#: main.c:2493
+#: main.c:2489
 msgid "since"
 msgstr ""
 
-#: main.c:2495
+#: main.c:2491
 msgid "You may now:"
-msgstr ""
+msgstr "Můžete:"
+
+#: main.c:2493
+msgid "Revert to back to before the idle"
+msgstr "Vrátit čas na hodnotu před dobou nečinnosti"
+
+#: main.c:2495
+msgid "Continue timing, ignoring the idle"
+msgstr "Pokračovat v načítání času, ignorovat nečinnost"
 
 #: main.c:2497
-msgid "Revert to back to before the idle"
-msgstr ""
+msgid "Resume timing from when the idle started"
+msgstr "Pokračovat v evidenci, zkrátit čas o nečinnost"
 
 #: main.c:2499
-msgid "Continue timing, ignoring the idle"
-msgstr ""
-
-#: main.c:2501
-msgid "Resume timing from when the idle started"
-msgstr ""
-
-#: main.c:2503
 msgid "Idle Detect"
-msgstr ""
+msgstr "Detekce nečinnosti"
 
-#: main.c:2504
+#: main.c:2500
 msgid "Revert"
-msgstr ""
+msgstr "Vrátit"
 
-#: main.c:2504
+#: main.c:2500
 msgid "Continue"
 msgstr ""
 
-#: main.c:2504
+#: main.c:2500
 msgid "Resume"
 msgstr ""
 
-#: main.c:2713
+#: main.c:2709
 msgid "GTK+ runtime"
 msgstr ""
 
-#: main.c:2715
+#: main.c:2711
 msgid "Home page"
-msgstr ""
+msgstr "Domovská stránka"
 
-#: main.c:2721
+#: main.c:2717
 msgid "options"
 msgstr ""
 
-#: main.c:2723
+#: main.c:2719
 msgid "don't display the splash screen"
-msgstr ""
+msgstr "nezobrazovat úvodní obrazovku"
+
+#: main.c:2721
+msgid "display this help info"
+msgstr "zobrazit tuto informaci"
+
+#: main.c:2723
+msgid "display the version"
+msgstr "zobrazit verzi"
 
 #: main.c:2725
-msgid "display this help info"
-msgstr ""
+msgid "specify the midnight offset"
+msgstr "určit posun počátku dne"
 
 #: main.c:2727
-msgid "display the version"
-msgstr ""
+msgid "start timing the specified task"
+msgstr "začít načítat čas ke specifikované úloze"
 
 #: main.c:2729
-msgid "specify the midnight offset"
-msgstr ""
-
-#: main.c:2731
-msgid "start timing the specified task"
-msgstr ""
-
-#: main.c:2733
 msgid "use N as the first day of weeks"
 msgstr ""
 
-#: main.c:2838 main.c:2867 main.c:2896
+#: main.c:2833 main.c:2862 main.c:2891
 msgid "requires an argument"
 msgstr ""
 
-#: main.c:2873 main.c:2902
+#: main.c:2868 main.c:2897
 msgid "requires a number"
 msgstr ""
 
-#: main.c:2874 main.c:2903
+#: main.c:2869 main.c:2898
 msgid "not"
 msgstr ""
 
-#: main.c:2885
+#: main.c:2880
 msgid "Invalid offset for"
 msgstr ""
 
-#: main.c:2887
+#: main.c:2882
 msgid "Format should be"
 msgstr ""
 
-#: main.c:2910
+#: main.c:2905
 msgid "Invalid day of week number for"
 msgstr ""
 
-#: main.c:2929
+#: main.c:2924
 msgid "Ingoring unknown option"
 msgstr ""
 
-#: main.c:3059
+#: main.c:3054
 msgid "Task"
 msgstr ""
 
-#: main.c:3059
+#: main.c:3054
 msgid "not found"
 msgstr ""
 
-#: main.c:3107
+#: main.c:3102
 msgid "Welcome to"
 msgstr ""
 
@@ -761,87 +785,87 @@ msgstr ""
 
 #: project.c:436
 msgid "Unknown error"
-msgstr ""
+msgstr "Neznámá chyba"
 
 #: report.c:164
 msgid "This Week"
-msgstr ""
+msgstr "Tento týden"
 
 #: report.c:165
 msgid "Last Week"
-msgstr ""
+msgstr "Minulý týden"
 
 #: report.c:166
 msgid "This Week & Last Week"
-msgstr ""
+msgstr "Tento a minulý týden"
 
 #: report.c:167
 msgid "Last Two Weeks"
-msgstr ""
+msgstr "Poslední dva týdny"
 
 #: report.c:168
 msgid "This Month"
-msgstr ""
+msgstr "Tento měsíc"
 
 #: report.c:169
 msgid "Last Month"
-msgstr ""
+msgstr "Minulý měsíc"
 
 #: report.c:170
 msgid "This Year"
-msgstr ""
+msgstr "Tento rok"
 
 #: report.c:171
 msgid "Last Year"
-msgstr ""
+msgstr "Minulý rok"
 
 #: report.c:178
 msgid "Text"
-msgstr ""
+msgstr "Text"
 
 #: report.c:179
 msgid "HTML"
-msgstr ""
+msgstr "HTML"
 
 #: report.c:186
 msgid "Hours worked"
-msgstr ""
+msgstr "Odpracovaný čas"
 
 #: report.c:187
 msgid "Annotations"
-msgstr ""
+msgstr "Poznámky"
 
 #: report.c:188
 msgid "Hours & Annotations"
-msgstr ""
+msgstr "Čas s poznámkami"
 
 #: report.c:199
 msgid "None"
-msgstr ""
+msgstr "Žádné"
 
 #: report.c:200
 msgid "Minute"
-msgstr ""
+msgstr "na minuty"
 
 #: report.c:201
 msgid "5 Minutes"
-msgstr ""
+msgstr "na 5 minut"
 
 #: report.c:202
 msgid "10 Minutes"
-msgstr ""
+msgstr "na 10 minut"
 
 #: report.c:203
 msgid "15 minutes"
-msgstr ""
+msgstr "na 15 minut"
 
 #: report.c:204
 msgid "30 Minutes"
-msgstr ""
+msgstr "na půlhodiny"
 
 #: report.c:205
 msgid "Hour"
-msgstr ""
+msgstr "na hodiny"
 
 #: report.c:379
 msgid "writing to file"
@@ -849,11 +873,11 @@ msgstr ""
 
 #: report.c:403
 msgid "Save Report"
-msgstr ""
+msgstr "Uložit výkaz"
 
 #: report.c:435
 msgid "You must enter a print command"
-msgstr ""
+msgstr "Musíte zadat příkaz k tisku"
 
 #: report.c:445 report.c:455
 msgid "Error printing"
@@ -865,7 +889,7 @@ msgstr ""
 
 #: report.c:508
 msgid "Print Command"
-msgstr ""
+msgstr "Tiskový příkaz"
 
 #: report.c:653 report.c:1563 report.c:1809
 msgid "Report"
@@ -873,11 +897,11 @@ msgstr ""
 
 #: report.c:959 report.c:964
 msgid "Total"
-msgstr ""
+msgstr "Součet"
 
 #: report.c:978 report.c:984
 msgid "Week"
-msgstr ""
+msgstr "Týden"
 
 #: report.c:979 report.c:985
 msgid "to"
@@ -885,84 +909,86 @@ msgstr ""
 
 #: report.c:1060 report.c:1065
 msgid "Month"
-msgstr ""
+msgstr "Měsíc"
 
 #: report.c:1136 report.c:1141
 msgid "Year"
-msgstr ""
+msgstr "Rok"
 
 #: report.c:1210 report.c:1215
 msgid "Totals"
-msgstr ""
+msgstr "Celkem"
 
 #: report.c:1315 report.c:1497
 msgid "Error opening temporary file"
-msgstr ""
+msgstr "Chyba při otvírání dočasného souboru"
 
 #: report.c:1390 unhide.c:114
 msgid "You have not selected any tasks"
-msgstr ""
+msgstr "Nemáte vybranou žádnou úlohu"
 
 #: report.c:1421
 msgid ""
 "You must select either \"include hours\"\n"
 "or \"include annotations\"."
 msgstr ""
+"Výkaz musí obsahovat alespoň jednu věc:\n"
+"odpracovaný čas, nebo poznámky."
 
 #: report.c:1593 report.c:1598
 msgid "Grand Total"
-msgstr ""
+msgstr "Celkový součet"
 
 #: report.c:1602
 msgid "Generated by"
-msgstr ""
+msgstr "Generováno:"
 
 #: report.c:1846
 msgid "Format: "
-msgstr ""
+msgstr "Formát:"
 
 #: report.c:1858
 msgid "Data: "
-msgstr ""
+msgstr "Data:"
 
 #: report.c:1870
 msgid "Rounding: "
-msgstr ""
+msgstr "Zaokrouhlení:"
 
 #: report.c:1890 unhide.c:226
 msgid "Tasks to include:"
-msgstr ""
+msgstr "Zahrnout úlohy:"
 
 #: report.c:1939 unhide.c:269
 msgid "[Project] Task"
-msgstr ""
+msgstr "[Projekt] Úloha"
 
 #: report.c:1979 unhide.c:307
 msgid "Select all"
-msgstr ""
+msgstr "Vybrat vše"
 
 #: report.c:1987 unhide.c:315
 msgid "Select none"
-msgstr ""
+msgstr "Zrušit výběr"
 
 #: task.c:620
 #, c-format
 msgid "System Error (%d)"
-msgstr ""
+msgstr "Systémová chyba"
 
 #: task.c:623
 msgid "Invalid task data file format"
-msgstr ""
+msgstr "Chybný formát souboru úlohy"
 
 #: task.c:625
 #, c-format
 msgid "Unknown error (%d)"
-msgstr ""
+msgstr "Neznámá chyba (%d)"
 
 #: unhide.c:220
 msgid "Unhide"
-msgstr ""
+msgstr "Zobrazit"
 
 #: xextras.c:57 xextras.c:69
 msgid "Received X error.  See ya!"
-msgstr ""
+msgstr "Chyba X serveru. Ehm ..."

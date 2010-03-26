@@ -27,8 +27,152 @@
   ****************************************************************************/
 
 static char *changelog_text = "\
-09 Mar 2003:\n\
+Release 2.0.0 (25 Mar 2010)\n\
+  + Update to GTK 1.2 (Patch from Pavel Vavra)\n\
+  + Inclusion or a large series of Debian patches:\n\
+    Russ Allbery <rra@debian.org>  Sat, 26 Jul 2008 12:46:27 -0700\n\
+    * Add a desktop file and icon, courtesy of Ubuntu.  Thanks, Nathan\n\
+      Handler.  (Closes: #492498, LP: #248346)\n\
+    * Reference the icon in the menu file as well.\n\
+    * Fix the doc-base section (remove the Applications prefix).\n\
+    * Use filter instead of findstring to parse DEB_BUILD_OPTIONS.\n\
+    * Update standards version to 3.8.0.\n\
+      - Add README.source explaining the dbs system.\n\
+\n\
+    Russ Allbery <rra@debian.org>  Sat, 29 Dec 2007 16:45:57 -0800\n\
+    * Fix segfault when displaying HTML reports introduced by the patch to\n\
+      make the browser configurable.  Thanks to Chad Skeeters for the\n\
+      patch.\n\
+    * Change menu section to Applications/Project Management per the new\n\
+      menu policy.\n\
+    * Add a Homepage control field.\n\
+    * Update standards version to 3.7.3.\n\
+    * Wrap Build-Depends for readability.\n\
+\n\
+    Russ Allbery <rra@debian.org>  Sat, 20 May 2006 22:31:51 -0700\n\
+    * Choosing revert after an idle was subtracting time from all instances\n\
+      of that task, not just the running one.  Fixed.  Thanks to Ricardo\n\
+      Lopes Pereira for the report.  (Closes: #366762)\n\
+    * Always pass the host and build types to configure.\n\
+\n\
+    Russ Allbery <rra@debian.org>  Mon, 27 Feb 2006 00:37:01 -0800\n\
+    * Fix a segfault on daily reports when tasks have annotations and\n\
+      annotation data is requested.  (Closes: #350711)\n\
+    * Add a Last Year report.  Thanks, Bruno Gravato.  (Closes: #353046)\n\
+    * Don't compress the contrib scripts.\n\
+    * Add the build-indep and binary-indep targets.\n\
+    * Clean up stamp file handling in debian/rules.\n\
+\n\
+    Russ Allbery <rra@debian.org>  Sat,  3 Dec 2005 11:12:33 -0800\n\
+    * Providing binary-indep in debian/rules is required by Policy even if\n\
+      there are no arch-independent packages.  Whoops.\n\
+    * Mark install target as phony in debian/rules.\n\
+\n\
+    Russ Allbery <rra@stanford.edu>  Mon,  3 Oct 2005 15:52:11 -0700\n\
+    * Add README.Debian explaining how to get started and describing the\n\
+      user-visible changes relative to stock GTimer.\n\
+    * Add an explicit packaging copyright and license statement.\n\
+    * Update the FSF address in copyright.\n\
+\n\
+    Russ Allbery <rra@stanford.edu>  Fri, 15 Jul 2005 23:41:44 -0700\n\
+    * Build-depend on libxss-dev instead of xlibs-static-dev for the X\n\
+      transition.\n\
+    * Add a -weekstart command-line option to set the first day of the week\n\
+      for weekly reports.  (Closes: #307634)\n\
+    * Use the user's locale for weekday names as well.\n\
+    * Default to sensible-browser rather than x-www-browser and separate\n\
+      that patch out from the patch to make the browser configurable.\n\
+    * Fix the erroneous change to open modes in 10_57969-printpipe.patch so\n\
+      that 22_276011-reportmode.patch is no longer necessary.\n\
+    * 21_193517-oneMinIncr.diff subsumes 10_40450-32bitism.patch, so drop\n\
+      the latter.\n\
+    * Add history log entries at the top of the affected files in each patch\n\
+      rather than adding comments at the location of the change, with the\n\
+      exception of the Debian-specific change to turn off checks for newer\n\
+      versions.\n\
+    * Build with debugging symbols by default and support noopt.\n\
+    * Remove some bits from debian/rules that weren't being used.\n\
+\n\
+    Russ Allbery <rra@stanford.edu>  Wed, 29 Jun 2005 18:21:16 -0700\n\
+    * Only change the configured window size on exit if the call to get the\n\
+      window size succeeds, rather than changing it to some random value off\n\
+      the stack.  Partially fixes #309779.\n\
+\n\
+    Russ Allbery <rra@stanford.edu>  Fri, 20 May 2005 10:05:56 -0700\n\
+    * Revert and Resume now only revert times on the timers that were\n\
+      running, rather than all timers that had time for that day.  Fixes a\n\
+      bug introduced in the last release.  Thanks to Jamm!n Wheeler for the\n\
+      report.  (Closes: #309937)\n\
+\n\
+    Russ Allbery <rra@stanford.edu>  Mon, 18 Apr 2005 02:00:11 -0700\n\
+    * Specify a file mode when saving reports.  (Closes: #276011)\n\
+    * Add a dialog box to configure the browser, which allows us to stop\n\
+      suggesting Netscape.  Default to x-www-browser in the absence of any\n\
+      configuration.  (Closes: #38052, #138840)\n\
+    * Revert and Resume after an idle now really back up to before the idle,\n\
+      not just when the dialog box is displayed.  Revert now makes sure\n\
+      GTimer knows it has stopped.  (Closes: #282052, #64175)\n\
+    * Avoid memory clobber when saving projects that caused long-term\n\
+      instability.  Thanks, Ove Kaaven.  (Closes: #201091)\n\
+    * Don't depend on libc6-dev.\n\
+    * Depend on xlibs-static-dev instead of xlibs-dev as libXss.a is the\n\
+      only bit of X we call directly.  libgtk will pull in the rest.\n\
+    * Quote strings properly in the menu entry.\n\
+    * Improve the long description of the package.\n\
+    * Update debhelper compatibility to V4.\n\
+    * Add a watch file.\n\
+    * General reformatting and cleanup of the Debian control files.\n\
+\n\
+    Martin Hicks <mort@bork.org>  Fri,  2 Jan 2004 17:27:00 -0500\n\
+    * Add a callback to allow clearing of the paste buffer.\n\
+      Partial Close: Bug#193517\n\
+    * More increment and decrement shortcut keys and one\n\
+      minute increment and decrement.  Finishes up: Bug#193517\n\
+    * Dates in the report should now follow the user's Locale.\n\
+      Closes: Bug#204322\n\
+    * Moving files seems to break dbs so i removed the patch\n\
+      called 10_87440-rename_cz_to_cs.patch and replaced it with\n\
+      a small patch to debian/rules sent by Chad Walstrom.\n\
+    * Updated to required debhelper >= 3.0.0\n\
+\n\
+    Chad Walstrom <chewie@debian.org>  Fri,  9 May 2003 19:19:32 -0500\n\
+    * Switch to DBS build process, separated individual fixes in the \"patches\"\n\
+      directory.  Should be easier to send patches upstream.\n\
+    * Moved po/cz.po to po/cs.po.  Closes: Bug#87740\n\
+    * Shortcutted the version_timeout_handler() function to bypass version\n\
+      checking. Closes: Bug#109329\n\
+\n\
+    Chad C. Walstrom <chewie@debian.org>  Fri, 23 Feb 2001 01:07:18 -0600\n\
+    * Changed 'Recommends:' field in the control file to 'Suggests:' so\n\
+      we can keep the package in main.\n\
+    * Added 'Build-Depends' field in debian/control\n\
+\n\
+    Chad C. Walstrom <chewie@debian.org>  Thu, 22 Feb 2001 00:57:20 -0600\n\
+    * Added netscape to the 'Recommends:' field of the control file.\n\
+      This software has hard-coded the use of netscape as the viewer of\n\
+      the HTML report, unfortunately.\n\
+\n\
+    Chad C. Walstrom <chewie@debian.org>  Thu, 22 Feb 2001 00:14:49 -0600\n\
+    * Reapplied fix for 32-bit-isms noted earlier by David.  Closes: Bug#40450\n\
+\n\
+    Wichert Akkerman <wakkerma@debian.org>  Sun, 20 Feb 2000 15:22:43 +0100\n\
+    * Fix unsafe /tmp usage with patch from BTS. Closes: Bug#57969\n\
+\n\
+    David Huggins-Daines <dhd@debian.org>  Tue, 29 Jun 1999 14:15:10 -0400\n\
+    * Fixed a bug which would cause the main window to never be shown (on\n\
+      Alpha at least).\n\
+    * Fixed some (probably harmless) 32-bit-isms.\n\
+    * Fixed the menu entry.\n\
+\n\
+19 Mar 2003:\n\
   - Release 1.1.6\n\
+    + Fixed bug that would sometimes cause annotations to be truncated.\n\
+    + Added cut/copy/paste in new \"Edit\" menu.\n\
+      Use can store time in the cut/paste buffer:\n\
+        User can cut all time from selected task for current day. (Ctrl-X)\n\
+        User can decrement time from selected task for current day.\n\
+      Paste will apply stored in the cut/paste buffer to the currently\n\
+      selected task.\n\
     + Added -resume command line option.  This will start time all tasks\n\
       that were being timed when the application exited last.\n\
     + Projects are now associated with a project.  The project is now the\n\
@@ -41,6 +185,9 @@ static char *changelog_text = "\
     + Modified http function to use \"Host:\" required by web sites\n\
       that used virtual hosts, like www.cknudsen.com.  Also improved\n\
       error handling a little bit.\n\
+    + Fixed font setting of text reports to properly use fixed-width font.\n\
+    + Increased default size of report text window.\n\
+    + Added link to GTimer home page in Help menu.\n\
 09 Mar 2000:\n\
   - Release 1.1.5\n\
     + Improved idle handling.  The task list is no longer re-sorted when\n\

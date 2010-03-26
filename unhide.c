@@ -30,6 +30,7 @@
  *	http://www.cknudsen.com/gtimer/
  *
  * History:
+ *      07-Sep-2007	Updated to use GtkTreeView 
  *	09-Mar-2000	Updated call to create_confirm_window()
  *	18-Mar-1999	Internationalization
  *	16-Mar-1999	Add back support for GTK 1.0
@@ -53,16 +54,12 @@
 
 #include <gtk/gtk.h>
 
-#ifdef HAVE_LIBINTL_H
-#include <libintl.h>
-#else
-#define gettext(a)      a
-#endif
-
 #include "project.h"
 #include "task.h"
 #include "gtimer.h"
 #include "config.h"
+// PV:
+#include "custom-list.h"
 
 #ifdef GTIMER_MEMDEBUG
 #include "memdebug/memdebug.h"
@@ -76,10 +73,12 @@ extern GtkWidget *main_window;
 
 typedef struct {
   GtkWidget *window;
-  GtkWidget *task_list;
+  GtkWidget *task_list;     // PV: -
+//GtkTreeView *task_list;   // PV: +
   TaskData **tasks;
   int num_tasks;
-  GtkWidget **list_items;
+//GtkWidget **list_items;   // PV: -
+  GtkTreePath **list_items; // PV: +
 } HideData;
 
 
@@ -94,8 +93,20 @@ gpointer data;
   HideData *hd = (HideData *) data;
   GList *selected, *item;
   int loop;
+  // PV:
+  GtkTreeSelection *select;
+#if PV_DEBUG
+  volatile const char *s1;
+  volatile const char *s2;
+#else
+  const char *s1, *s2;
+#endif
 
-  selected = GTK_LIST ( hd->task_list ) ->selection;
+//  selected = GTK_LIST ( hd->task_list ) ->selection;
+
+  select = gtk_tree_view_get_selection ( GTK_TREE_VIEW(hd->task_list) );
+  selected = gtk_tree_selection_get_selected_rows ( GTK_TREE_SELECTION(select), NULL );
+  // selected contains list of paths
 
   if ( ! selected ) {
     create_confirm_window ( CONFIRM_ERROR,
@@ -109,8 +120,11 @@ gpointer data;
 
   /* which tasks were selected... */
   for ( item = selected; item != NULL; item = item->next ) {
+    s1 = gtk_tree_path_to_string(item->data);
     for ( loop = 0; loop < hd->num_tasks; loop++ ) {
-      if ( item->data == hd->list_items[loop] ) {
+      s2 = gtk_tree_path_to_string( hd->list_items[loop] );
+//    if ( item->data == hd->list_items[loop] ) {
+      if ( strcmp (s1, s2) == 0 ) {
         /* don't need to realloc visible_tasks[] */
         visible_tasks[num_visible_tasks] = hd->tasks[loop];
         visible_tasks[num_visible_tasks]->moved = 1;
@@ -154,14 +168,10 @@ GtkWidget *widget;
 gpointer data;
 {
   HideData *hd = (HideData *) data;
-#if GTK_VERSION < 10100
-  int loop;
 
-  for ( loop = 0; loop < hd->num_tasks; loop++ )
-    gtk_list_select_item ( GTK_LIST ( hd->task_list ), loop );
-#else
-  gtk_list_select_all ( GTK_LIST ( hd->task_list ) );
-#endif
+  gtk_tree_selection_select_all (
+    gtk_tree_view_get_selection ( GTK_TREE_VIEW(hd->task_list) ) );
+
 }
 
 
@@ -171,14 +181,10 @@ GtkWidget *widget;
 gpointer data;
 {
   HideData *hd = (HideData *) data;
-#if GTK_VERSION < 10100
-  int loop;
 
-  for ( loop = 0; loop < hd->num_tasks; loop++ )
-    gtk_list_unselect_item ( GTK_LIST ( hd->task_list ), loop );
-#else
-  gtk_list_unselect_all ( GTK_LIST ( hd->task_list ) );
-#endif
+  gtk_tree_selection_unselect_all (
+    gtk_tree_view_get_selection ( GTK_TREE_VIEW(hd->task_list) ) );
+
 }
 
 
@@ -197,6 +203,15 @@ GtkWidget *create_unhide_window ()
   GList *items = NULL;
   int loop, count;
   char msg[100];
+  // PV:
+  char temp[512];
+  CustomList *customlist;
+  GtkCellRenderer *renderer;
+  GtkTreeViewColumn *col;
+  GtkTreeSelection *select;
+  gchar * xtaskname;
+
+  customlist = custom_list_new();
 
   hd = (HideData *) malloc ( sizeof ( HideData ) );
   memset ( hd, '\0', sizeof ( HideData ) );
@@ -221,41 +236,46 @@ GtkWidget *create_unhide_window ()
     GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS );
   gtk_box_pack_start ( GTK_BOX ( GTK_DIALOG (hide_window)->vbox ),
     scrolled, TRUE, TRUE, 2 );
-  gtk_widget_show ( scrolled );
 
-  hd->task_list = gtk_list_new ();
   hd->tasks = (TaskData **) malloc ( sizeof ( TaskData * ) *
     num_tasks ); /* more than we need... */
-  hd->list_items = (GtkWidget **) malloc ( sizeof ( GtkWidget * ) *
+  hd->list_items = (GtkWidget **) malloc ( sizeof ( GtkTreePath * ) *
     num_tasks ); /* more than we need... */
   for ( loop = 0, count = 0; loop < num_tasks; loop++ ) {
     if ( taskOptionEnabled ( tasks[loop]->task, GTIMER_TASK_OPTION_HIDDEN ) ) {
-      hd->list_items[count] =
-        gtk_list_item_new_with_label ( tasks[loop]->task->name );
+
+      if (tasks[loop]->task->project_id < 0 )
+        snprintf ( temp, sizeof (temp), "%s", tasks[loop]->task->name );
+      else
+        snprintf ( temp, sizeof (temp), "[%s] %s", tasks[loop]->project_name,
+	  tasks[loop]->task->name );
       items = g_list_append ( items, hd->list_items[count] );
       hd->tasks[count] = tasks[loop];
-      gtk_widget_show ( hd->list_items[count] );
+      xtaskname = g_strdup_printf ("%s", temp);
+      hd->list_items[count] = custom_list_append_record( customlist, xtaskname);
       count++;
     }
   }
   hd->num_tasks = count;
+// PV: TreeView
+  hd->task_list = gtk_tree_view_new_with_model(GTK_TREE_MODEL(customlist));
+  g_object_unref(customlist);
 
-#if GTK_VERSION < 10100
-   gtk_container_add (GTK_CONTAINER (scrolled), hd->task_list );
-#else
+  renderer = gtk_cell_renderer_text_new();
+  col = gtk_tree_view_column_new();
+
+  gtk_tree_view_column_pack_start ( col, renderer, TRUE );
+  gtk_tree_view_column_add_attribute ( col, renderer, "text", CUSTOM_LIST_COL_NAME );
+  gtk_tree_view_column_set_title ( col, gettext("[Project] Task") );
+  gtk_tree_view_append_column ( GTK_TREE_VIEW(hd->task_list), col );
+  select = gtk_tree_view_get_selection ( GTK_TREE_VIEW(hd->task_list) );
+  gtk_tree_selection_set_mode( select, GTK_SELECTION_MULTIPLE );
+
   gtk_scrolled_window_add_with_viewport ( GTK_SCROLLED_WINDOW ( scrolled ),
     hd->task_list );
-#endif
 
-  gtk_list_append_items ( GTK_LIST ( hd->task_list ), items );
-  gtk_list_set_selection_mode ( GTK_LIST ( hd->task_list ),
-    GTK_SELECTION_MULTIPLE );
-#if GTK_VERSION < 10100
-  for ( loop = 0; loop < hd->num_tasks; loop++ )
-    gtk_list_select_item ( GTK_LIST ( hd->task_list ), loop );
-#else
-  gtk_list_select_all ( GTK_LIST ( hd->task_list ) );
-#endif
+  gtk_tree_selection_select_all ( GTK_TREE_SELECTION(select) );
+  gtk_widget_show ( scrolled );
   gtk_widget_show ( hd->task_list );
   
   /* add command buttons */
@@ -300,7 +320,7 @@ GtkWidget *create_unhide_window ()
   gtk_widget_show (button);
   /*gtk_tooltips_set_tips (tooltips, button, "Unselect all tasks" );*/
 
-  gtk_widget_show (hide_window);
+  gtk_widget_show_all (hide_window);
 
   return ( hide_window );
 }

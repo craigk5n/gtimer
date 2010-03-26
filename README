@@ -1,20 +1,47 @@
-GTimer v1.1.4 - 04 May 1999
-Copyright (C) 1998 Craig Knudsen, cknudsen@radix.net
-http://www.radix.net/~cknudsen/gtimer/
+GTimer v2.0.0
+Copyright (C) 1998 Craig Knudsen, craig@kn5.is
+http://www.k5n.us/gtimer.php
+
+BUILD REQUIREMENTS:
+--------------------------------------------------------------------------
+GTK 2.8 or later
+
+It should build without issue on any UN*X that has GTK.  It should also
+build on Windows machines that have the Windows port of GTK.  I have
+also compiled it on Mac OS X and it works great, but you do need to
+install X11 (from apple) and GTK.
+
+
 
 
 COMPILING:
 --------------------------------------------------------------------------
-To build, just type "make".  To install in "/usr/X11R6/bin", type
-"make install".  The "gtk-config" program should be in your path.
+Use the following sequence of commands to build:
 
-The development environment for GTimer is Linux x86 2.0.36, libc6 (glibc),
-and GTK 1.1.13.  It should build without issue on any UN*X that has GTK 1.1.13
-or later.  Send me email if you would like to be notified of future releases.
+./configure
+make
 
+If you are monkeying around with the source and automake stuff, you may
+use the following commands to update the configure script.  (This is
+not needed for the vast majority of source code changes.)
+
+aclocal
+automake --add-missing
+autoconf
+
+For more source code build documentation, see the INSTALL file.
+
+
+RUNNING:
+--------------------------------------------------------------------------
 To run:
 	./gtimer
 
+
+NEW RELEASES:
+--------------------------------------------------------------------------
+To check for new releases, try the "Tools->Check for New Version" item
+in the menu.
 
 USING:
 --------------------------------------------------------------------------
@@ -34,13 +61,11 @@ Command line options:
 
 TO DO:
 --------------------------------------------------------------------------
-- Add ability to group tasks by a group name.
 - Catch some signals (SIGINT, for example) so we can save date before
   exiting.  GIMP does this, so it should be possible.
 - Show the GNU license on initial run of the app.
 - Online help.
 - Postscript output for printing rather than plain text.
-- GNOME integration.
 - Make a smaller main window (like gtcd)
 - Optionally store data in MySQL, Oracle, etc. instead of flat files
 - Add a configuration window to set things like print command,
@@ -53,4 +78,23 @@ TO DO:
 HISTORY:
 --------------------------------------------------------------------------
 See ChangeLog for development history.
+
+
+TRANSLATING
+--------------------------------------------------------------------------
+create messages.po[t]:
+
+$xgettext *.c
+
+create <lang>.po:
+
+$msginit
+
+create <lang>.mo
+
+$msgfmt -o <lang>.mo <lang>.po
+
+Merge new texts:
+
+$msgmerge -U <lang>.po messages.po[t]
 

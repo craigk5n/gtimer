@@ -1,0 +1,530 @@
+msgid ""
+msgstr ""
+"Date: 2002-12-11 10:27:14+0100\n"
+"From: Pontus Ullgren <ullgren@colin>\n"
+"Content-Type: text/plain; charset=ISO-8859-1\n"
+"Xgettext-Options: \n"
+"Files: annotate.c config.c confirm.c edit.c main.c report.c task.c tasktest.c unhide.c xextras.c\n"
+
+#: annotate.c:106
+msgid "Annotation added"
+msgstr "Kommentar tillagd"
+
+#: annotate.c:148
+msgid "Add Annotation"
+msgstr "Lägg till kommentar"
+
+#: annotate.c:159
+msgid "Enter annotation for"
+msgstr "Lägg till kommentar för"
+
+#: annotate.c:189 edit.c:218 main.c:639 main.c:660 main.c:682 main.c:714 main.c:739 main.c:790 main.c:797 main.c:814 main.c:823 main.c:853 main.c:862 main.c:893 main.c:1048 report.c:311 report.c:359 report.c:371 report.c:379 report.c:446 report.c:537 report.c:1042 report.c:1057 report.c:1091 report.c:1122 report.c:1173 report.c:1513 unhide.c:102 unhide.c:264
+msgid "Ok"
+msgstr "Ok"
+
+#: annotate.c:200 edit.c:229 main.c:797 report.c:455 report.c:1525 unhide.c:276
+msgid "Cancel"
+msgstr "Avbryt"
+
+#: edit.c:106
+msgid "Task updated"
+msgstr "Uppgiften uppdaterad"
+
+#: edit.c:133
+msgid "Task added"
+msgstr "Lagt till uppgift"
+
+#: edit.c:178
+msgid "Edit Task"
+msgstr "Editera uppgift"
+
+#: edit.c:180
+msgid "Add Task"
+msgstr "Lägg till en uppgift"
+
+#: edit.c:193
+msgid "Task name"
+msgstr "Uppgiftens namn"
+
+#: edit.c:206
+msgid "Unnamed Task"
+msgstr "Namnlös"
+
+#: main.c:423
+msgid "About..."
+msgstr "Om..."
+
+#: main.c:424 report.c:523
+msgid "Save"
+msgstr "Spara"
+
+#: main.c:425
+msgid "Exit"
+msgstr "Avsluta"
+
+#: main.c:426 main.c:1810
+msgid "Idle Detect"
+msgstr "Upptäck overksamhet"
+
+#: main.c:427
+msgid "Toolbar"
+msgstr "Vertygsrad"
+
+#: main.c:428
+msgid "Animate"
+msgstr "Animera"
+
+#: main.c:429
+msgid "Auto Save"
+msgstr "Automat spara"
+
+#: main.c:430
+msgid "Start Timing"
+msgstr "Starta Klockan"
+
+#: main.c:431
+msgid "Stop Timing"
+msgstr "Stoppa Klockan"
+
+#: main.c:432
+msgid "Stop All Timing"
+msgstr "Stoppa Alla Klockor"
+
+#: main.c:433
+msgid "New..."
+msgstr "Ny..."
+
+#: main.c:434
+msgid "Edit..."
+msgstr "Editera..."
+
+#: main.c:435
+msgid "Annotate..."
+msgstr "Kommentar..."
+
+#: main.c:436
+msgid "Hide"
+msgstr "Gömm.."
+
+#: main.c:437
+msgid "Unhide..."
+msgstr "Vissa..."
+
+#: main.c:438
+msgid "Delete"
+msgstr "Radera"
+
+#: main.c:439
+msgid "Increment 5 seconds"
+msgstr "Öka med 5 sekunder"
+
+#: main.c:440
+msgid "Increment 30 seconds"
+msgstr "Öka med 30 sekunder"
+
+#: main.c:441
+msgid "Decrement 5 seconds"
+msgstr "Minska med 5 sekunder"
+
+#: main.c:442
+msgid "Decrement 30 seconds"
+msgstr "Minska med 30 sekunder"
+
+#: main.c:443
+msgid "Set to Zero"
+msgstr "Nollställ"
+
+#: main.c:444
+msgid "Daily..."
+msgstr "Daglig..."
+
+#: main.c:445
+msgid "Weekly..."
+msgstr "Veckovis..."
+
+#: main.c:446
+msgid "Monthly..."
+msgstr "Måntlig..."
+
+#: main.c:447
+msgid "Yearly..."
+msgstr "Årlig..."
+
+#: main.c:450
+msgid "Start Timing the Selected Task"
+msgstr "Starta klockan för vald uppgift"
+
+#: main.c:452
+msgid "Stop Timing the Selected Task"
+msgstr "Stoppa klockan för vald uppgift"
+
+#: main.c:454
+msgid "Stop Timing All Tasks"
+msgstr "Stoppa klockan för alla uppgifter"
+
+#: main.c:456
+msgid "Add Annotation to Selected Task"
+msgstr "Lägg till en kommentar för vald uppgift"
+
+#: main.c:458
+msgid "Add New Task"
+msgstr "Lägg till ny uppgift"
+
+#: main.c:460
+msgid "Edit Name of the Selected Task"
+msgstr "Ändra namn på vald uppgift"
+
+#: main.c:618
+msgid "All data saved"
+msgstr "Alla värden sparade"
+
+#: main.c:630 main.c:631
+msgid "Version"
+msgstr "Version"
+
+#: main.c:633
+msgid "Author"
+msgstr "Upphovsman"
+
+#: main.c:637
+msgid "About"
+msgstr "Om"
+
+#: main.c:658 main.c:680 main.c:712 main.c:737 main.c:788 main.c:812 main.c:821 main.c:851 main.c:860 main.c:891 main.c:1046 main.c:2094 main.c:2124 main.c:2139 main.c:2145 report.c:308 report.c:311 report.c:358 report.c:368 report.c:371 report.c:379 report.c:1040 report.c:1056 report.c:1089 report.c:1120 report.c:1171 unhide.c:100
+msgid "Error"
+msgstr "Fel"
+
+#: main.c:659
+msgid ""
+"You have not selected\n"
+"a task to edit."
+msgstr ""
+"Du har inte valt\n"
+"en uppgift att editera."
+
+#: main.c:681
+msgid ""
+"You have not selected\n"
+"a task to hide."
+msgstr ""
+"Du har inte valt\n"
+"en uppgift att gömma."
+
+#: main.c:697
+msgid "Task hidden"
+msgstr "Uppgiften gömd"
+
+#: main.c:713
+msgid "There are no hidden tasks."
+msgstr "Det finns inga gömmda uppgifter."
+
+#: main.c:735
+msgid "Error deleting task"
+msgstr "Fel vid radering av uppgiften"
+
+#: main.c:774
+msgid "Task removed"
+msgstr "Uppgift raderad"
+
+#: main.c:789
+msgid ""
+"You have not selected\n"
+"a task to delete."
+msgstr ""
+"Du har inte valt\n"
+"en uppgift att radera."
+
+
+#: main.c:795
+msgid "Delete Task?"
+msgstr "Radera uppgiften?"
+
+#: main.c:796
+msgid ""
+"Are you sure you want\n"
+"to delete this task?"
+msgstr ""
+"Är Du säker på att\n"
+"du vill radera uppgiften?"
+
+#: main.c:813
+msgid ""
+"You have not selected\n"
+"a task to start timing."
+msgstr ""
+"Du har inte valt en uppgift\n"
+"att starta klockan för."
+
+#: main.c:822
+msgid "Task is already being timed."
+msgstr "Klockan är redan startad för denna uppgift."
+
+#: main.c:852
+msgid ""
+"You have not selected\n"
+"a task to stop timing."
+msgstr "Du har inte valt\n"
+"en uppgift att stoppa."
+
+#: main.c:861
+msgid "Task is not being timed."
+msgstr "Uppgiften är inte startad."
+
+#: main.c:892
+msgid ""
+"You have not selected\n"
+"a task to annotate."
+msgstr ""
+"Du har inte valt någon\n"
+"uppgift att lägga till kommentar till."
+
+#: main.c:1047
+msgid ""
+"You have not selected\n"
+"a task to adjust the time for."
+msgstr ""
+"Du har inte valt någon\n"
+"uppgift för tidsjustering."
+
+#: main.c:1347
+msgid "File"
+msgstr "Arkiv"
+
+#: main.c:1381
+msgid "Options"
+msgstr "Inställningar"
+
+#: main.c:1409 main.c:2305
+msgid "Task"
+msgstr "Uppgift"
+
+#: main.c:1419 report.c:482 report.c:1224 report.c:1410
+msgid "Report"
+msgstr "Rapport"
+
+#: main.c:1605
+msgid "Today"
+msgstr "Idag"
+
+#: main.c:1805
+msgid "You have been idle for"
+msgstr "Du har varit inaktiv"
+
+#: main.c:1806
+msgid "minutes"
+msgstr "minuter"
+
+#: main.c:1806
+msgid "since"
+msgstr "sedan"
+
+#: main.c:1808
+msgid ""
+"Do you wish to revert\n"
+"to before the idle?"
+msgstr ""
+"Will Du återgå till lägget\n"
+"före inaktivitets perioden?"
+
+#: main.c:1811
+msgid "Revert"
+msgstr "Återgå"
+
+#: main.c:1811
+msgid "Continue Timing"
+msgstr "Fortsätt tidtagning"
+
+#: main.c:1989
+msgid "Welcome to"
+msgstr "Välkommen till"
+
+#: main.c:2016
+msgid "GTK+ runtime"
+msgstr "GTK+ runtime"
+
+#: main.c:2018
+msgid "Home page"
+msgstr "Hemsida"
+
+#: main.c:2024
+msgid "options"
+msgstr "inställning"
+
+#: main.c:2026
+msgid "don't display the splash screen"
+msgstr "vissa inte start skärm"
+
+#: main.c:2028
+msgid "display this help info"
+msgstr "vissa denna hjälp"
+
+#: main.c:2030
+msgid "display the version"
+msgstr "vissa version"
+
+#: main.c:2032
+msgid "specify the midnight offset"
+msgstr "specificera midnatts offset"
+
+#: main.c:2034
+msgid "start timing the specified task"
+msgstr "starta tidtagning för vald uppgift"
+
+#: main.c:2094
+msgid "unable to create directory"
+msgstr "kunde inte skapa katalog"
+
+#: main.c:2124 main.c:2139
+msgid "requires an argument"
+msgstr "måste ha ett argument"
+
+#: main.c:2145
+msgid "requires a number"
+msgstr "måste ha numeriskt värde"
+
+#: main.c:2146
+msgid "not"
+msgstr "inte"
+
+#: main.c:2157
+msgid "Invalid offset for"
+msgstr "Okänt "
+
+#: main.c:2159
+msgid "Format should be"
+msgstr "Formatet borde vara"
+
+#: main.c:2181
+msgid "Ingoring unknown option"
+msgstr "Ignorerar okänt val"
+
+#: main.c:2305
+msgid "not found"
+msgstr "inte hittad"
+
+#: report.c:309 report.c:369
+msgid "writing to file"
+msgstr "spara till fil"
+
+#: report.c:332
+msgid "Save Report"
+msgstr "Spara rapport"
+
+#: report.c:359
+msgid "You must enter a print command"
+msgstr "DU måste lägga till ett utskrift kommando"
+
+#: report.c:379
+msgid "Error printing"
+msgstr "Fel vid utskrift"
+
+#: report.c:416
+msgid "Print Report"
+msgstr "Skriv ut rapport"
+
+#: report.c:433
+msgid "Print Command"
+msgstr "Utskrift kommando"
+
+#: report.c:530
+msgid "Print"
+msgstr "Skriv ut"
+
+#: report.c:720 report.c:725
+msgid "Total"
+msgstr "Totalt"
+
+#: report.c:739 report.c:746
+msgid "Week"
+msgstr "Vecka"
+
+#: report.c:740 report.c:747
+msgid "to"
+msgstr "till"
+
+#: report.c:814 report.c:819
+msgid "Month"
+msgstr "Månad"
+
+#: report.c:881 report.c:886
+msgid "Year"
+msgstr "År"
+
+#: report.c:946 report.c:951
+msgid "Totals"
+msgstr "Totalt"
+
+#: report.c:1041
+msgid ""
+"Could not find \"netscape\"\n"
+"in your path."
+msgstr "Kunde inte hitta \"netscape\"\n"
+"i din sökväg."
+
+#: report.c:1056
+msgid "Error communicating with Netscape."
+msgstr "Fel vid kommunikation med Netscape."
+
+#: report.c:1090 unhide.c:101
+msgid "You have not selected any tasks"
+msgstr "Du har inte valt någon uppgift"
+
+#: report.c:1121
+msgid ""
+"You must select either \"include hours\"\n"
+"or \"include annotations\"."
+msgstr ""
+"Du måste välja anntingen \"vissa timmar\"\n"
+"eller \"vissa kommentarer\""
+
+#: report.c:1172
+msgid "Error opening temporary file"
+msgstr "Fel vid öppnande av temporär fil"
+
+#: report.c:1242
+msgid "Generated by"
+msgstr "Genererad av"
+
+#: report.c:1257
+msgid "Error reading"
+msgstr "Fel vid läsning"
+
+#: report.c:1438
+msgid "Format: "
+msgstr "Format: "
+
+#: report.c:1450
+msgid "Data: "
+msgstr "Data: "
+
+#: report.c:1464 unhide.c:209
+msgid "Tasks to include:"
+msgstr "Uppgifter som skall ingå:"
+
+#: report.c:1534 unhide.c:285
+msgid "Select all"
+msgstr "Markera alla"
+
+#: report.c:1542 unhide.c:293
+msgid "Select none"
+msgstr "Avmarkera alla"
+
+#: task.c:532
+msgid "System Error"
+msgstr "System Fel"
+
+#: task.c:535
+msgid "Invalid task data file format"
+msgstr "Felaktigt filformatet på uppgift data filen."
+
+#: task.c:537
+msgid "Unknown error"
+msgstr "Okänt fel"
+
+#: unhide.c:203
+msgid "Unhide"
+msgstr "Vissa"
+
+#: xextras.c:61 xextras.c:73
+msgid "Received X error.  See ya!"
+msgstr "Fel X har uppstått. Syns!"

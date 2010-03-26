@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=GTimer
+Comment=GTK-based X11 task timer
+Exec=gtimer
+Icon=gtimer
+Categories=Utility;Clock;GTK;

@@ -1,6 +1,6 @@
 .\"
 .\" GTimer man page
-.\" Copyright (C) 1998 Craig Knudsen, cknudsen@radix.net
+.\" Copyright (C) 1998-2003 Craig Knudsen, cknudsen@cknudsen.com
 .\"
 .\" This program is free software; you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by
@@ -17,14 +17,14 @@
 .\" the Free Software Foundation, 59 Temple Place - Suite 330,
 .\" Boston, MA 02111-1307, USA.
 .\"
-.TH GTIMER 1 "" "GTimer" "GTimer"
+.TH GTIMER 1 "Mar 19, 2003" "GTimer" "GTimer"
 
 .SH NAME
 gtimer \- an application for recording time spent on user-defined tasks.
 
 .SH SYNOPSIS
 .B gtimer
-[\f3\-midnight \f2offset\f1] [\f3\-nosplash] [\f3\-start \f2task\f1]
+[\f3\-midnight \f2offset\f1] [\f3\-weekstart \f2day\f1] [\f3\-nosplash] [\f3\-resume] [\f3\-start \f2task\f1]
 
 .SH DESCRIPTION
 
@@ -43,6 +43,22 @@ For example, the command
 .B gtimer -midnight 400
 
 will not consider everything 3:59AM the previous day.
+
+.TP 8
+.B \-weekstart \f2day\f3
+Specify which day of the week should be considered the beginning of the
+week when generating reports.  \f2day\f3 should be a number between 0 and
+6, where 0 is Sunday.  For example, the command
+
+.B gtimer -weekstart 1
+
+will use Monday as the first day of the week for all weekly reports.  The
+default is 0 (Sunday).
+
+.TP 8
+.B \-resume
+Start timing any tasks that were still be timed when
+GTimer last exited.
 
 .TP 8
 .B \-start \f2taskname\f3
@@ -69,6 +85,6 @@ Do not display the splash window on startup.
 enscript(1), lpr(1)
 
 .SH AUTHOR
-Craig Knudsen <cknudsen@radix.net> <http://www.radix.net/~cknudsen/>
+Craig Knudsen <cknudsen@cknudsen.com> <http://www.cknudsen.com/>
 
-GTimer WWW home page: <http://www.radix.net/~cknudsen/gtimer/>
+GTimer WWW home page: <http://www.cknudsen.com/gtimer/>

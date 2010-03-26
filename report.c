@@ -30,6 +30,19 @@
  *	http://www.cknudsen.com/gtimer/
  *
  * History:
+ *	27-Feb-2006	Added "Last Year" report option.  (Bruno Gravato)
+ *	27-Feb-2006	Fix a crash in daily reports when annotations are
+ *			included.  (Russ Allbery)
+ *	15-Jul-2005	Allow the start of the week to be configured.
+ *			(Russ Allbery)
+ *	15-Jul-2005	Honor the user's locale for weekday names.
+ *	17-Apr-2005	Added configurability of the browser. (Russ Allbery)
+ *	02-Jan-2004	Honor the user's locale for date display.  (Colin
+ *			Phipps)
+ *	09-Mar-2003	Avoid a temporary file when printing by using popen.
+ *			Safely create the tmeporary file for HTML reports.
+ *			Use tmpfile for formatting the reports.  (CPhipps
+ *			and chewie@debian.org)
  *	03-Mar-2003	Added support for rounding.
  *	28-Feb-2003	Include project name or "none" in reports
  *	09-Mar-2000	Updated calls to create_confirm_window()
@@ -82,7 +95,6 @@
  *
  ****************************************************************************/
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #if HAVE_UNISTD_H
@@ -98,16 +110,13 @@
 
 #include <gtk/gtk.h>
 
-#ifdef HAVE_LIBINTL_H
-#include <libintl.h>
-#else
-#define gettext(a)      a
-#endif
-
 #include "project.h"
 #include "task.h"
 #include "gtimer.h"
 #include "config.h"
+// PV:
+#include "custom-list.h"
+
 
 #ifdef GTIMER_MEMDEBUG
 #include "memdebug/memdebug.h"
@@ -136,6 +145,7 @@ static int lmonth_days[] = { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 extern TaskData **visible_tasks;
 extern int num_visible_tasks;
 extern int config_midnight_offset;
+extern int config_start_of_week;
 extern GtkWidget *main_window;
 extern GdkPixmap *appicon2;
 extern GdkPixmap *appicon2_mask;
@@ -149,22 +159,34 @@ extern GdkPixmap *appicon2_mask;
 #define REPORT_RANGE_THIS_MONTH         5
 #define REPORT_RANGE_LAST_MONTH         6
 #define REPORT_RANGE_THIS_YEAR          7
-static char *time_options[] = { "Today", "This Week", "Last Week",
-  "This Week & Last Week", "Last Two Weeks",
-  "This Month", "Last Month", "This Year", NULL };
+#define REPORT_RANGE_LAST_YEAR          8
+static char *time_options[] = { gettext_noop("Today"),
+                                gettext_noop("This Week"),
+                                gettext_noop("Last Week"),
+                                gettext_noop("This Week & Last Week"),
+                                gettext_noop("Last Two Weeks"),
+                                gettext_noop("This Month"),
+                                gettext_noop("Last Month"),
+                                gettext_noop("This Year"),
+                                gettext_noop("Last Year"),
+				NULL };
 
 /* Output types */
 #define REPORT_OUTPUT_TEXT		0
 #define REPORT_OUTPUT_HTML		1
 /* LaTeX next? */
-static char *output_options[] = { "Text", "HTML", NULL };
+static char *output_options[] = { gettext_noop("Text"),
+                                  gettext_noop("HTML"),
+				  NULL };
 
 /* Data to include */
 #define REPORT_DATA_HOURS		0
 #define REPORT_DATA_ANNOTATIONS		1
 #define REPORT_DATA_BOTH		2
-static char *data_options[] = { "Hours worked", "Annotations",
-  "Hours & Annotations", NULL };
+static char *data_options[] = { gettext_noop("Hours worked"),
+                                gettext_noop( "Annotations"),
+                                gettext_noop("Hours & Annotations"),
+				NULL };
 
 /* Rounding options */
 #define REPORT_ROUND_NONE		0
@@ -174,8 +196,14 @@ static char *data_options[] = { "Hours worked", "Annotations",
 #define REPORT_ROUND_15_MINUTES		900
 #define REPORT_ROUND_30_MINUTES		1800
 #define REPORT_ROUND_HOUR		3600
-static char *round_options[] = { "None", "Minute", "5 Minutes",
-  "10 Minutes", "15 minutes", "30 Minutes", "Hour", NULL };
+static char *round_options[] = { gettext_noop("None"),
+                                 gettext_noop("Minute"),
+                                 gettext_noop("5 Minutes"),
+                                gettext_noop("10 Minutes"),
+                                gettext_noop("15 minutes"),
+                                gettext_noop("30 Minutes"),
+                                gettext_noop("Hour"),
+				NULL };
 static int round_values[]= { REPORT_ROUND_NONE,
   REPORT_ROUND_MINUTE, REPORT_ROUND_5_MINUTES,
   REPORT_ROUND_10_MINUTES, REPORT_ROUND_15_MINUTES,
@@ -199,17 +227,19 @@ typedef struct {
 typedef struct {
   GtkWidget *window;
   GtkWidget *time_menu;
-  GtkWidget *time_menu_items[8];
+  GtkWidget *time_menu_items[9];
   GtkWidget *output_menu;
   GtkWidget *output_menu_items[2];
   GtkWidget *data_menu;
   GtkWidget *data_menu_items[3];
   GtkWidget *round_menu;
   GtkWidget *round_menu_items[8];
-  GtkWidget *task_list;
+//  GtkWidget *task_list;    // PV: -
+  GtkTreeView *task_list;    // PV: +
   TaskData **tasks;
   int num_tasks;
-  GtkWidget **list_items;
+//  GtkWidget **list_items;  // PV: -
+  GtkTreePath **list_items;  // PV: +
   report_type type;
   int include_hours;
   int include_annotations;
@@ -223,9 +253,6 @@ typedef struct {
   GtkWidget *printentry;
 } DisplayReportData;
 
-
-/* Local functions */
-static char *get_client_path ( char *file );
 
 
 
@@ -339,6 +366,10 @@ gpointer data;
   int fd;
   char *msg;
 
+// PV: better: gtk_file_chooser_dialog  see
+// http://library.gnome.org/devel/gtk/stable/GtkFileChooserDialog.html
+
+// PV: warning: assignment discards qualifiers from pointer target type
   file = gtk_file_selection_get_filename (
     GTK_FILE_SELECTION ( drd->filesel ) );
   fd = open ( file, O_WRONLY | O_CREAT | O_TRUNC, 0644 );
@@ -388,10 +419,15 @@ GtkWidget *widget;
 gpointer data;
 {
   DisplayReportData *drd = (DisplayReportData *)data;
-  int fd;
-  char tempfile[100];
+  FILE *fp = NULL;
   char cmd[500], *ptr, *msg;
 
+#if PV_DEBUG
+  printf("OK(print)\n");
+  printf("\n****************\n%s", drd->text);
+#endif
+
+// PV: warning: assignment discards qualifiers from pointer target type
   ptr = gtk_entry_get_text ( GTK_ENTRY(drd->printentry) );
   if ( ! ptr || ! strlen ( ptr ) ) {
     create_confirm_window ( CONFIRM_ERROR,
@@ -402,21 +438,19 @@ gpointer data;
     return;
   }
 
-  sprintf ( tempfile, "/tmp/gtimer-%d.txt", (int) random () % 1000 );
-  fd = open ( tempfile, O_WRONLY | O_CREAT | O_TRUNC, 0644 );
-  if ( fd <= 0 ) {
-    msg = (char *) malloc ( strlen ( tempfile ) + 100 );
+  fp = popen(ptr,"w");
+  if ( !fp ) {
+    msg = (char *) malloc ( 120 );
     sprintf ( msg, "%s %d %s\n%s", gettext("Error"),
-      errno, gettext("writing to file"), tempfile );
-    create_confirm_window ( CONFIRM_ERROR,
-      gettext("Error"), msg, gettext("Ok"), NULL, NULL,
-      NULL, NULL, NULL, NULL );
+        errno, gettext("Error printing"), strerror(errno) );
+    create_confirm_window ( CONFIRM_ERROR, gettext("Error"), msg,
+        gettext("Ok"), NULL, NULL,
+        NULL, NULL, NULL, NULL );
     free ( msg );
   } else {
-    write ( fd, drd->text, strlen ( drd->text ) );
-    close ( fd );
-    sprintf ( cmd, "cat %s | %s", tempfile, ptr );
-    if ( system ( cmd ) ) {
+    fwrite ( drd->text, strlen ( drd->text ), sizeof(char), fp );
+    fclose ( fp );
+    if ( ferror (fp) ) {
       create_confirm_window ( CONFIRM_ERROR,
         gettext("Error"), gettext("Error printing"),
         gettext("Ok"), NULL, NULL,
@@ -464,10 +498,8 @@ gpointer data;
   gdk_window_set_icon ( GTK_WIDGET ( drd->printwin )->window,
     NULL, appicon2, appicon2_mask );
 
-#if GTK_VERSION >= 10100
   gtk_window_set_transient_for ( GTK_WINDOW ( drd->printwin ),
     GTK_WINDOW ( drd->window ) );
-#endif
 
   hbox = gtk_hbox_new ( TRUE, 5 );
   gtk_box_pack_start ( GTK_BOX ( GTK_DIALOG (drd->printwin)->vbox ),
@@ -506,88 +538,223 @@ gpointer data;
 }
 
 
+/* PV: static void display_text_results ( text )
+*     rewritten during migration to GTK2
+*     Thanks to Vijay Kumar B. and his tutorial
+*     Multiline Text Editing Widget
+*/
 
-
-static void display_text_results ( text )
-char *text;
+void
+find (GtkTextView *text_view, const gchar *text, GtkTextIter *iter)
 {
-  DisplayReportData *drd;
-  GtkWidget *window, *hbox, *button, *textarea, *vscrollbar;
-  GtkStyle *style;
-  /*GtkTooltips *tooltips;*/
-  char msg[100];
+  GtkTextIter mstart, mend;
+  gboolean found;
+  GtkTextBuffer *buffer;
+  GtkTextMark *last_pos;
 
+  buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (text_view));
+  found = gtk_text_iter_forward_search (iter, text, 0, &mstart, &mend, NULL);
+
+  if (found)
+    {
+      gtk_text_buffer_select_range (buffer, &mstart, &mend);
+      last_pos = gtk_text_buffer_create_mark (buffer, "last_pos", 
+                                              &mend, FALSE);
+      gtk_text_view_scroll_mark_onscreen (text_view, last_pos);
+    }
+}
+
+
+
+typedef struct _App {
+  GtkWidget *text_view;
+  GtkWidget *search_entry;
+} App;
+
+App app;
+
+void
+win_destroy (void)
+{
+  gtk_main_quit();
+}
+
+void
+next_button_clicked (GtkWidget *next_button, App *app)
+{
+  const gchar *text;
+  GtkTextBuffer *buffer;
+  GtkTextMark *last_pos;
+  GtkTextIter iter;
+
+  text = gtk_entry_get_text (GTK_ENTRY (app->search_entry));
+  
+  buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (app->text_view));
+
+  last_pos = gtk_text_buffer_get_mark (buffer, "last_pos");
+  if (last_pos == NULL)
+    return;
+
+  gtk_text_buffer_get_iter_at_mark (buffer, &iter, last_pos);
+  find (GTK_TEXT_VIEW (app->text_view), text, &iter);
+}
+
+void
+search_button_clicked (GtkWidget *search_button, App *app)
+{
+  const gchar *text;
+  GtkTextBuffer *buffer;
+  GtkTextIter iter;
+
+  text = gtk_entry_get_text (GTK_ENTRY (app->search_entry));
+  buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (app->text_view));
+  gtk_text_buffer_get_start_iter (buffer, &iter);
+
+  find (GTK_TEXT_VIEW (app->text_view), text, &iter);
+}
+
+
+void static display_text_results ( char *text )
+{
+  GtkWidget *vbox;
+  GtkWidget *hbox;
+  GtkWidget *search_button;
+  GtkWidget *next_button;
+  GtkWidget *swindow;
+
+  // PV: additional variables and original objects
+  GtkWidget		*hbox2;
+  GtkWidget		*save_button, *print_button, *ok_button;
+  GtkTextBuffer		*txbuf;
+  size_t		txlen;
+  DisplayReportData	*drd;
+  char			msg[100];
+
+#if PV_DEBUG
+  g_message("Display_text_results: start");
+#endif
+
+
+  // At first copy original code
   drd = (DisplayReportData *) malloc ( sizeof ( DisplayReportData ) );
   memset ( drd, '\0', sizeof ( DisplayReportData ) );
   drd->text = text;
 
-  drd->window = window = gtk_dialog_new ();
+#if PV_DEBUG
+  g_message("Display_text_results: checkpoint 1");
+#endif
+
+  // ... and now create window using GTK2 logic
+
+  drd->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+//  g_signal_connect (G_OBJECT (drd->window), "destroy", win_destroy, NULL);
+
+  // Set window attributes:
   sprintf ( msg, "GTimer: %s", gettext ("Report") );
-  gtk_window_set_title (GTK_WINDOW (window), msg );
+  gtk_window_set_title (GTK_WINDOW (drd->window), msg );
   gtk_window_set_wmclass ( GTK_WINDOW ( drd->window ), "GTimer", "gtimer" );
+// PV: set default size 450x300
+  gtk_window_set_default_size (GTK_WINDOW(drd->window), 450, 500);
   gtk_widget_realize ( drd->window );
   gdk_window_set_icon ( GTK_WIDGET ( drd->window )->window,
     NULL, appicon2, appicon2_mask );
+  // set font?
+  //  if ( font == NULL ) {
+  //    font = gdk_font_load ( "-adobe-courier-medium-r-*-*-12-*-*-*-*-*-*-*" );
+  //    if ( font == NULL )
+  //      font = gdk_font_load ( "fixed" );
+  //  }
+  
+#if PV_DEBUG
+  g_message("Display_text_results: checkpoint 2");
+#endif
 
-  hbox = gtk_hbox_new ( FALSE, 2 );
-  gtk_box_pack_start ( GTK_BOX ( GTK_DIALOG (window)->vbox ),
-    hbox, TRUE, TRUE, 2 );
+  vbox = gtk_vbox_new (FALSE, 2);
+  gtk_container_add (GTK_CONTAINER (drd->window), vbox);
 
-  style = gtk_style_new ();
-  gdk_font_unref ( style->font );
-  style->font = gdk_font_load (
-    "-adobe-courier-medium-r-*-*-12-*-*-*-*-*-*-*" );
-  if ( style->font == NULL )
-    style->font = gdk_font_load ( "fixed" );
-  gtk_widget_push_style ( style );
+  hbox = gtk_hbox_new (FALSE, 2);
+  gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
+  
+  app.search_entry = gtk_entry_new ();
+  gtk_box_pack_start (GTK_BOX (hbox), app.search_entry, TRUE, TRUE, 0);
 
-  textarea = gtk_text_new ( NULL, NULL );
-  gtk_widget_set_usize ( textarea, 300, 200 );
-  gtk_box_pack_start ( GTK_BOX ( hbox ),
-    textarea, TRUE, TRUE, 2 );
-  gtk_text_set_word_wrap ( GTK_TEXT ( textarea ), 1 );
-  gtk_widget_show ( textarea );
-  gtk_widget_realize ( textarea );
-  gtk_text_freeze ( GTK_TEXT ( textarea ) );
-  gtk_text_set_point ( GTK_TEXT ( textarea ), 0 );
-  gtk_text_insert ( GTK_TEXT ( textarea ), NULL, NULL, NULL,
-    text, strlen ( text ) );
-  gtk_text_thaw ( GTK_TEXT ( textarea ) );
+#if PV_DEBUG
+  g_message("Display_text_results: checkpoint 3");
+#endif
 
-  gtk_widget_pop_style ();
 
-  vscrollbar = gtk_vscrollbar_new ( GTK_TEXT ( textarea )->vadj );
-  gtk_box_pack_start ( GTK_BOX ( hbox ),
-    vscrollbar, FALSE, FALSE, 2 );
-  gtk_widget_show ( vscrollbar );
+  search_button = gtk_button_new_with_label ("Search");  
+  gtk_box_pack_start (GTK_BOX (hbox), search_button, FALSE, FALSE, 0);
+  g_signal_connect (G_OBJECT (search_button), "clicked", 
+                    G_CALLBACK (search_button_clicked), &app);
 
-  gtk_widget_show ( hbox );
+  next_button = gtk_button_new_with_label ("Next");
+  gtk_box_pack_start (GTK_BOX (hbox), next_button, FALSE, FALSE, 0);
+  g_signal_connect (G_OBJECT (next_button), "clicked",
+                    G_CALLBACK (next_button_clicked), &app);
 
-  button = gtk_button_new_with_label ( gettext("Save") );
-  gtk_box_pack_start (GTK_BOX (GTK_DIALOG (window)->action_area),
-    button, TRUE, FALSE, 10);
-  gtk_signal_connect (GTK_OBJECT (button), "clicked",
-    GTK_SIGNAL_FUNC (display_text_results_save_callback), drd);
-  gtk_widget_show (button);
+  swindow = gtk_scrolled_window_new (NULL, NULL);
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (swindow),
+                                  GTK_POLICY_AUTOMATIC,
+                                  GTK_POLICY_AUTOMATIC);
+  gtk_box_pack_start (GTK_BOX (vbox), swindow, TRUE, TRUE, 0);
 
-  button = gtk_button_new_with_label ( gettext("Print") );
-  gtk_box_pack_start (GTK_BOX (GTK_DIALOG (window)->action_area),
-    button, TRUE, FALSE, 10);
-  gtk_signal_connect (GTK_OBJECT (button), "clicked",
-    GTK_SIGNAL_FUNC (display_text_results_print_callback), drd);
-  gtk_widget_show (button);
+#if PV_DEBUG
+  g_message("Display_text_results: checkpoint 4");
+#endif
 
-  button = gtk_button_new_with_label ( gettext("Ok") );
-  gtk_box_pack_start (GTK_BOX (GTK_DIALOG (window)->action_area),
-    button, TRUE, FALSE, 10);
-  gtk_signal_connect (GTK_OBJECT (button), "clicked",
-    GTK_SIGNAL_FUNC (display_text_results_ok_callback), drd);
-  GTK_WIDGET_SET_FLAGS (button, GTK_CAN_DEFAULT);
-  gtk_widget_grab_default (button);
-  gtk_widget_show (button);
 
-  gtk_widget_show ( window );
+// PV: add: set text
+  txbuf = gtk_text_buffer_new(NULL);
+  txlen = strlen ( text );
+  gtk_text_buffer_set_text ( GTK_TEXT_BUFFER ( txbuf ), text, txlen );
+// PV: end of set text
+
+#if PV_DEBUG
+  g_message("Display_text_results: checkpoint 5");
+#endif
+
+  app.text_view = gtk_text_view_new_with_buffer (txbuf);
+  gtk_text_view_set_editable(GTK_TEXT_VIEW(app.text_view),0);
+  gtk_container_add (GTK_CONTAINER (swindow), app.text_view);
+
+  hbox2 = gtk_hbox_new (FALSE, 2);
+  gtk_box_pack_start (GTK_BOX (vbox), hbox2, FALSE, FALSE, 0);
+
+#if PV_DEBUG
+  g_message("Display_text_results: checkpoint 6");
+#endif
+  
+  save_button = gtk_button_new_with_label ("Save");
+  gtk_box_pack_start (GTK_BOX (hbox2), save_button, TRUE, FALSE, 0);
+  g_signal_connect (G_OBJECT (save_button), "clicked",
+                    G_CALLBACK (display_text_results_save_callback), drd);
+   
+  print_button = gtk_button_new_with_label ("Print");
+  gtk_box_pack_start (GTK_BOX (hbox2), print_button, TRUE, FALSE, 0);
+  g_signal_connect (G_OBJECT (print_button), "clicked",
+                    G_CALLBACK (display_text_results_print_callback), drd);
+
+  ok_button = gtk_button_new_with_label ("Ok");
+  gtk_box_pack_start (GTK_BOX (hbox2), ok_button, TRUE, FALSE, 0);
+  g_signal_connect (G_OBJECT (ok_button), "clicked",
+                    G_CALLBACK (display_text_results_ok_callback), drd);
+
+#if PV_DEBUG
+  g_message("Display_text_results: checkpoint 7");
+#endif
+
+
+  gtk_widget_show_all (drd->window);
+
+#if PV_DEBUG
+  g_message("Display_text_results: end");
+#endif
+
+
 }
+
+
 
 
 static time_t do_round ( time_in, round_incr )
@@ -631,12 +798,11 @@ int is_last;
   TaskAnnotation **anns;
   int num_anns = 0;
   int h, m, s, rounded;
-  static char *weekdays[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri",
-    "Sat" };
   time_t ret = 0;
   char indentation[30];
   int ncols = 0;
   char *newline = "\n";
+  char daystring[20];
 
   switch ( format ) {
     case REPORT_OUTPUT_TEXT:
@@ -663,10 +829,12 @@ int is_last;
   else
     strcpy ( indentation, "  " );
 
+  strftime ( daystring, sizeof(daystring), "%x %a", tm );
+
   for ( loop = 0; loop < num_seltasks; loop++ ) {
-    if ( seltasks[loop]->week_start[0] == '\0' || tm->tm_wday == 0 )
-      sprintf ( seltasks[loop]->week_start, "%02d/%02d/%d %s", mon, mday,
-        year, weekdays[wday] );
+    if ( ( seltasks[loop]->week_start[0] == '\0' ) ||
+      ( tm->tm_wday == config_start_of_week ) )
+      strcpy ( seltasks[loop]->week_start, daystring );
     if ( include_hours )
       entry = taskGetTimeEntry ( seltasks[loop]->taskdata->task,
         year, mon, mday );
@@ -697,31 +865,27 @@ int is_last;
     }
     rounded = 0;
     if ( ( entry && entry->seconds ) || seltasks[loop]->todays_annotations ) {
+      if ( entry && entry->seconds ) {
+        rounded = do_round ( entry->seconds, round_incr );
+        h = rounded / 3600;
+        m = ( rounded - h * 3600 ) / 60;
+        s = rounded % 60;
+      }
       if ( type == REPORT_TYPE_DAILY ) {
         if ( ! found ) {
           switch ( format ) {
             case REPORT_OUTPUT_TEXT:
-              fprintf ( fp, "\n%02d/%02d/%d %s\n", mon, mday, year,
-                weekdays[wday] );
+              fprintf ( fp, "\n%s\n", daystring );
               fprintf ( fp, "-------------------------------------\n" );
               break;
             case REPORT_OUTPUT_HTML:
               fprintf ( fp, "<tr><th colspan=\"%d\">",
                 ncols + 1 );
-              fprintf ( fp, "%02d/%02d/%d %s\n", mon, mday, year,
-                weekdays[wday] );
+              fprintf ( fp, "\n%s\n", daystring );
               fprintf ( fp, "</th></tr>\n" );
               break;
           }
           found = 1;
-        }
-        if ( entry && entry->seconds ) {
-          rounded = do_round ( entry->seconds, round_incr );
-          h = rounded / 3600;
-          m = ( rounded - h * 3600 ) / 60;
-          s = rounded % 60;
-        } else {
-          h = m = s = 0;
         }
         if ( format == REPORT_OUTPUT_HTML )
           fprintf ( fp, "<tr>" );
@@ -803,7 +967,7 @@ int is_last;
   }
 
   if ( ( type == REPORT_TYPE_WEEKLY ) && 
-    ( wday == 6 || is_last ) ) {
+    ( wday == ( ( config_start_of_week + 6 ) % 7 ) || is_last ) ) {
     found = 0;
     for ( loop = 0; loop < num_seltasks; loop++ ) {
       if ( seltasks[loop]->weekly_total ||
@@ -811,16 +975,14 @@ int is_last;
         if ( ! found ) {
           switch ( format ) {
             case REPORT_OUTPUT_TEXT:
-              fprintf ( fp, "\n%s %s %s %02d/%02d/%d %s\n", gettext("Week"),
-                seltasks[loop]->week_start, gettext("to"), mon, mday, year,
-                weekdays[wday] );
+              fprintf ( fp, "\n%s %s %s %s\n", gettext("Week"),
+                seltasks[loop]->week_start, gettext("to"), daystring );
               fprintf ( fp, "-------------------------------------\n" );
               break;
             case REPORT_OUTPUT_HTML:
               fprintf ( fp, "<tr><th colspan=\"%d\">", ncols + 1 );
-              fprintf ( fp, "%s %s %s %02d/%02d/%d %s", gettext("Week"),
-                seltasks[loop]->week_start, gettext("to"), mon, mday, year,
-                weekdays[wday] );
+              fprintf ( fp, "%s %s %s %s", gettext("Week"),
+                seltasks[loop]->week_start, gettext("to"), daystring );
               fprintf ( fp, "</th></tr>\n" );
               break;
           }
@@ -1141,36 +1303,39 @@ static void display_html_results ( text )
 char *text;
 {
   char *path;
-  int fd;
-  char tempfile[50];
+  int fd = -1;
+  char tempfile[L_tmpnam];
   char *command;
 
-  path = get_client_path ( "netscape" );
-  if ( path == NULL ) {
+  if (tmpnam(tempfile))
+    fd = open ( tempfile, O_WRONLY | O_CREAT | O_EXCL, 0600 );
+  if (fd == -1) {
     create_confirm_window ( CONFIRM_ERROR,
-      gettext("Error"),
-      gettext("Could not find \"netscape\"\nin your path."),
-      gettext("Ok"), NULL, NULL,
-      NULL, NULL, NULL, NULL );
+        gettext("Error"),
+        gettext("Error opening temporary file"),
+        gettext("Ok"), NULL, NULL,
+        NULL, NULL, NULL, NULL );
+    return;
   }
-
-  sprintf ( tempfile, "/tmp/gtimer-%d.html", (int) random () % 1000 );
-  fd = open ( tempfile, O_WRONLY | O_CREAT | O_TRUNC, 0600 );
   write ( fd, text, strlen ( text ) );
   close ( fd );
   free ( text );
 
-  command = (char *) malloc ( strlen ( path ) + 100 );
-  sprintf ( command, "%s -raise -remote 'openURL(file:%s)'",
-    path, tempfile );
+  if ( configGetAttribute ( CONFIG_BROWSER, &path ) < 0 )
+    path = "mozilla";
+
+  command = (char *) malloc ( strlen ( path ) + 100 + L_tmpnam );
+  if ( strstr ( path, "%s" ) )
+    sprintf ( command, path, tempfile );
+  else
+    sprintf ( command, "%s %s", path, tempfile );
   if ( system ( command ) != 0 ) {
     create_confirm_window ( CONFIRM_ERROR,
-      gettext("Error"), gettext("Error communicating with Netscape."),
+      gettext("Error"), gettext("Error communicating with browser."),
       gettext("Ok"), NULL, NULL,
       NULL, NULL, NULL, NULL );
   }
 
-  free ( path );
   free ( command );
 }
 
@@ -1182,21 +1347,42 @@ gpointer data;
 {
   ReportData *rd = (ReportData *) data;
   GList *selected, *item;
+#if PV_DEBUG
+  volatile int loop;
+#else
   int loop;
+#endif
   ReportTaskData **seltasks;
   int num_selected = 0;
   int range = REPORT_RANGE_TODAY;
   int format = REPORT_OUTPUT_TEXT;
   int round_incr = REPORT_ROUND_NONE;
   FILE *fp;
-  char *tempfile;
   time_t now, time_start, time_end, time_loop, total;
   struct tm *tm;
   struct stat buf;
   char *text = NULL;
-  int fd, ret, ncols, h, m, s;
+  int ret, ncols, h, m, s;
+  size_t len;
+  // PV:
+  GtkTreeSelection *select;
+#if PV_DEBUG
+  volatile const char *s1;
+  volatile const char *s2;
+#else
+  const char *s1, *s2;
+#endif
 
-  selected = GTK_LIST ( rd->task_list ) ->selection;
+//  selected = GTK_LIST ( rd->task_list ) ->selection;
+
+#if PV_DEBUG
+  g_message("Report start");
+#endif
+
+
+  select = gtk_tree_view_get_selection(GTK_TREE_VIEW(rd->task_list));
+  selected = gtk_tree_selection_get_selected_rows(GTK_TREE_SELECTION(select), NULL);
+  // selected contains list of paths
 
   if ( ! selected ) {
     create_confirm_window ( CONFIRM_ERROR,
@@ -1239,14 +1425,20 @@ gpointer data;
     return;
   }
 
+#if PV_DEBUG
+  g_message("Report CP1 -- Tasks: %d \n", rd->num_tasks);
+#endif
+
   /* which tasks were selected... */
   seltasks = (ReportTaskData **) malloc
     ( sizeof ( ReportTaskData * ) * rd->num_tasks );
   for ( loop = 0; loop < rd->num_tasks; loop++ )
     seltasks[loop] = NULL;
   for ( item = selected; item != NULL; item = item->next ) {
+    s1 = gtk_tree_path_to_string(item->data);
     for ( loop = 0; loop < rd->num_tasks; loop++ ) {
-      if ( item->data == rd->list_items[loop] ) {
+       s2 = gtk_tree_path_to_string(rd->list_items[loop]);
+        if ( ! strcmp(s1, s2) ) {
         seltasks[num_selected] = (ReportTaskData *) malloc
           ( sizeof ( ReportTaskData ) );
         memset ( seltasks[num_selected], '\0', sizeof ( ReportTaskData ) );
@@ -1254,6 +1446,11 @@ gpointer data;
       }
     }
   }
+
+#if PV_DEBUG
+  g_message("Report checkpoint 2");
+#endif
+
 
   /* which time range ? */
   for ( loop = 0; time_options[loop]; loop++ ) {
@@ -1263,6 +1460,9 @@ gpointer data;
     }
   }
 
+#if PV_DEBUG
+  g_message("Report checkpoint 3");
+#endif
   /* which output format */
   for ( loop = 0; output_options[loop]; loop++ ) {
     if ( GTK_OPTION_MENU ( rd->output_menu ) -> menu_item ==
@@ -1271,6 +1471,9 @@ gpointer data;
     }
   }
 
+#if PV_DEBUG
+  g_message("Report checkpoint 4");
+#endif
   /* which rounding ? */
   for ( loop = 0; round_options[loop]; loop++ ) {
     if ( GTK_OPTION_MENU ( rd->round_menu ) -> menu_item ==
@@ -1279,15 +1482,15 @@ gpointer data;
     }
   }
 
+#if PV_DEBUG
+  g_message("Report checkpoint 5");
+#endif
+
   gtk_grab_remove ( rd->window );
   gtk_widget_destroy ( rd->window );
 
-  /* Generate the report...
-  ** Write report to a file, then read it in...
-  */
-  tempfile = (char *) malloc ( 100 );
-  sprintf ( tempfile, "/tmp/ttrpt-%d", (int) random () % 1000 );
-  fp = fopen ( tempfile, "w" );
+  /* Generate the report... */
+  fp = tmpfile();
   if ( ! fp ) {
     create_confirm_window ( CONFIRM_ERROR,
       gettext("Error"),
@@ -1295,7 +1498,6 @@ gpointer data;
       gettext("Ok"), NULL, NULL,
       NULL, NULL, NULL,
       NULL );
-    free ( tempfile );
     for ( loop = 0; loop < num_visible_tasks; loop++ )
       free ( seltasks[loop] );
     free ( seltasks );
@@ -1342,6 +1544,13 @@ gpointer data;
       time_start = now - ONE_DAY * tm->tm_yday;
       time_end = now;
       break;
+    case REPORT_RANGE_LAST_YEAR:
+      if ( (tm->tm_year - 1) % 4 == 0 )
+        time_start = now - ONE_DAY * ( tm->tm_yday + 366 );
+      else
+        time_start = now - ONE_DAY * ( tm->tm_yday + 365 );
+      time_end = now - ONE_DAY * ( tm->tm_yday + 1 );
+      break;
     default:
     case REPORT_RANGE_THIS_WEEK:
       time_start = now - ONE_DAY * tm->tm_wday;
@@ -1361,6 +1570,11 @@ gpointer data;
     if ( rd->include_annotations )
       ncols++;
   }
+
+#if PV_DEBUG
+  g_message("Report checkpoint \"total\"");
+#endif
+
 
   total = 0;
   for ( time_loop = time_start; time_loop <= time_end; time_loop += ONE_DAY ) {
@@ -1392,35 +1606,39 @@ gpointer data;
       break;
   }
 
+#if PV_DEBUG
+  g_message("Report checkpoint (total printed)");
+#endif
+
+
+  len = ftell(fp);
+  rewind ( fp );
+  text = (char *) calloc ( len + 1, sizeof(char) );
+  fread ( text, len, sizeof(char), fp );
   fclose ( fp );
-  if ( stat ( tempfile, &buf ) == 0 ) {
-    text = (char *) malloc ( buf.st_size + 1 );
-    fd = open ( tempfile, O_RDONLY );
-    ret = read ( fd, text, buf.st_size );
-    close ( fd );
-    if ( ret >= 0 )
-      text[ret] = '\0';
-    else
-      sprintf ( text, "%s %s\n", gettext("Error reading"), tempfile );
-    switch ( format ) {
-      case REPORT_OUTPUT_TEXT:
-        display_text_results ( text );
-        break;
-      case REPORT_OUTPUT_HTML:
-        display_html_results ( text );
-        break;
-    }
+  switch ( format ) {
+    case REPORT_OUTPUT_TEXT:
+      display_text_results ( text );
+      break;
+    case REPORT_OUTPUT_HTML:
+      display_html_results ( text );
+      break;
   }
+#if PV_DEBUG
+  g_message("Report checkpoint 99%");
+#endif
 
   /* Free resources */
-  unlink ( tempfile );
-  free ( tempfile );
   for ( loop = 0; loop < num_selected; loop++ )
     free ( seltasks[loop] );
   free ( seltasks );
   free ( rd->tasks );
   free ( rd->list_items );
   free ( rd );
+#if PV_DEBUG
+  g_message("Report end");
+#endif
+
 }
 
 
@@ -1443,14 +1661,13 @@ GtkWidget *widget;
 gpointer data;
 {
   ReportData *rd = (ReportData *) data;
-#if GTK_VERSION < 10100
   int loop;
 
-  for ( loop = 0; loop < rd->num_tasks; loop++ )
-    gtk_list_select_item ( GTK_LIST ( rd->task_list ), loop );
-#else
-  gtk_list_select_all ( GTK_LIST ( rd->task_list ) );
-#endif
+  gtk_tree_selection_select_all (
+     gtk_tree_view_get_selection ( GTK_TREE_VIEW (rd->task_list) ) ) ;
+//  for ( loop = 0; loop < rd->num_tasks; loop++ )
+//    gtk_list_select_item ( GTK_LIST ( rd->task_list ), loop );
+
 }
 
 
@@ -1460,14 +1677,13 @@ GtkWidget *widget;
 gpointer data;
 {
   ReportData *rd = (ReportData *) data;
-#if GTK_VERSION < 10100
   int loop;
 
-  for ( loop = 0; loop < rd->num_tasks; loop++ )
-    gtk_list_unselect_item ( GTK_LIST ( rd->task_list ), loop );
-#else
-  gtk_list_unselect_all ( GTK_LIST ( rd->task_list ) );
-#endif
+  gtk_tree_selection_unselect_all (
+     gtk_tree_view_get_selection ( GTK_TREE_VIEW (rd->task_list) ) ) ;
+//  for ( loop = 0; loop < rd->num_tasks; loop++ )
+//    gtk_list_unselect_item ( GTK_LIST ( rd->task_list ), loop );
+
 }
 
 
@@ -1483,7 +1699,7 @@ ReportData *rd;
 
   for ( loop = 0; time_options[loop]; loop++ ) {
     rd->time_menu_items[loop] =
-      gtk_menu_item_new_with_label ( time_options[loop] );
+      gtk_menu_item_new_with_label ( gettext(time_options[loop]) );
     gtk_menu_append ( GTK_MENU ( menu ), rd->time_menu_items[loop] );
     gtk_widget_show ( rd->time_menu_items[loop] );
   }
@@ -1503,7 +1719,7 @@ ReportData *rd;
 
   for ( loop = 0; output_options[loop]; loop++ ) {
     rd->output_menu_items[loop] =
-      gtk_menu_item_new_with_label ( output_options[loop] );
+      gtk_menu_item_new_with_label ( gettext(output_options[loop]) );
     gtk_menu_append ( GTK_MENU ( menu ), rd->output_menu_items[loop] );
     gtk_widget_show ( rd->output_menu_items[loop] );
   }
@@ -1523,7 +1739,7 @@ ReportData *rd;
 
   for ( loop = 0; data_options[loop]; loop++ ) {
     rd->data_menu_items[loop] =
-      gtk_menu_item_new_with_label ( data_options[loop] );
+      gtk_menu_item_new_with_label ( gettext(data_options[loop]) );
     gtk_menu_append ( GTK_MENU ( menu ), rd->data_menu_items[loop] );
     gtk_widget_show ( rd->data_menu_items[loop] );
   }
@@ -1541,7 +1757,7 @@ ReportData *rd;
 
   for ( loop = 0; round_options[loop]; loop++ ) {
     rd->round_menu_items[loop] =
-      gtk_menu_item_new_with_label ( round_options[loop] );
+      gtk_menu_item_new_with_label ( gettext(round_options[loop]) );
     gtk_menu_append ( GTK_MENU ( menu ), rd->round_menu_items[loop] );
     gtk_widget_show ( rd->round_menu_items[loop] );
   }
@@ -1566,8 +1782,26 @@ report_type type;
   GList *items = NULL;
   int loop;
   char msg[100], temp[512];
+  // PV:
+  CustomList *customlist;
+  //  GtkWidget *select;
+  GtkCellRenderer *renderer;
+  GtkTreeViewColumn *col;
+//  GtkTreePath *path;
+  GtkTreeSelection *select;
+  gchar *xtaskname;
+
+#if PV_DEBUG
+  g_message("Report window: start");
+#endif
+
+  customlist = custom_list_new();
 
   rd = (ReportData *) malloc ( sizeof ( ReportData ) );
+#if PV_DEBUG
+  g_message("rd: %d", (int) rd);
+#endif
+
   memset ( rd, '\0', sizeof ( ReportData ) );
   rd->type = type;
   rd->window = report_window = gtk_dialog_new ();
@@ -1579,6 +1813,11 @@ report_type type;
   gtk_widget_realize ( report_window );
   gdk_window_set_icon ( GTK_WIDGET ( rd->window )->window,
     NULL, appicon2, appicon2_mask );
+
+#if PV_DEBUG
+  g_message("Report window: CP 1");
+#endif
+
 
   table = gtk_table_new ( 4, 2, FALSE );
   gtk_table_set_row_spacings (GTK_TABLE (table), 4);
@@ -1599,6 +1838,10 @@ report_type type;
   gtk_table_attach_defaults ( GTK_TABLE (table), rd->time_menu, 1, 2, 0, 1 );
   gtk_widget_show ( rd->time_menu );
 
+
+#if PV_DEBUG
+  g_message("Report window: CP 2");
+#endif
 
   label = gtk_label_new ( gettext("Format: ") );
   gtk_table_attach_defaults ( GTK_TABLE (table), label, 0, 1, 1, 2 );
@@ -1638,6 +1881,12 @@ report_type type;
 
   gtk_widget_show ( table );
 
+
+#if PV_DEBUG
+  g_message("Report window: CP 3");
+#endif
+
+
   label = gtk_label_new ( gettext("Tasks to include:") );
   gtk_label_set_justify ( GTK_LABEL ( label ), GTK_JUSTIFY_LEFT );
   gtk_box_pack_start ( GTK_BOX ( GTK_DIALOG (report_window)->vbox ),
@@ -1645,20 +1894,21 @@ report_type type;
   gtk_widget_show ( label );
 
   /* list of tasks */
+// PV: GTK_LIST --> GTK_TREE_VIEW
   scrolled = gtk_scrolled_window_new ( NULL, NULL );
   gtk_widget_set_usize ( scrolled, 300, 200 );
   gtk_scrolled_window_set_policy ( GTK_SCROLLED_WINDOW (scrolled),
     GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS );
   gtk_box_pack_start ( GTK_BOX ( GTK_DIALOG (report_window)->vbox ),
     scrolled, TRUE, TRUE, 2 );
-  gtk_widget_show ( scrolled );
 
-  rd->task_list = gtk_list_new ();
+// PV: -  rd->task_list = gtk_list_new ();
   rd->tasks = (TaskData **) malloc ( sizeof ( TaskData * ) *
     num_visible_tasks );
-  rd->list_items = (GtkWidget **) malloc ( sizeof ( GtkWidget * ) *
+  rd->list_items = (GtkTreePath **) malloc ( sizeof ( GtkTreePath * ) *
     num_visible_tasks );
   rd->num_tasks = num_visible_tasks;
+
   for ( loop = 0; loop < num_visible_tasks; loop++ ) {
     if ( visible_tasks[loop]->task->project_id < 0 )
       snprintf ( temp, sizeof ( temp ), "%s",
@@ -1667,26 +1917,37 @@ report_type type;
       snprintf ( temp, sizeof ( temp ),
         "[%s] %s", visible_tasks[loop]->project_name,
         visible_tasks[loop]->task->name );
-    rd->list_items[loop] =
-      gtk_list_item_new_with_label ( temp );
     items = g_list_append ( items, rd->list_items[loop] );
     rd->tasks[loop] = visible_tasks[loop];
-    gtk_widget_show ( rd->list_items[loop] );
+    xtaskname = g_strdup_printf ("%s", temp);
+    rd->list_items[loop] = custom_list_append_record (customlist, xtaskname);
   }
 
-#if GTK_VERSION < 10100
-  gtk_container_add (GTK_CONTAINER (scrolled), rd->task_list );
-#else
-  gtk_scrolled_window_add_with_viewport ( GTK_SCROLLED_WINDOW ( scrolled ),
-    rd->task_list );
+
+#if PV_DEBUG
+  g_message("Report window: CP 4");
 #endif
 
-  gtk_list_append_items ( GTK_LIST ( rd->task_list ), items );
-  gtk_list_set_selection_mode ( GTK_LIST ( rd->task_list ),
-    GTK_SELECTION_MULTIPLE );
-  for ( loop = 0; loop < num_visible_tasks; loop++ ) {
-    gtk_list_select_item ( GTK_LIST ( rd->task_list ), loop );
-  }
+  rd->task_list = gtk_tree_view_new_with_model(GTK_TREE_MODEL(customlist));
+  g_object_unref(customlist); /* destroy store automatically with view */
+
+  renderer = gtk_cell_renderer_text_new();
+  col = gtk_tree_view_column_new();
+
+  gtk_tree_view_column_pack_start (col, renderer, TRUE);
+  gtk_tree_view_column_add_attribute (col, renderer, "text", CUSTOM_LIST_COL_NAME);
+  gtk_tree_view_column_set_title (col, gettext("[Project] Task"));
+  gtk_tree_view_append_column(GTK_TREE_VIEW(rd->task_list),col);
+  select = gtk_tree_view_get_selection(GTK_TREE_VIEW(rd->task_list));
+  gtk_tree_selection_set_mode(GTK_TREE_SELECTION(select), GTK_SELECTION_MULTIPLE);
+
+  gtk_scrolled_window_add_with_viewport ( GTK_SCROLLED_WINDOW ( scrolled ),
+    rd->task_list );
+
+// PV: select all
+  gtk_tree_selection_select_all(GTK_TREE_SELECTION(select));
+
+  gtk_widget_show ( scrolled );
   gtk_widget_show ( rd->task_list );
   
   /* add command buttons */
@@ -1731,50 +1992,17 @@ report_type type;
   gtk_widget_show (button);
   /*gtk_tooltips_set_tips (tooltips, button, "Unselect all tasks" );*/
 
-  gtk_widget_show (report_window);
+  gtk_widget_show_all (report_window);
+
+
+#if PV_DEBUG
+  g_message("Report window: CP 100");
+#endif
+
 
   return ( report_window );
 }
 
 
 
-/*
-** Determine the path to an executable using the $PATH environment
-** variable.
-** Return value should be freed (unless it's NULL!)
-*/
-static char *get_client_path ( file )
-char *file;
-{
-  char *path;
-  static char *path2 = "/usr/bin/X11:/usr/local/bin:/usr/bin";
-  char *env;
-  struct stat buf;
-  char *ret, *ptr;
-
-  env = getenv ( "PATH" );
-  if ( env ) {
-    path = (char *) malloc ( strlen ( env ) + strlen ( path2 ) + 2 );
-    sprintf ( path, "%s:%s", env, path2 );
-  } else {
-    path = (char *) malloc ( strlen ( path2 ) + 1 );
-    strcpy ( path, path2 );
-  }
-
-  ptr = strtok ( path, ":" );
-  while ( ptr ) {
-    ret = (char *) malloc ( strlen ( ptr ) + strlen ( file ) + 2 );
-    sprintf ( ret, "%s/%s", ptr, file );
-    if ( stat ( ret, &buf ) == 0 ) {
-      /* found it */
-      free ( path );
-      return ( ret );
-    }
-    ptr = strtok ( NULL, ":" );
-  }
-
-  /* not found */
-  free ( path );
-  return ( NULL );
-}
 

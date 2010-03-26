@@ -21,6 +21,8 @@
  *	Suite 330, Boston, MA  02111-1307, USA
  *
  * History:
+ *	17-Apr-2005	Add support for subtracting a particular offset
+ *			off of timers.  (Russ Allbery)
  *	09-Mar-2000	Added functions to allow for restoring to
  *			a previous state: taskMark(), taskMarkAll(),
  *			taskRestore(), taskRestoreAll()
@@ -61,17 +63,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#ifdef HAVE_LIBINTL_H
-#include <libintl.h>
-#else
-#define gettext(a)	a
-#endif
-
 #include "task.h"
 
 #ifdef GTIMER_MEMDEBUG
 #include "memdebug/memdebug.h"
 #endif
+
+// PV: Internationalization
+#include "gtimeri18n.h"
 
 static int num_tasks = 0;
 static Task **tasks = NULL;
@@ -156,13 +155,22 @@ char *name;
 ** to restore the state of the task to what it was when this function
 ** was called.
 */
-void taskMark ( task )
+void taskMark ( task, offset )
 Task *task;
+int offset;
 {
   int i;
+  int seconds;
 
   for ( i = 0; i < task->num_entries; i++ ) {
     task->entries[i]->marked_seconds = task->entries[i]->seconds;
+  }
+  if ( offset > 0 && task->num_entries > 0 ) {
+    seconds = task->entries[task->num_entries - 1]->marked_seconds;
+    seconds -= offset;
+    if ( seconds < 0 )
+      seconds = 0;
+    task->entries[task->num_entries - 1]->marked_seconds = seconds;
   }
 }
 
@@ -174,13 +182,14 @@ Task *task;
 ** Other stuff like annotations doesn't apply here, but annotations shouldn't
 ** be added during idle time anyhow...
 */
-void taskMarkAll ()
+void taskMarkAll ( offset )
+int offset;
 {
   int loop;
 
   for ( loop = 0; loop <= max_task; loop++ ) {
     if ( tasks[loop] ) {
-      taskMark ( tasks[loop] );
+      taskMark ( tasks[loop], offset );
     }
   }
 }
@@ -608,13 +617,12 @@ int task_error;
 
   switch ( task_error ) {
     case TASK_ERROR_SYSTEM_ERROR:
-      sprintf ( msg, "%s (%d)", gettext("System Error"), errno );
+      sprintf ( msg, gettext("System Error (%d)"), errno );
       return ( msg );
     case TASK_ERROR_BAD_FILE:
       return ( gettext("Invalid task data file format") );
     default:
-      sprintf ( msg, "%s(%d)", gettext("Unknown error"),
-        task_error );
+      sprintf ( msg,  gettext("Unknown error (%d)"), task_error );
       return ( msg );
   }
 }

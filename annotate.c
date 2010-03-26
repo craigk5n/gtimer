@@ -30,6 +30,7 @@
  *	http://www.cknudsen.com/gtimer/
  *
  * History:
+ *      17-Aug-2008	Support UTF-8 using GTK+ 2.x
  *	18-Mar-1999	Internationalization
  *	16-May-1999	Added support for GTK 1.0.
  *	10-May-1998	Removed ifdef for GTK versions before 1.0.0
@@ -54,12 +55,6 @@
 #include <memory.h>
 #include <ctype.h>
 
-#ifdef HAVE_LIBINTL_H
-#include <libintl.h>
-#else
-#define gettext(a)      a
-#endif
-
 #include <gtk/gtk.h>
 
 #include "project.h"
@@ -73,7 +68,6 @@
 
 extern char *taskdir;
 extern GtkWidget *status;
-extern guint status_id;
 
 typedef struct {
   TaskData *taskdata;
@@ -87,24 +81,22 @@ GtkWidget *widget;
 gpointer data;
 {
   AnnotateData *td = (AnnotateData *) data;
-  char *str;
   int len;
+  GtkTextBuffer *buffer;
+  GtkTextIter start, end;
+  gchar *text;
 
   /* Add annotation to task */
   if ( td->taskdata ) {
-    len = GTK_TEXT ( td->text )->gap_position;
-    str = (char *) malloc ( len + 1 );
-#if GTK_VERSION < 10100
-    strncpy ( str, (char *) GTK_TEXT ( td->text )->text, len );
-#else
-    strncpy ( str, (char *) GTK_TEXT ( td->text )->text.wc, len );
-#endif
-    str[len] = '\0';
-    if ( strlen ( str ) )
-      taskAddAnnotation ( td->taskdata->task, taskdir, str );
-    free ( str );
-    gtk_statusbar_push ( GTK_STATUSBAR ( status ), status_id,
-      gettext("Annotation added") );
+
+    buffer = gtk_text_view_get_buffer(td->text);
+    gtk_text_buffer_get_bounds(buffer, &start, &end);
+    text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+    if (strlen(text))
+      taskAddAnnotation (td->taskdata->task, taskdir, (char *) text );
+    free(text);
+
+    showMessage ( gettext("Annotation added") );
   }
 
   gtk_grab_remove ( td->window );
@@ -166,23 +158,13 @@ TaskData *taskdata;
 
   gtk_widget_show ( hbox );
 
-  style = gtk_style_new ();
-  gdk_font_unref ( style->font );
-  style->font = gdk_font_load (
-    "-adobe-courier-medium-r-*-*-12-*-*-*-*-*-*-*" );
-  if ( style->font == NULL )
-    style->font = gdk_font_load ( "fixed" );
-  gtk_widget_push_style ( style );
-
-  td->text = gtk_text_new ( NULL, NULL );
-  gtk_text_set_word_wrap ( GTK_TEXT ( td->text ), 1 );
+  td->text = gtk_text_view_new();
+  gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(td->text), GTK_WRAP_WORD_CHAR);
   gtk_widget_set_usize ( td->text, 340, 50 );
   gtk_box_pack_start ( GTK_BOX ( GTK_DIALOG (annotate_window)->vbox ),
     td->text, TRUE, TRUE, 5 );
-  gtk_text_set_editable ( GTK_TEXT ( td->text ), TRUE );
   gtk_widget_show ( td->text );
 
-  gtk_widget_pop_style ();
 
   /* add command buttons */
   /*tooltips = gtk_tooltips_new ();*/

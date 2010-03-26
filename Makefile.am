@@ -6,7 +6,7 @@ gtimer_SOURCES = \
 	annotate.c confirm.c main.c task.h config.c edit.c \
 	report.c unhide.c config.h changelog.c changelog.h \
 	gtimer.h task.c xextras.c project.h project.c \
-	http.c http.h tcpt.c tcpt.h \
+	http.c http.h tcpt.c tcpt.h custom-list.c custom-list.h \
 	icons/splash.xpm icons/gtimer.xpm icons/gtimer2.xpm \
 	icons/clock1.xpm icons/clock2.xpm icons/clock3.xpm \
 	icons/clock4.xpm icons/clock5.xpm icons/clock6.xpm \
@@ -14,7 +14,8 @@ gtimer_SOURCES = \
 	icons/start.xpm icons/stop.xpm icons/stop_all.xpm \
 	icons/annotate.xpm icons/new.xpm icons/edit.xpm
 
-CPPFLAGS = @UIFLAGS@ @CPPFLAGS@
+AM_CPPFLAGS = \
+	-DLOCALEDIR=\"$(localedir)\" @UIFLAGS@ @CPPFLAGS@
 
 gtimer_LDADD = @UILIBS@
 

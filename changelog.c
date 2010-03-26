@@ -66,13 +66,16 @@ extern GdkPixmap *appicon2_mask;
 
 static GtkWidget *changelog_window = NULL;
 
-static void ok_callback ( widget, data )
-GtkWidget *widget;
-gpointer data;
+static void changelog_ok_callback ( GtkWidget *widget, gpointer data )
 {
   gtk_widget_hide ( changelog_window );
 }
 
+static gboolean changelog_X_callback ( GtkWidget *widget, gpointer data )
+{
+  changelog_ok_callback( widget, data );
+  return (TRUE);    // do NOT continue destroying window
+}
 
 
 
@@ -83,64 +86,67 @@ static void create_changelog_window ()
 {
   /*GtkTooltips *tooltips;*/
   GtkWidget *hbox, *textarea, *vscrollbar, *button;
+  GtkWidget *vbox, *textview, *swindow, *ok_button;    // PV: +
+  GtkTextBuffer *txbuf;                                // PV: +
+  int txlen;                                           // PV: +
   GtkStyle *style;
   char msg[100];
 
-  changelog_window = gtk_dialog_new ();
+  changelog_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_window_set_wmclass ( GTK_WINDOW ( changelog_window ), "GTimer", "gtimer" );
   sprintf ( msg, "GTimer: %s", gettext ("Change Log") );
   gtk_window_set_title (GTK_WINDOW (changelog_window), msg );
-  gtk_window_position ( GTK_WINDOW(changelog_window), GTK_WIN_POS_MOUSE );
-  gtk_widget_realize ( changelog_window );
+  gtk_window_set_position ( GTK_WINDOW(changelog_window), GTK_WIN_POS_MOUSE );
+//  gtk_widget_realize ( changelog_window );
   gdk_window_set_icon ( GTK_WIDGET ( changelog_window )->window,
     NULL, appicon2, appicon2_mask );
 
-  hbox = gtk_hbox_new ( FALSE, 2 );
-  gtk_box_pack_start ( GTK_BOX ( GTK_DIALOG (changelog_window)->vbox ),
-    hbox, TRUE, TRUE, 2 );
+  vbox = gtk_vbox_new ( FALSE, 2 );
+  gtk_container_add ( GTK_CONTAINER (changelog_window), vbox);
 
-  style = gtk_style_new ();
+  hbox = gtk_hbox_new ( FALSE, 2 );
+  gtk_box_pack_start ( GTK_BOX ( vbox ), hbox, FALSE, FALSE, 2 );
+
+  swindow = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW(swindow),
+                                  GTK_POLICY_AUTOMATIC,
+                                  GTK_POLICY_AUTOMATIC);
+  gtk_box_pack_start ( GTK_BOX(vbox), swindow, TRUE, TRUE, 0);
+
+//  style = gtk_style_new ();
+// PV: -
+/*
   gdk_font_unref ( style->font );
   style->font = gdk_font_load (
     "-adobe-courier-medium-r-*-*-12-*-*-*-*-*-*-*" );
   if ( style->font == NULL )
     style->font = gdk_font_load ( "fixed" );
-  gtk_widget_push_style ( style );
+*/
+//  gtk_widget_push_style ( style );
 
-  textarea = gtk_text_new ( NULL, NULL );
-  gtk_widget_set_usize ( textarea, 300, 100 );
-  gtk_box_pack_start ( GTK_BOX ( hbox ),
-    textarea, TRUE, TRUE, 2 );
-  gtk_text_set_word_wrap ( GTK_TEXT ( textarea ), 1 );
-  gtk_widget_show ( textarea );
-  gtk_widget_realize ( textarea );
-  gtk_text_freeze ( GTK_TEXT ( textarea ) );
-  gtk_text_set_point ( GTK_TEXT ( textarea ), 0 );
-  gtk_text_insert ( GTK_TEXT ( textarea ), NULL, NULL, NULL,
-    changelog_text, strlen ( changelog_text ) );
-  gtk_text_thaw ( GTK_TEXT ( textarea ) );
+  txbuf = gtk_text_buffer_new(NULL);
+  txlen = strlen(changelog_text);
+  gtk_text_buffer_set_text (GTK_TEXT_BUFFER(txbuf), changelog_text, txlen);
+  textview = gtk_text_view_new_with_buffer(txbuf);
+  gtk_text_view_set_editable(GTK_TEXT_VIEW(textview),0);                   
+  gtk_container_add (GTK_CONTAINER (swindow), textview);
+  ok_button = gtk_button_new_with_label(gettext("Ok"));
+  gtk_box_pack_start(GTK_BOX(vbox), ok_button, FALSE, FALSE, 0);
+  g_signal_connect(G_OBJECT(ok_button), "clicked",
+                   G_CALLBACK (changelog_ok_callback), NULL);
+  g_signal_connect(G_OBJECT(changelog_window), "delete-event",
+                   G_CALLBACK (changelog_X_callback), NULL);
 
-  gtk_widget_pop_style ();
 
-  vscrollbar = gtk_vscrollbar_new ( GTK_TEXT ( textarea )->vadj );
-  gtk_box_pack_start ( GTK_BOX ( hbox ),
-    vscrollbar, FALSE, FALSE, 2 );
-  gtk_widget_show ( vscrollbar );
-
-  gtk_widget_show ( hbox );
-
-  button = gtk_button_new_with_label ( gettext("Ok") );
-  gtk_box_pack_start (GTK_BOX (GTK_DIALOG (changelog_window)->action_area),
-    button, TRUE, FALSE, 10);
-  gtk_signal_connect (GTK_OBJECT (button), "clicked",
-    GTK_SIGNAL_FUNC (ok_callback), NULL);
-  GTK_WIDGET_SET_FLAGS (button, GTK_CAN_DEFAULT);
-  gtk_widget_grab_default (button);
-  gtk_widget_show (button);
-
-  gtk_widget_set_usize ( changelog_window, 600, 400 );
+//  gtk_widget_show (button);
+  gtk_window_set_default_size ( changelog_window, 600, 600 );
   /*gdk_window_resize ( GTK_WIDGET ( changelog_window )->window, 600, 400 );*/
   gtk_widget_show (changelog_window);
+  gtk_widget_show_all(changelog_window);
+
+  GTK_WIDGET_SET_FLAGS (ok_button, GTK_CAN_DEFAULT);
+  gtk_widget_grab_default (ok_button);
+
 }
 
 

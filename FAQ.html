@@ -3,7 +3,7 @@
 <TITLE>GTimer FAQ</TITLE>
 <META NAME="keywords" VALUE="GTimer, Application Timer, Linux, GTK, FAQ">
 <META NAME="abstract" VALUE="FAQ for GTimer (a GTK-based UNIX/X-Windows application that keeps track of time spent on different tasks)">
-<META NAME="author" VALUE="Craig Knudsen, cknudsen@radix.net">
+<META NAME="author" VALUE="Craig Knudsen, cknudsen@cknudsen.com">
 </HEAD>
 <BODY BGCOLOR="#FFFFFF">
 <FONT FACE="Arial, Helvetica">
@@ -15,8 +15,8 @@
 <LI><A HREF="#themes">Will it work with GTK+ themes?</A>
 <LI><A HREF="#splash">Can I get rid of the splash screen?</A>
 <LI><A HREF="#idle">Can I adjust the idle time?</A>
+<LI><A HREF="#db">Can GTimer connect to a database?</A>
 <LI><A HREF="#i18n">How do I get GTimer to work in French/Spanish/Your-Language-Here?</A>
-<LI><A HREF="#hang">GTimer periodically hangs.  What can I do?</A>
 </UL>
 
 <HR><H3><A NAME="gtk">What versions of GTK+ will GTimer compile with?</A></H3>
@@ -52,6 +52,14 @@ the ~/.gtimer/.gtimerrc file and edit the line that follows idle.
 (It's the idle threshold in seconds.)
 </BLOCKQUOTE>
 
+<HR><H3><A NAME="db">Can GTimer connect to a database?</A></H3>
+<BLOCKQUOTE>
+GTimer currently has no way of directly communicating with
+a database.  But, you can use the exportSQL.pl Perl script to
+convert GTimer data into SQL.  Look in the contrib directory
+for exportSQL.pl and other tools.
+</BLOCKQUOTE>
+
 <HR><H3><A NAME="i18n">How do I get GTimer to work in French/Spanish/Your-Language-Here?</A></H3>
 <BLOCKQUOTE>
 GTimer has internationaliztion (I18N) support.  You must have the
@@ -77,18 +85,11 @@ language you want.  Here's an example for French:
 </OL>
 </BLOCKQUOTE>
 
-<HR><H3><A NAME="hang">GTimer periodically hangs.  What can I do?</A></H3>
-<BLOCKQUOTE>
-Use the <TT>-noversioncheck</TT> option to keep GTimer for checking
-to see if a new version is available.  It sometimes locks up in the
-HTTP request.
-</BLOCKQUOTE>
-
 <HR>
 <ADDRESS>
-<B>Home Page:</B> <A HREF="http://www.radix.net/~cknudsen/gtimer/">http://www.radix.net/~cknudsen/gtimer/</A><BR>
-<B>Author:</B> <A HREF="http://www.radix.net/~cknudsen/">Craig Knudsen</A>,
-  <A HREF="mailto:cknudsen@radix.net">cknudsen@radix.net</A><BR>
+<B>Home Page:</B> <A HREF="http://www.cknudsen.com/gtimer/">http://www.cknudsen.com/gtimer/</A><BR>
+<B>Author:</B> <A HREF="http://www.cknudsen.com/">Craig Knudsen</A>,
+  <A HREF="mailto:cknudsen@cknudsen.com">cknudsen@cknudsen.com</A><BR>
 </ADDRESS>
 </FONT>
 </BODY>

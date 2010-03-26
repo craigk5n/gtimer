@@ -1,0 +1,5 @@
+debian/tmp/usr/bin/gtimer
+@BUILD_TREE@/contrib usr/share/doc/gtimer
+
+debian/gtimer.desktop   usr/share/applications
+debian/gtimer.xpm       usr/share/pixmaps

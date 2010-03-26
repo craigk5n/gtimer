@@ -30,6 +30,7 @@
  *	http://www.cknudsen.com/gtimer/
  *
  * History:
+ *	17-Apr-2005	Added configurability of the browser. (Russ Allbery)
  *	28-Feb-2003	Added project create/edit window.
  *	21-Feb-2003	Added project pulldown in task create/edit.
  *	30-Apr-1999	Fixed bug where \n chars could be included at the
@@ -56,12 +57,6 @@
 
 #include <gtk/gtk.h>
 
-#ifdef HAVE_LIBINTL_H
-#include <libintl.h>
-#else
-#define gettext(a)      a
-#endif
-
 #include "project.h"
 #include "task.h"
 #include "gtimer.h"
@@ -76,7 +71,6 @@ extern int num_visible_tasks;
 extern TaskData **tasks;
 extern int num_tasks;
 extern GtkWidget *status;
-extern guint status_id;
 
 typedef struct {
   Project *p;
@@ -90,6 +84,11 @@ typedef struct {
   GtkWidget *name;
   GtkWidget *projectMenu;
 } TaskEditData;
+
+typedef struct {
+  GtkWidget *window;
+  GtkWidget *name;
+} BrowserEditData;
 
 
 static void ok_project_callback ( widget, data )
@@ -115,8 +114,7 @@ gpointer data;
       strcpy ( ed->p->name, str );
       project_updated = 1;
     }
-    gtk_statusbar_push ( GTK_STATUSBAR ( status ), status_id,
-      gettext("Project updated") );
+    showMessage ( gettext("Project updated") );
   }
 
   /* New Project */
@@ -133,8 +131,7 @@ gpointer data;
       *ptr = '\0';
     p = projectCreate ( str );
     projectAdd ( p );
-    gtk_statusbar_push ( GTK_STATUSBAR ( status ), status_id,
-      gettext("Project added") );
+    showMessage ( gettext("Project added") );
   }
 
   /* redraw the task list only if we changed a project name */
@@ -329,8 +326,7 @@ gpointer data;
         ed->taskdata->project_name = selp ? selp->name : "";
       }
     }
-    gtk_statusbar_push ( GTK_STATUSBAR ( status ), status_id,
-      gettext("Task updated") );
+    showMessage ( gettext("Task updated") );
   }
 
   /* New Task */
@@ -359,8 +355,7 @@ gpointer data;
     new_project_id = selp ? selp->number : -1;     
     td->task->project_id = new_project_id;
     td->project_name = selp ? selp->name : "";
-    gtk_statusbar_push ( GTK_STATUSBAR ( status ), status_id,
-      gettext("Task updated") );
+    showMessage ( gettext("Task updated") );
   }
 
   gtk_grab_remove ( ed->window );
@@ -520,3 +515,103 @@ TaskData *taskdata;
 }
 
 
+
+static void ok_browser_callback ( widget, data )
+GtkWidget *widget;
+gpointer data;
+{
+  BrowserEditData *ed = (BrowserEditData *) data;
+  char *browser;
+
+  browser = gtk_entry_get_text ( GTK_ENTRY(ed->name) );
+  configSetAttribute ( CONFIG_BROWSER, browser );
+  gtk_grab_remove ( ed->window );
+  gtk_widget_destroy ( ed->window );
+  free ( ed );
+}
+
+
+static void cancel_browser_callback ( widget, data )
+GtkWidget *widget;
+gpointer data;
+{
+  BrowserEditData *ed = (BrowserEditData *) data;
+  gtk_grab_remove ( ed->window );
+  gtk_widget_destroy ( ed->window );
+  free ( ed );
+}
+
+/*
+** Create the add/edit browser window.
+*/
+GtkWidget *create_browser_edit_window ()
+{
+  GtkWidget *browser_window;
+  GtkWidget *table;
+  GtkWidget *info, *label, *name_text, *ok_button, *cancel_button;
+  BrowserEditData *ed;
+  char msg[500], *browser;
+
+  ed = (BrowserEditData *) malloc ( sizeof ( BrowserEditData ) );
+  memset ( ed, 0, sizeof ( BrowserEditData ) );
+  ed->window = browser_window = gtk_dialog_new ();
+  gtk_window_set_wmclass ( GTK_WINDOW ( ed->window ), "GTimer", "gtimer" );
+  sprintf ( msg, "GTimer: %s", gettext ("Change Browser") );
+  gtk_window_set_title ( GTK_WINDOW ( browser_window ), msg );
+  gtk_window_position ( GTK_WINDOW ( browser_window ), GTK_WIN_POS_MOUSE );
+  gtk_grab_add ( browser_window );
+  gtk_widget_realize ( browser_window );
+
+  sprintf ( msg, "%s", "The string \"%s\" in this command, if present, will"
+    " be replaced with the URL to open; otherwise, the URL will be added to"
+    " the end of the command.");
+  info = gtk_label_new ( msg );
+  gtk_label_set_line_wrap ( GTK_LABEL (info), 1 );
+  gtk_box_pack_start ( GTK_BOX ( GTK_DIALOG (browser_window)->vbox ),
+    info, TRUE, FALSE, 5 );
+
+  table = gtk_table_new ( 1, 3, FALSE );
+  gtk_table_set_row_spacings ( GTK_TABLE (table), 4 );
+  gtk_table_set_col_spacings ( GTK_TABLE (table), 8 );
+  gtk_container_border_width ( GTK_CONTAINER (table), 6 );
+  gtk_box_pack_start ( GTK_BOX ( GTK_DIALOG (browser_window)->vbox ),
+    table, TRUE, FALSE, 5 );
+
+  sprintf ( msg, "%s: ", gettext ( "Command" ) );
+  label = gtk_label_new ( msg );
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
+  gtk_table_attach (GTK_TABLE (table), label, 0, 1,
+    0, 1, GTK_FILL, GTK_FILL, 0, 0);
+
+  ed->name = name_text = gtk_entry_new ();
+  gtk_table_attach_defaults (GTK_TABLE (table), name_text, 1, 3,
+    0, 1);
+  if ( configGetAttribute ( CONFIG_BROWSER, &browser ) == 0 )
+    gtk_entry_set_text ( GTK_ENTRY(name_text), browser );
+  else {
+    gtk_entry_set_text ( GTK_ENTRY(name_text),
+      "mozilla -raise -remote 'openURL(file:%s)'" );
+    gtk_entry_select_region ( GTK_ENTRY(name_text), 0, 
+      strlen ( "mozilla -raise -remote 'openURL(file:%s)'" ) );
+  }
+  gtk_window_set_focus ( &GTK_DIALOG ( browser_window )->window,
+    name_text );
+
+  ok_button = gtk_button_new_with_label ( gettext("Ok") );
+  gtk_box_pack_start (GTK_BOX (GTK_DIALOG (browser_window)->action_area),
+    ok_button, TRUE, TRUE, 5);
+  gtk_signal_connect (GTK_OBJECT (ok_button), "clicked",
+    GTK_SIGNAL_FUNC (ok_browser_callback), ed);
+  GTK_WIDGET_SET_FLAGS (ok_button, GTK_CAN_DEFAULT);
+  gtk_widget_grab_default (ok_button);
+
+  cancel_button = gtk_button_new_with_label ( gettext("Cancel") );
+  gtk_box_pack_start (GTK_BOX (GTK_DIALOG (browser_window)->action_area),
+    cancel_button, TRUE, TRUE, 5);
+  gtk_signal_connect (GTK_OBJECT (cancel_button), "clicked",
+    GTK_SIGNAL_FUNC (cancel_browser_callback), ed);
+
+  gtk_widget_show_all ( browser_window );
+
+  return ( browser_window );
+}
