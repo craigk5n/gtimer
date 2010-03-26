@@ -2050,9 +2050,11 @@ static GtkWidget *create_main_window_menu_bar()
 
 printf ( "Getting text '%s'\n", menustring );
   gtk_ui_manager_add_ui_from_string (uimanager, menustring, -1, &err);
+/* Debug code for crash -- cek
 printf ( "Error ptr = %d\n", (int) err );
 printf ( "Error code = %d\n", err->code );
 printf ( "Error message = %s\n", err->message );
+*/
     if (!(err == NULL))
     {
 	g_message(gettext("Building menu Failed: %s \n"), err->message);
