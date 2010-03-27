@@ -1,5 +1,5 @@
 GTimer v2.0.0
-Copyright (C) 1998 Craig Knudsen, craig@kn5.is
+Copyright (C) 1998-2010 Craig Knudsen, craig@k5n.us
 http://www.k5n.us/gtimer.php
 
 BUILD REQUIREMENTS:
@@ -7,12 +7,10 @@ BUILD REQUIREMENTS:
 GTK 2.8 or later
 
 It should build without issue on any UN*X that has GTK.  It should also
-build on Windows machines that have the Windows port of GTK.  I have
-also compiled it on Mac OS X and it works great, but you do need to
-install X11 (from apple) and GTK.
-
-
-
+build on Windows machines that have the Windows port of GTK.  Recent versions
+of Cygwin include GTK for Windows.  I have also compiled it on Mac OS X and
+it works great, but you may need to install X11 (from Apple) depending on
+which version of OS X you have, and you will need to install GTK for Mac OS X.
 
 COMPILING:
 --------------------------------------------------------------------------
@@ -36,6 +34,12 @@ RUNNING:
 --------------------------------------------------------------------------
 To run:
 	./gtimer
+
+
+LICENSE:
+--------------------------------------------------------------------------
+GTimer is open source released under the GNU General Public License (GPL)
+Version 2.  See the COPYING file for a complete copy of the license.
 
 
 NEW RELEASES:
@@ -70,7 +74,7 @@ TO DO:
 - Optionally store data in MySQL, Oracle, etc. instead of flat files
 - Add a configuration window to set things like print command,
   idle timeout, etc.
-- Export function (tab-delimited text file)
+- Export function (CSV file)
 - Ability to edit existing annotations
 
 
@@ -82,19 +86,6 @@ See ChangeLog for development history.
 
 TRANSLATING
 --------------------------------------------------------------------------
-create messages.po[t]:
-
-$xgettext *.c
-
-create <lang>.po:
-
-$msginit
-
-create <lang>.mo
-
-$msgfmt -o <lang>.mo <lang>.po
-
-Merge new texts:
-
-$msgmerge -U <lang>.po messages.po[t]
+See FAQ.html for instructions on how to create new translation files
+for use with GTimer.
 
