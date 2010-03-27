@@ -97,7 +97,7 @@ static void create_changelog_window ()
   sprintf ( msg, "GTimer: %s", gettext ("Change Log") );
   gtk_window_set_title (GTK_WINDOW (changelog_window), msg );
   gtk_window_set_position ( GTK_WINDOW(changelog_window), GTK_WIN_POS_MOUSE );
-//  gtk_widget_realize ( changelog_window );
+  gtk_widget_realize ( changelog_window );
   gdk_window_set_icon ( GTK_WIDGET ( changelog_window )->window,
     NULL, appicon2, appicon2_mask );
 
