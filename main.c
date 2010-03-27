@@ -24,7 +24,7 @@
  *	Helps you keep track of time spent on different tasks.
  *
  * Author:
- *	Craig Knudsen, cknudsen@cknudsen.com, http://www.cknudsen.com
+ *	Craig Knudsen, craig@k5n.us, http://www.k5n.us
  *
  * Home Page:
  *	http://www.cknudsen.com/gtimer/
@@ -916,7 +916,7 @@ static void about_callback ( GtkAction *act )
     gtk_major_version, gtk_minor_version, gtk_micro_version );
   strcat ( text, gettext("Author") );
   sprintf ( text + strlen ( text ),
-     ":\nCraig Knudsen\ncknudsen@cknudsen.com\n\n" );
+     ":\nCraig Knudsen\ncraig@k5n.us\n\n" );
   create_confirm_window ( CONFIRM_ABOUT,
     gettext("About"),
     text,
