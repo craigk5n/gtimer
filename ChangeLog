@@ -1,4 +1,4 @@
-Release 2.0.0 (25 Mar 2010)
+Release 2.0.0 (27 Mar 2010)
   + Fix crash on viewing change log window
   + Update to GTK 1.2 (Patch from Pavel Vavra)
   + Inclusion or a large series of Debian patches:

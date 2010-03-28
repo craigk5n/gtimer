@@ -27,7 +27,8 @@
   ****************************************************************************/
 
 static char *changelog_text = "\
-Release 2.0.0 (25 Mar 2010)\n\
+Release 2.0.0 (27 Mar 2010)\n\
+  + Fix crash on viewing change log window\n\
   + Update to GTK 1.2 (Patch from Pavel Vavra)\n\
   + Inclusion or a large series of Debian patches:\n\
     Russ Allbery <rra@debian.org>  Sat, 26 Jul 2008 12:46:27 -0700\n\
