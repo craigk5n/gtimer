@@ -2027,7 +2027,7 @@ static GtkWidget *create_main_window_menu_bar()
 //  GtkUIManager *uimanager;
   GtkActionGroup *actgroup;
   GtkAction *item;
-  GError *err;
+  GError *err = NULL;
 
   actgroup = gtk_action_group_new("ActionMain");
   // set translation domain and function
