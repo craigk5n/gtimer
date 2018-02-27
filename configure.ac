@@ -29,7 +29,7 @@ AC_ARG_ENABLE(shm,
                 ssext=$enableval, ssext=yes)
 
 if test "$ssext" = yes; then
-  AC_CHECK_LIB(Xss, XScreenSaverQueryInfo, [GTK_LIBS="-lXss -lXext $GTK_LIBS"
+  AC_CHECK_LIB(Xss, XScreenSaverQueryInfo, [GTK_LIBS="-lXss -lX11 $GTK_LIBS"
     ok=yes
     AC_DEFINE(HAVE_SCREEN_SAVER_EXT)], ok=no, $GTK_LIBS)
 fi
