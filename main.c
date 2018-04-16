@@ -227,6 +227,7 @@ GdkBitmap *icon_masks[8], *blankicon_mask, *appicon_mask, *appicon2_mask;
 #else
 GtkAccelGroup* mainag;
 #endif
+static AppIndicator *indicator;
 static sockfd connection = -1;
 static gint gdk_input_id = -1;
 static int version_check_is_auto = 0;
@@ -2192,6 +2193,7 @@ void update_list () {
       gtk_clist_set_text ( GTK_CLIST(task_list), i, 3, text );
       strcpy ( taskdata->last_total, text );
     }
+
     taskdata->last_total_int = total;
     today = 0;
     if ( taskdata->todays_entry )
@@ -2234,6 +2236,7 @@ void update_list () {
     strcpy ( total_str, today_test );
     gtk_label_set ( GTK_LABEL ( total_label ), total_str );
   }
+  app_indicator_set_label(indicator, today_test + 7, "Gtimer Indicator");
 }
 
 
@@ -2734,6 +2737,8 @@ static void print_help () {
 
 
 int main ( int argc, char *argv[] ) {
+  GtkWidget *indicator_menu;
+  GtkWidget *menu_item;
   char *home = "";
 #ifndef WIN32
   uid_t uid;
@@ -3012,6 +3017,25 @@ int main ( int argc, char *argv[] ) {
   today_year = tm->tm_year + 1900;
   today_mon = tm->tm_mon + 1;
   today_mday = tm->tm_mday;
+
+  indicator_menu = gtk_menu_new();
+  indicator = app_indicator_new ("gtimer_indicator", "/usr/share/pixmaps/gtimer.xpm", APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+  app_indicator_set_status (indicator, APP_INDICATOR_STATUS_ACTIVE);
+  app_indicator_set_menu (indicator, GTK_MENU (indicator_menu));
+
+  menu_item = gtk_menu_item_new_with_label ("Start current task");
+  gtk_menu_shell_append (GTK_MENU_SHELL (indicator_menu), menu_item);
+  g_signal_connect_swapped (menu_item, "activate",
+                      G_CALLBACK (start_callback),
+                                  (gpointer) g_strdup ("Start current task"));
+  gtk_widget_show (menu_item);
+
+  menu_item = gtk_menu_item_new_with_label ("Stop all tasks");
+  gtk_menu_shell_append (GTK_MENU_SHELL (indicator_menu), menu_item);
+  g_signal_connect_swapped (menu_item, "activate",
+                      G_CALLBACK (stop_all_callback),
+                                  (gpointer) g_strdup ("Stop all tasks"));
+  gtk_widget_show (menu_item);
 
   /* build and update the task list */
   build_list ();
