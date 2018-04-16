@@ -15,9 +15,8 @@ gtimer_SOURCES = \
 	icons/annotate.xpm icons/new.xpm icons/edit.xpm
 
 AM_CPPFLAGS = \
-	-DLOCALEDIR=\"$(localedir)\" @UIFLAGS@ @CPPFLAGS@
+	-DLOCALEDIR=\"$(localedir)\" @UIFLAGS@ @CPPFLAGS@ @APP_INDICATOR_CFLAGS@
 
-gtimer_LDADD = @UILIBS@
+gtimer_LDADD = @UILIBS@ @APP_INDICATOR_LIBS@
 
 EXTRA_DIST = gtimer.1 icons/gtimer.gif
-

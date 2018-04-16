@@ -34,6 +34,7 @@ if test "$ssext" = yes; then
     AC_DEFINE(HAVE_SCREEN_SAVER_EXT)], ok=no, $GTK_LIBS)
 fi
 
+PKG_CHECK_MODULES([APP_INDICATOR], [appindicator-0.1])
 
 UILIBS=$GTK_LIBS
 UIFLAGS="$GTK_CFLAGS $GTK_VERSION_FLAGS"
@@ -46,4 +47,3 @@ AC_OUTPUT(Makefile)
 dnl AC_OUTPUT([Makefile intl/Makefile po/Makefile.in],
 
 dnl [sed -e "/POTFILES =/r po/POTFILES" po/Makefile.in > po/Makefile])
-

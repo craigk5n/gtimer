@@ -4,17 +4,17 @@
  * Copyright:
  *	(C) 1999 Craig Knudsen, cknudsen@cknudsen.com
  *	See accompanying file "COPYING".
- * 
+ *
  *	This program is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU General Public License
  *	as published by the Free Software Foundation; either version 2
  *	of the License, or (at your option) any later version.
- * 
+ *
  *	This program is distributed in the hope that it will be useful,
  *	but WITHOUT ANY WARRANTY; without even the implied warranty of
  *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *	GNU General Public License for more details.
- * 
+ *
  *	You should have received a copy of the GNU General Public License
  *	along with this program; if not, write to the
  *	Free Software Foundation, Inc., 59 Temple Place,
@@ -157,6 +157,7 @@
 #include <glib.h>
 
 #include <gtk/gtk.h>
+#include <libappindicator/app-indicator.h>
 
 #ifdef HAVE_SCREEN_SAVER_EXT
 #include <gdk/gdkx.h>
@@ -424,9 +425,9 @@ static const GtkActionEntry MM_NormalEntries[] = {
 
 /* PV: Add Toggle Entries
  *   This structure is initialized with FALSE initial values. Before activating it will
- *   be modified according to configuration settings. This is why this structure is not 
+ *   be modified according to configuration settings. This is why this structure is not
  *   declared as 'const'
- */ 
+ */
 
 //static const GtkToggleActionEntry MM_ToggleEntries[] = {
 static GtkToggleActionEntry MM_ToggleEntries[] = {
@@ -656,7 +657,7 @@ TaskData **td2;
     ret = 1;
   else
     ret = 0;
-  
+
   if ( sort_forward )
     return ( ret );
   else
@@ -683,7 +684,7 @@ TaskData **td2;
     ret = 1;
   else
     ret = my_strcasecmp ( tda->project_name, tdb->project_name );
-  
+
   if ( sort_forward )
     return ( ret );
   else
@@ -941,7 +942,7 @@ static void website_callback ( GtkAction *act )
     sprintf ( command, path, GTIMER_URL );
   else
     sprintf ( command, "%s %s", path, GTIMER_URL );
-      
+
   if ( system ( command ) != 0 ) {
     create_confirm_window ( CONFIRM_ERROR,
       gettext("Error"), gettext("Error communicating with browser."),
@@ -1376,7 +1377,7 @@ static void report2_callback ( GtkAction *act )
     }
   }
   if ( rt == REPORT_TYPE_NONE ) {
-	fprintf( stderr, "Gtimer: Unknown report (%s)!\n", aname); return; 
+	fprintf( stderr, "Gtimer: Unknown report (%s)!\n", aname); return;
   }
 
 #if PV_DEBUG
@@ -1661,7 +1662,7 @@ static void shift_time_callback ( GtkAction *act )
     }
   }
   if ( time_shift == -1 ) {
-	fprintf( stderr, "Gtimer: Unknown action (%s)!\n", aname); return; 
+	fprintf( stderr, "Gtimer: Unknown action (%s)!\n", aname); return;
   }
 #if PV_DEBUG
   g_message("Shift_time: %d s", time_shift);
@@ -1994,9 +1995,9 @@ gchar *mainmenu_translate(const gchar *str, gpointer data)
         if ( strchr(str, '|') ) {
 
           split = g_strsplit(retval,"|",2);
-	
-        
-	  //debug: 
+
+
+	  //debug:
 #if PV_DEBUG
           printf("\nPrefix: %s", split[0]);
           printf("\nText  : %s", split[1]);
@@ -2155,7 +2156,7 @@ void update_list () {
       row[2] = "00:00:00";
       row[3] = "00:00:00";
       gtk_clist_append ( GTK_CLIST(task_list), row );
-      gtk_clist_set_pixtext (GTK_CLIST (task_list), i, 0, 
+      gtk_clist_set_pixtext (GTK_CLIST (task_list), i, 0,
         taskdata->project_name, 2, blankicon, blankicon_mask);
       continue;
     }
@@ -2168,7 +2169,7 @@ void update_list () {
           taskdata->project_name, 2, icon, mask);
         taskdata->last_on = 1;
       } else {
-        gtk_clist_set_pixtext (GTK_CLIST (task_list), i, 0, 
+        gtk_clist_set_pixtext (GTK_CLIST (task_list), i, 0,
           taskdata->project_name, 2, blankicon, blankicon_mask);
         taskdata->last_on = 0;
       }
@@ -2199,7 +2200,7 @@ void update_list () {
       time ( &now );
       diff = now - taskdata->on_since;
       today += diff;
-    } 
+    }
     h = today / 3600;
     m = ( today - h * 3600 ) / 60;
     s = today % 60;
@@ -2216,7 +2217,7 @@ void update_list () {
         taskdata->project_name, 2, icon, mask);
       taskdata->last_on = 1;
     } else if ( ! taskdata->timer_on && taskdata->last_on ) {
-      gtk_clist_set_pixtext (GTK_CLIST (task_list), i, 0, 
+      gtk_clist_set_pixtext (GTK_CLIST (task_list), i, 0,
         taskdata->project_name, 2, blankicon, blankicon_mask);
       taskdata->last_on = 0;
     }
@@ -2343,10 +2344,10 @@ static void build_list () {
     row[3] = total_str;
     gtk_clist_append ( GTK_CLIST(task_list), row );
     if ( tasks[i]->timer_on )
-      gtk_clist_set_pixtext (GTK_CLIST (task_list), i, 0, 
+      gtk_clist_set_pixtext (GTK_CLIST (task_list), i, 0,
         visible_tasks[i]->project_name, 2, icon, mask);
     else
-      gtk_clist_set_pixtext (GTK_CLIST (task_list), i, 0, 
+      gtk_clist_set_pixtext (GTK_CLIST (task_list), i, 0,
         visible_tasks[i]->project_name, 2, blankicon, blankicon_mask);
   }
   /* gtk_clist_thaw ( GTK_CLIST(task_list) ); */
@@ -2928,7 +2929,7 @@ int main ( int argc, char *argv[] ) {
   }
 
   /* read config values */
-  config_file = (char *) malloc ( strlen ( taskdir ) + 
+  config_file = (char *) malloc ( strlen ( taskdir ) +
     strlen ( CONFIG_DEFAULT_FILE ) + 2 );
   sprintf ( config_file, "%s/%s", taskdir, CONFIG_DEFAULT_FILE );
   configReadAttributes ( config_file );
@@ -2951,7 +2952,7 @@ int main ( int argc, char *argv[] ) {
   /* PV: Set menu check boxes according to config */
   if ( config_toolbar_enabled )
     MM_ToggleEntries[MM_TOGGLE_TOOLBAR].is_active = TRUE;
-    
+
   if ( config_animate_enabled )
     MM_ToggleEntries[MM_TOGGLE_ANIMATE].is_active = TRUE;
 
@@ -2960,7 +2961,7 @@ int main ( int argc, char *argv[] ) {
 
    if ( config_idle_enabled )
     MM_ToggleEntries[MM_TOGGLE_IDLE].is_active = TRUE;
- 
+
   /* in the future check version number and pop up license and/or
   ** release notes if a new version
   */
