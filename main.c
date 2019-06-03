@@ -337,13 +337,13 @@ typedef struct {
 // globally accessible UI Manager object
 GtkUIManager *uimanager;
 
-// Menu Entries - because it is neccessary to translete each menu item as separate word, I decide
+// Menu Entries - because it is neccessary to translate each menu item as separate word, I decide
 // to assign unique prefix to each menu column and merge these prefixes to menu items.
-// Prefix will be hidden during translation (see function mainmenu_transalate).
+// Prefix will be hidden during translation (see function mainmenu_translate).
 // Last character in prefix is '|', I hope this character never appears as a part of displayed word.
 // If I'll not be right in future, please change it to another character in menu and function
 // mainmenu_translate.
-// Reccomendation: It will be better _do_not_translate_ these prefixes.
+// Recommendation: It will be better _do_not_translate_ these prefixes.
 
 static const GtkActionEntry MM_NormalEntries[] = {
   { "FileMenu", NULL, gettext_noop("MM|_File") },
@@ -384,7 +384,7 @@ static const GtkActionEntry MM_NormalEntries[] = {
 	gettext_noop("Hide task"), G_CALLBACK(task_hide_callback) },
   { "TM_Unhide", NULL, gettext_noop("TM|_Unhide... "), "<control>U",
 	gettext_noop("Unhide tasks"), G_CALLBACK(task_unhide_callback) },
-  { "TM_Delete", NULL, gettext_noop("TM|_Delete"), "<control>A",
+  { "TM_Delete", NULL, gettext_noop("TM|_Delete"), "<control>R",
 	gettext_noop("Add annotation"), G_CALLBACK(task_delete_callback) },
   { "TM_Inc1", NULL, gettext_noop("TM|_Increment 1 minute"), "<shift><control>I",
 	gettext_noop("Increment time"), G_CALLBACK(shift_time_callback) },
