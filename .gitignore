@@ -1,0 +1,8 @@
+*.o
+.deps
+Makefile
+autom4te.cache
+compile
+config.log
+config.status
+gtimer

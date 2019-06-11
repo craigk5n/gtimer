@@ -29,14 +29,36 @@ AC_ARG_ENABLE(shm,
                 ssext=$enableval, ssext=yes)
 
 if test "$ssext" = yes; then
-  AC_CHECK_LIB(Xss, XScreenSaverQueryInfo, [GTK_LIBS="-lXss -lX11 $GTK_LIBS"
+  AC_CHECK_LIB(Xss, XScreenSaverQueryInfo, [GTK_LIBS="-lXss $GTK_LIBS"
     ok=yes
     AC_DEFINE(HAVE_SCREEN_SAVER_EXT)], ok=no, $GTK_LIBS)
 fi
 
-PKG_CHECK_MODULES([APP_INDICATOR], [appindicator-0.1])
+APPINDICATOR_REQUIRED=0.0.7
 
-UILIBS=$GTK_LIBS
+AC_ARG_ENABLE(appindicator,
+                        AS_HELP_STRING([--enable-appindicator[=@<:@no/auto/yes@:>@]],[Build support for application indicators ]),
+                        [enable_appindicator=$enableval],
+                        [enable_appindicator="auto"])
+
+if test x$enable_appindicator = xauto ; then
+        PKG_CHECK_EXISTS([appindicator-0.1 >= $APPINDICATOR_REQUIRED],
+                         enable_appindicator="yes",
+                         enable_appindicator="no")
+fi
+
+if test x$enable_appindicator = xyes ; then
+        PKG_CHECK_EXISTS([appindicator-0.1 >= $APPINDICATOR_REQUIRED],,
+                         AC_MSG_ERROR([appindicator-0.1 is not installed]))
+        PKG_CHECK_MODULES(APP_INDICATOR,
+                        appindicator-0.1 >= $APPINDICATOR_REQUIRED)
+        AC_SUBST(APP_INDICATOR_CFLAGS)
+        AC_SUBST(APP_INDICATOR_LIBS)
+        AC_DEFINE(HAVE_APP_INDICATOR, 1, [Have AppIndicator])
+fi
+AM_CONDITIONAL(HAVE_APP_INDICATOR, test x"$enable_appindicator" = xyes)
+
+UILIBS="-lX11 $GTK_LIBS"
 UIFLAGS="$GTK_CFLAGS $GTK_VERSION_FLAGS"
 
 AC_SUBST(UILIBS)

@@ -157,7 +157,9 @@
 #include <glib.h>
 
 #include <gtk/gtk.h>
+#ifdef HAVE_APP_INDICATOR
 #include <libappindicator/app-indicator.h>
+#endif
 
 #ifdef HAVE_SCREEN_SAVER_EXT
 #include <gdk/gdkx.h>
@@ -227,7 +229,9 @@ GdkBitmap *icon_masks[8], *blankicon_mask, *appicon_mask, *appicon2_mask;
 #else
 GtkAccelGroup* mainag;
 #endif
+#ifdef HAVE_APP_INDICATOR
 static AppIndicator *indicator;
+#endif
 static sockfd connection = -1;
 static gint gdk_input_id = -1;
 static int version_check_is_auto = 0;
@@ -2236,7 +2240,9 @@ void update_list () {
     strcpy ( total_str, today_test );
     gtk_label_set ( GTK_LABEL ( total_label ), total_str );
   }
+#ifdef HAVE_APP_INDICATOR
   app_indicator_set_label(indicator, today_test + 7, "Gtimer Indicator");
+#endif
 }
 
 
@@ -3018,10 +3024,12 @@ int main ( int argc, char *argv[] ) {
   today_mon = tm->tm_mon + 1;
   today_mday = tm->tm_mday;
 
+#ifdef HAVE_APP_INDICATOR
   indicator_menu = gtk_menu_new();
   indicator = app_indicator_new ("gtimer_indicator", "/usr/share/pixmaps/gtimer.xpm", APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
   app_indicator_set_status (indicator, APP_INDICATOR_STATUS_ACTIVE);
   app_indicator_set_menu (indicator, GTK_MENU (indicator_menu));
+#endif
 
   menu_item = gtk_menu_item_new_with_label ("Start current task");
   gtk_menu_shell_append (GTK_MENU_SHELL (indicator_menu), menu_item);

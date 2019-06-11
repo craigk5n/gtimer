@@ -57,10 +57,10 @@
 
 /* Note: we could use "VERSION" produced from autoconf, but I like
    to also have the version date, so I'll just edit this by hand. */
-#define GTIMER_VERSION		"2.0.0"
-#define GTIMER_VERSION_DATE	"27 Mar 2010" /*"19 Mar 2003"*/
+#define GTIMER_VERSION		"2.0.0+git"
+#define GTIMER_VERSION_DATE	"10 Jun 2019" /*"19 Mar 2003"*/
 #define GTIMER_URL		"http://www.k5n.us/gtimer.php"
-#define GTIMER_COPYRIGHT	"Copyright (C) 2000-2010 Craig Knudsen"
+#define GTIMER_COPYRIGHT	"Copyright (C) 2000-2019 Craig Knudsen"
 
 #define GTIMER_STATUS_ID	"status-update"
 
