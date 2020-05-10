@@ -1368,7 +1368,7 @@ static void report2_callback ( GtkAction *act )
   const TTarray acts[] = {
 	{"RM_Daily", REPORT_TYPE_DAILY},
 	{"RM_Weekly", REPORT_TYPE_WEEKLY},
-	{"RM_MOnthly", REPORT_TYPE_MONTHLY},
+	{"RM_Monthly", REPORT_TYPE_MONTHLY},
 	{"RM_Yearly", REPORT_TYPE_YEARLY}
    };
   const gchar *aname = gtk_action_get_name(GTK_ACTION(act));
