@@ -2,7 +2,7 @@
  * GTimer
  *
  * Copyright:
- *	(C) 1999 Craig Knudsen, cknudsen@cknudsen.com
+ *	(C) 1999-2023 Craig Knudsen, craig@k5n.us
  *	See accompanying file "COPYING".
  * 
  *	This program is free software; you can redistribute it and/or
@@ -24,12 +24,13 @@
  *	Helps you keep track of time spent on different tasks.
  *
  * Author:
- *	Craig Knudsen, cknudsen@cknudsen.com http://www.cknudsen.com/
+ *	Craig Knudsen, craig@k5n.us https://www.k5n.us/gtimer/
  *
  * Home Page:
- *	http://www.cknudsen.com/gtimer/
+ *	https://www.k5n.us/gtimer
  *
  * History:
+ *  06-May-2023	Changed release to 2.0.1
  *	09-Mar-2000	Changed release to 1.1.5
  *	09-Mar-2000	Added args to confirm_create_window()
  *	04-May-1999	Changed release to 1.1.4
@@ -57,10 +58,10 @@
 
 /* Note: we could use "VERSION" produced from autoconf, but I like
    to also have the version date, so I'll just edit this by hand. */
-#define GTIMER_VERSION		"2.0.0+git"
-#define GTIMER_VERSION_DATE	"10 Jun 2019" /*"19 Mar 2003"*/
-#define GTIMER_URL		"http://www.k5n.us/gtimer.php"
-#define GTIMER_COPYRIGHT	"Copyright (C) 2000-2019 Craig Knudsen"
+#define GTIMER_VERSION		"2.0.1"
+#define GTIMER_VERSION_DATE	"06 May 2023" /*"19 Mar 2003"*/
+#define GTIMER_URL		"http://www.k5n.us/gtimer"
+#define GTIMER_COPYRIGHT	"Copyright (C) 2000-2023 Craig Knudsen"
 
 #define GTIMER_STATUS_ID	"status-update"
 

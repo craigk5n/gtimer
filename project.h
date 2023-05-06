@@ -2,7 +2,7 @@
  * Definition for a project
  *
  * Copyright:
- *	(C) 2003 Craig Knudsen, cknudsen@cknudsen.com
+ *	(C) 2003 Craig Knudsen, craig@k5n.us
  *	See accompanying file "COPYING".
  * 
  *	This program is free software; you can redistribute it and/or

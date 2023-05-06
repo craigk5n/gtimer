@@ -1,43 +1,38 @@
 /*
-**
-**  Classification:     UNCLASSIFIED
-**
-**  Copyright:          (c) Copyright 1995 IBM Corporation
-**                      This program is protected by the copyright law as an
-**                      unpublished work.
-**
-**  RCS Info:           $Date: 1995/11/27 15:27:46 $ $Revision: 1.1 $
-**
-**                      $Id: Header.h,v 1.1 1995/11/27 15:27:46 baseline Exp $
-**
-**  Filename:           $Source: /Minerva/testing/minerva/src/templates/RCS/Header.h,v $
-**
-**  Originator:         Craig Knudsen
-**                      t/l 335-6068
-**                      knudsen@dev.infomkt.ibm.com
-**
-**  Organization:       IBM Corporation / infoMarket
-**                      3190 Fairview Park Drive
-**                      Falls Church, VA  22042
-**                      Ph: (703)205-5600       FAX: (703)205-5691
-**
-**  Description:
-**
-**      NewsTicker include file.
-**	Include file for using tcpt routines.
-**	Attempt to resolve some of the issues with dealing with
-**	winsock.  See tcpt.c for more info on usage.
-**	Define sockfd to be an int on UNIX and SOCKET on Win32.
-**
-**  Limitations:
-**
-**      1.  None.
-**
-**  Modification History:
-**
-**      12-Mar-96  cek  Created
-**
-******************************************************************************/
+ * GTimer
+ *
+ * Copyright:
+ *	(C) 1999-2023 Craig Knudsen, craig@k5n.us
+ *	See accompanying file "COPYING".
+ * 
+ *	This program is free software; you can redistribute it and/or
+ *	modify it under the terms of the GNU General Public License
+ *	as published by the Free Software Foundation; either version 2
+ *	of the License, or (at your option) any later version.
+ * 
+ *	This program is distributed in the hope that it will be useful,
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *	GNU General Public License for more details.
+ * 
+ *	You should have received a copy of the GNU General Public License
+ *	along with this program; if not, write to the
+ *	Free Software Foundation, Inc., 59 Temple Place,
+ *	Suite 330, Boston, MA  02111-1307, USA
+ *
+ * Description:
+ *	Helps you keep track of time spent on different tasks.
+ *
+ * Author:
+ *	Craig Knudsen, craig@k5n.us https://www.k5n.us/gtimer/
+ *
+ * Home Page:
+ *	https://www.k5n.us/gtimer
+ *
+ * History:
+ *	25-Feb-1998	Created
+ *
+ ****************************************************************************/
 
 #ifndef _TCPT_H
 #define _TCPT_H
@@ -106,5 +101,7 @@ tcptError tcptEnableSocks (
 ** tcptDisableSocks - Disable the SOCKS server
 */
 tcptError tcptDisableSocks ();
+
+tcptError tcptConnect ( sockfd sock, struct sockaddr_in *server, int size );
 
 #endif /* _TCPT_H */

@@ -2,7 +2,7 @@
  * GTimer
  *
  * Copyright:
- *      (C) 1999 Craig Knudsen, cknudsen@radix.net
+ *      (C) 1999-2023 Craig Knudsen, craig@k5n.us
  *      See accompanying file "COPYING".
  *
  *      This program is free software; you can redistribute it and/or
@@ -184,7 +184,7 @@ Release 2.0.0 (27 Mar 2010)\n\
     + Added \"Last Two Weeks\", \"This Week & Last Week\" reports\n\
     + Reread gtkrc if -dir option is supplied\n\
     + Modified http function to use \"Host:\" required by web sites\n\
-      that used virtual hosts, like www.cknudsen.com.  Also improved\n\
+      that used virtual hosts, like www.k5n.us.  Also improved\n\
       error handling a little bit.\n\
     + Fixed font setting of text reports to properly use fixed-width font.\n\
     + Increased default size of report text window.\n\

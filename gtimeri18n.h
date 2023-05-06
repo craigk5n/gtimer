@@ -2,7 +2,7 @@
  * GTimer
  *
  * Copyright:
- *	(C) 1999 Craig Knudsen, cknudsen@cknudsen.com
+ *	(C) 1999-2023 Craig Knudsen, craig@k5n.us
  *	See accompanying file "COPYING".
  * 
  *	This program is free software; you can redistribute it and/or
@@ -24,10 +24,10 @@
  *	Helps you keep track of time spent on different tasks.
  *
  * Author:
- *	Craig Knudsen, cknudsen@cknudsen.com http://www.cknudsen.com/
+ *	Craig Knudsen, craig@k5n.us https://www.k5n.us/gtimer/
  *
  * Home Page:
- *	http://www.cknudsen.com/gtimer/
+ *	https://www.k5n.us/gtimer/
  *
  * History:
  *	2008-08-31	Header file created

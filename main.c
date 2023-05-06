@@ -2,7 +2,7 @@
  * GTimer
  *
  * Copyright:
- *	(C) 1999 Craig Knudsen, cknudsen@cknudsen.com
+ *	(C) 1999-2023 Craig Knudsen, craig@k5n.us
  *	See accompanying file "COPYING".
  *
  *	This program is free software; you can redistribute it and/or
@@ -27,7 +27,7 @@
  *	Craig Knudsen, craig@k5n.us, http://www.k5n.us
  *
  * Home Page:
- *	http://www.cknudsen.com/gtimer/
+ *	https://www.k5n.us/gtimer/
  *
  * History:
  *      07-Aug-2008	Ver 1.1.7 - Support UTF-8 using GTK+ ver. > 2.4.0
@@ -358,7 +358,9 @@ static const GtkActionEntry MM_NormalEntries[] = {
   { "TaskMenu", NULL, gettext_noop( "MM|_Task") },
   { "ProjectMenu", NULL, gettext_noop("MM|_Project") },
   { "ReportMenu", NULL, gettext_noop("MM|_Report") },
+  /*
   { "ToolsMenu", NULL, gettext_noop("MM|_Tools") },
+  */
   { "HelpMenu", NULL, gettext_noop("MM|_Help") },
   { "FM_Save", GTK_STOCK_SAVE, gettext_noop("FM|_Save"), "<control>S",
 	gettext_noop("Save actual state"), G_CALLBACK(save_callback) },
@@ -418,8 +420,10 @@ static const GtkActionEntry MM_NormalEntries[] = {
 	gettext_noop("Monthly Report"), G_CALLBACK(report2_callback) },
   { "RM_Yearly", NULL, gettext_noop("RM|_Yearly..."), NULL,
 	gettext_noop("Yearly Report"), G_CALLBACK(report2_callback) },
+  /*
   { "TL_Check", NULL, gettext_noop("TL|_Check for New Version..."), NULL,
 	gettext_noop("Keep your program updated"), G_CALLBACK(check_version_callback) },
+  */
   { "HM_About", NULL, gettext_noop("HM|_About..."), NULL,
 	gettext_noop("About"), G_CALLBACK(about_callback) },
   { "HM_ViewChL", NULL, gettext_noop("HM|View _Change log..."), NULL,

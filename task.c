@@ -2,7 +2,7 @@
  * Routines for dealing with tasks
  *
  * Copyright:
- *	(C) 1999 Craig Knudsen, cknudsen@cknudsen.com
+ *	(C) 1999-2023 Craig Knudsen, craig@k5n.us
  *	See accompanying file "COPYING".
  * 
  *	This program is free software; you can redistribute it and/or

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1999 Craig Knudsen, cknudsen@cknudsen.com
+ * Copyright (C) 1999-2023 Craig Knudsen, craig@k5n.us
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,10 +19,10 @@
  *	Helps you keep track of time spent on different tasks.
  *
  * Author:
- *	Craig Knudsen, cknudsen@cknudsen.com, http://www.cknudsen.com
+ *	Craig Knudsen, craig@k5n.us, https://www.k5n.us/gtimer
  *
  * Home Page:
- *	http://www.cknudsen.com/gtimer/
+ *	https://www.k5n.us/gtimer/
  *
  * History:
  *	17-Apr-2005	Added configurability of the browser. (Russ Allbery)
