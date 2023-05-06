@@ -168,6 +168,7 @@
 #include "project.h"
 #include "task.h"
 #include "gtimer.h"
+#include "gtimeri18n.h"
 #include "config.h"
 #include "tcpt.h"
 #include "http.h"
@@ -2041,8 +2042,10 @@ static GtkWidget *create_main_window_menu_bar()
 
   actgroup = gtk_action_group_new("ActionMain");
   // set translation domain and function
+  #ifdef DEFAULT_TEXT_DOMAIN
   gtk_action_group_set_translation_domain(GTK_ACTION_GROUP(actgroup), DEFAULT_TEXT_DOMAIN);
   gtk_action_group_set_translate_func(GTK_ACTION_GROUP(actgroup), mainmenu_translate, NULL, NULL);
+  #endif
   // set entries
   gtk_action_group_add_actions  (GTK_ACTION_GROUP(actgroup), MM_NormalEntries,
 				G_N_ELEMENTS(MM_NormalEntries), main_window);
@@ -2831,7 +2834,9 @@ int main ( int argc, char *argv[] ) {
 #endif
 //  textdomain ( "gtimer" );
 #endif
+#ifdef DEFAULT_TEXT_DOMAIN
   bind_textdomain_codeset(DEFAULT_TEXT_DOMAIN, "UTF-8");
+#endif
 
   /* Init GTK */
   gtk_init ( &argc, &argv );
