@@ -22,7 +22,7 @@ test_db_init (void)
   g_assert_cmpint (sqlite3_step (stmt), ==, SQLITE_ROW);
   sqlite3_finalize (stmt);
 
-  gtimer_db_manager_free (db_manager);
+  g_object_unref (db_manager);
 }
 
 static void
@@ -58,7 +58,7 @@ test_db_save_task (void)
   g_assert_cmpint (sqlite3_column_int (stmt, 0), ==, 3600);
   sqlite3_finalize (stmt);
 
-  gtimer_db_manager_free (db_manager);
+  g_object_unref (db_manager);
 }
 
 static void
@@ -94,7 +94,7 @@ test_db_report (void)
   g_assert_cmpint (r1->total_duration, ==, 7200);
 
   g_list_free_full (report, (GDestroyNotify)gtimer_report_row_free);
-  gtimer_db_manager_free (db_manager);
+  g_object_unref (db_manager);
 }
 
 int

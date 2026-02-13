@@ -5,6 +5,7 @@
 #include "../core/timer-utils.h"
 #include "../core/db-manager.h"
 #include <time.h>
+#include <glib/gi18n.h>
 
 struct _GTimerWindow
 {
@@ -158,7 +159,7 @@ on_add_task_response (GtkDialog *dialog, int response_id, gpointer user_data)
     }
 
     if (name && strlen (name) > 0) {
-      gtimer_db_manager_create_task (self->db_manager, name, project_id);
+      gtimer_db_manager_create_task (self->db_manager, name, project_id, NULL);
       show_toast (self, "Task '%s' added", name);
       if (self->model) {
         gtimer_task_list_model_refresh (self->model);
@@ -292,7 +293,7 @@ on_edit_task_response (GtkDialog *dialog, int response_id, gpointer user_data)
     }
 
     if (name && strlen (name) > 0) {
-      gtimer_db_manager_update_task (self->db_manager, gtimer_task_get_id (task), name, project_id);
+      gtimer_db_manager_update_task (self->db_manager, gtimer_task_get_id (task), name, project_id, NULL);
       show_toast (self, "Task '%s' updated", name);
       gtimer_task_list_model_refresh (self->model);
       update_window_title (self);
@@ -448,7 +449,7 @@ on_delete_task_response (GtkDialog *dialog, int response_id, gpointer user_data)
     GtkSelectionModel *selection = gtk_column_view_get_model (self->column_view);
     GObject *item = gtk_single_selection_get_selected_item (GTK_SINGLE_SELECTION (selection));
     if (GTIMER_IS_TASK (item)) {
-      gtimer_db_manager_delete_task (self->db_manager, gtimer_task_get_id (GTIMER_TASK (item)));
+      gtimer_db_manager_delete_task (self->db_manager, gtimer_task_get_id (GTIMER_TASK (item)), NULL);
       show_toast (self, "Task deleted");
       gtimer_task_list_model_refresh (self->model);
       update_window_title (self);
@@ -487,7 +488,7 @@ on_hide_task_action (GSimpleAction *action, GVariant *parameter, gpointer user_d
   GtkSelectionModel *selection = gtk_column_view_get_model (self->column_view);
   GObject *item = gtk_single_selection_get_selected_item (GTK_SINGLE_SELECTION (selection));
   if (GTIMER_IS_TASK (item)) {
-    gtimer_db_manager_hide_task (self->db_manager, gtimer_task_get_id (GTIMER_TASK (item)), TRUE);
+    gtimer_db_manager_hide_task (self->db_manager, gtimer_task_get_id (GTIMER_TASK (item)), TRUE, NULL);
     show_toast (self, "Task hidden");
     gtimer_task_list_model_refresh (self->model);
     update_window_title (self);
@@ -506,7 +507,7 @@ on_unhide_response (GtkDialog *dialog, int response_id, gpointer user_data)
       GtkWidget *check = g_object_get_data (G_OBJECT (row), "check");
       if (gtk_check_button_get_active (GTK_CHECK_BUTTON (check))) {
         int task_id = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (row), "task-id"));
-        gtimer_db_manager_hide_task (self->db_manager, task_id, FALSE);
+        gtimer_db_manager_hide_task (self->db_manager, task_id, FALSE, NULL);
       }
       row = gtk_widget_get_next_sibling (row);
     }
@@ -631,7 +632,7 @@ on_new_project_response (GtkDialog *dialog, int response_id, gpointer user_data)
     GtkWidget *entry = g_object_get_data (G_OBJECT (content_area), "entry");
     const char *name = gtk_editable_get_text (GTK_EDITABLE (entry));
     if (name && strlen (name) > 0) {
-      gtimer_db_manager_create_project (self->db_manager, name);
+      gtimer_db_manager_create_project (self->db_manager, name, NULL);
       show_toast (self, "Project '%s' added", name);
     }
   }
@@ -671,7 +672,7 @@ on_edit_project_response (GtkDialog *dialog, int response_id, gpointer user_data
       GObject *item = g_list_model_get_item (id_model, selected);
       int project_id = GPOINTER_TO_INT (g_object_get_data (item, "project-id"));
       g_object_unref (item);
-      gtimer_db_manager_update_project (self->db_manager, project_id, name);
+      gtimer_db_manager_update_project (self->db_manager, project_id, name, NULL);
       show_toast (self, "Project '%s' updated", name);
       gtimer_task_list_model_refresh (self->model);
     }
@@ -916,17 +917,31 @@ on_right_click_cb (GtkGestureClick *gesture,
 
 
 
-  GMenu *menu = g_menu_new ();
+    GMenu *menu = g_menu_new ();
 
-  g_menu_append (menu, "Start/Stop", "win.start-stop");
 
-  g_menu_append (menu, "Edit...", "win.edit-task");
 
-  g_menu_append (menu, "Annotate...", "win.annotate");
+    g_menu_append (menu, _("Start/Stop"), "win.start-stop");
 
-  g_menu_append (menu, "Hide", "win.hide-task");
 
-  g_menu_append (menu, "Delete", "win.delete-task");
+
+    g_menu_append (menu, _("Edit..."), "win.edit-task");
+
+
+
+    g_menu_append (menu, _("Annotate..."), "win.annotate");
+
+
+
+    g_menu_append (menu, _("Hide"), "win.hide-task");
+
+
+
+    g_menu_append (menu, _("Delete"), "win.delete-task");
+
+
+
+  
 
 
 
@@ -1021,12 +1036,12 @@ gtimer_window_init (GTimerWindow *self)
   gtk_box_append (GTK_BOX (main_box), action_bar);
 
   struct { const char *icon; const char *action; const char *tooltip; } bar_buttons[] = {
-    { "media-playback-start-symbolic", "win.start-stop", "Start/Stop Timing" },
-    { "media-playback-stop-symbolic", "win.stop-all", "Stop All Timers" },
-    { "list-add-symbolic", "win.new-task", "New Task" },
-    { "document-edit-symbolic", "win.edit-task", "Edit Task" },
-    { "edit-paste-symbolic", "win.annotate", "Annotate Task" },
-    { "x-office-document-symbolic", "app.report", "Daily Report" },
+    { "media-playback-start-symbolic", "win.start-stop", _("Start/Stop Timing") },
+    { "media-playback-stop-symbolic", "win.stop-all", _("Stop All Timers") },
+    { "list-add-symbolic", "win.new-task", _("New Task") },
+    { "document-edit-symbolic", "win.edit-task", _("Edit Task") },
+    { "edit-paste-symbolic", "win.annotate", _("Annotate Task") },
+    { "x-office-document-symbolic", "app.report", _("Daily Report") },
   };
 
   for (guint i = 0; i < G_N_ELEMENTS (bar_buttons); i++) {
@@ -1062,41 +1077,41 @@ gtimer_window_init (GTimerWindow *self)
 
   GMenu *menu = g_menu_new ();
   GMenu *task_section = g_menu_new ();
-  g_menu_append (task_section, "Start Timing", "win.start-stop");
-  g_menu_append (task_section, "Stop All Timing", "win.stop-all");
-  g_menu_append (task_section, "Edit Task...", "win.edit-task");
-  g_menu_append (task_section, "Annotate...", "win.annotate");
-  g_menu_append (task_section, "Hide", "win.hide-task");
-  g_menu_append (task_section, "Unhide...", "win.unhide-tasks");
-  g_menu_append (task_section, "Delete", "win.delete-task");
-  g_menu_append_section (menu, "Task", G_MENU_MODEL (task_section));
+  g_menu_append (task_section, _("Start Timing"), "win.start-stop");
+  g_menu_append (task_section, _("Stop All Timing"), "win.stop-all");
+  g_menu_append (task_section, _("Edit Task..."), "win.edit-task");
+  g_menu_append (task_section, _("Annotate..."), "win.annotate");
+  g_menu_append (task_section, _("Hide"), "win.hide-task");
+  g_menu_append (task_section, _("Unhide..."), "win.unhide-tasks");
+  g_menu_append (task_section, _("Delete"), "win.delete-task");
+  g_menu_append_section (menu, _("Task"), G_MENU_MODEL (task_section));
   
   GMenu *report_section = g_menu_new ();
-  g_menu_append (report_section, "Daily Report...", "app.report");
-  g_menu_append_section (menu, "Data", G_MENU_MODEL (report_section));
+  g_menu_append (report_section, _("Daily Report..."), "app.report");
+  g_menu_append_section (menu, _("Data"), G_MENU_MODEL (report_section));
 
   GMenu *time_section = g_menu_new ();
-  g_menu_append (time_section, "+1 Minute", "win.adjust-time(60)");
-  g_menu_append (time_section, "+5 Minutes", "win.adjust-time(300)");
-  g_menu_append (time_section, "+30 Minutes", "win.adjust-time(1800)");
-  g_menu_append (time_section, "-1 Minute", "win.adjust-time(-60)");
-  g_menu_append (time_section, "-5 Minutes", "win.adjust-time(-300)");
-  g_menu_append (time_section, "-30 Minutes", "win.adjust-time(-1800)");
-  g_menu_append (time_section, "Set to Zero", "win.set-zero");
-  g_menu_append_section (menu, "Time Adjustment", G_MENU_MODEL (time_section));
+  g_menu_append (time_section, _("+1 Minute"), "win.adjust-time(60)");
+  g_menu_append (time_section, _("+5 Minutes"), "win.adjust-time(300)");
+  g_menu_append (time_section, _("+30 Minutes"), "win.adjust-time(1800)");
+  g_menu_append (time_section, _("-1 Minute"), "win.adjust-time(-60)");
+  g_menu_append (time_section, _("-5 Minutes"), "win.adjust-time(-300)");
+  g_menu_append (time_section, _("-30 Minutes"), "win.adjust-time(-1800)");
+  g_menu_append (time_section, _("Set to Zero"), "win.set-zero");
+  g_menu_append_section (menu, _("Time Adjustment"), G_MENU_MODEL (time_section));
   GMenu *edit_section = g_menu_new ();
-  g_menu_append (edit_section, "Cut Time", "win.cut-time");
-  g_menu_append (edit_section, "Copy Time", "win.copy-time");
-  g_menu_append (edit_section, "Paste Time", "win.paste-time");
-  g_menu_append (edit_section, "Clear Buffer", "win.clear-buffer");
-  g_menu_append_section (menu, "Edit", G_MENU_MODEL (edit_section));
+  g_menu_append (edit_section, _("Cut Time"), "win.cut-time");
+  g_menu_append (edit_section, _("Copy Time"), "win.copy-time");
+  g_menu_append (edit_section, _("Paste Time"), "win.paste-time");
+  g_menu_append (edit_section, _("Clear Buffer"), "win.clear-buffer");
+  g_menu_append_section (menu, _("Edit"), G_MENU_MODEL (edit_section));
   GMenu *project_section = g_menu_new ();
-  g_menu_append (project_section, "New Project...", "win.new-project");
-  g_menu_append (project_section, "Edit Project...", "win.edit-project");
-  g_menu_append_section (menu, "Project", G_MENU_MODEL (project_section));
+  g_menu_append (project_section, _("New Project..."), "win.new-project");
+  g_menu_append (project_section, _("Edit Project..."), "win.edit-project");
+  g_menu_append_section (menu, _("Project"), G_MENU_MODEL (project_section));
   GMenu *app_section = g_menu_new ();
-  g_menu_append (app_section, "Keyboard Shortcuts", "win.shortcuts");
-  g_menu_append (app_section, "About GTimer", "app.about");
+  g_menu_append (app_section, _("Keyboard Shortcuts"), "win.shortcuts");
+  g_menu_append (app_section, _("About GTimer"), "app.about");
   g_menu_append_section (menu, NULL, G_MENU_MODEL (app_section));
   
   GtkMenuButton *menu_button = GTK_MENU_BUTTON (gtk_menu_button_new ());
@@ -1121,7 +1136,7 @@ gtimer_window_init (GTimerWindow *self)
   GtkListItemFactory *factory = gtk_signal_list_item_factory_new ();
   g_signal_connect (factory, "setup", G_CALLBACK (setup_project_cb), NULL);
   g_signal_connect (factory, "bind", G_CALLBACK (bind_project_cb), NULL);
-  GtkColumnViewColumn *col = gtk_column_view_column_new ("Project", factory);
+  GtkColumnViewColumn *col = gtk_column_view_column_new (_("Project"), factory);
   gtk_column_view_column_set_fixed_width (col, 180);
   gtk_column_view_column_set_resizable (col, TRUE);
   GtkExpression *prop_expr = gtk_property_expression_new (GTIMER_TYPE_TASK, NULL, "project-name");
@@ -1132,7 +1147,7 @@ gtimer_window_init (GTimerWindow *self)
   factory = gtk_signal_list_item_factory_new ();
   g_signal_connect (factory, "setup", G_CALLBACK (setup_label_cb), NULL);
   g_signal_connect (factory, "bind", G_CALLBACK (bind_task_name_cb), NULL);
-  col = gtk_column_view_column_new ("Task", factory);
+  col = gtk_column_view_column_new (_("Task"), factory);
   gtk_column_view_column_set_expand (col, TRUE);
   gtk_column_view_column_set_resizable (col, TRUE);
   prop_expr = gtk_property_expression_new (GTIMER_TYPE_TASK, NULL, "name");
@@ -1143,7 +1158,7 @@ gtimer_window_init (GTimerWindow *self)
   factory = gtk_signal_list_item_factory_new ();
   g_signal_connect (factory, "setup", G_CALLBACK (setup_time_label_cb), NULL);
   g_signal_connect (factory, "bind", G_CALLBACK (bind_today_time_cb), NULL);
-  col = gtk_column_view_column_new ("Today", factory);
+  col = gtk_column_view_column_new (_("Today"), factory);
   gtk_column_view_column_set_fixed_width (col, 110);
   gtk_column_view_column_set_resizable (col, TRUE);
   prop_expr = gtk_property_expression_new (GTIMER_TYPE_TASK, NULL, "today-time");
@@ -1154,7 +1169,7 @@ gtimer_window_init (GTimerWindow *self)
   factory = gtk_signal_list_item_factory_new ();
   g_signal_connect (factory, "setup", G_CALLBACK (setup_time_label_cb), NULL);
   g_signal_connect (factory, "bind", G_CALLBACK (bind_total_time_cb), NULL);
-  col = gtk_column_view_column_new ("Total", factory);
+  col = gtk_column_view_column_new (_("Total"), factory);
   gtk_column_view_column_set_fixed_width (col, 110);
   gtk_column_view_column_set_resizable (col, TRUE);
   prop_expr = gtk_property_expression_new (GTIMER_TYPE_TASK, NULL, "total-time");
@@ -1167,7 +1182,7 @@ gtimer_window_init (GTimerWindow *self)
   factory = gtk_signal_list_item_factory_new ();
   g_signal_connect (factory, "setup", G_CALLBACK (setup_date_label_cb), NULL);
   g_signal_connect (factory, "bind", G_CALLBACK (bind_created_at_cb), NULL);
-  col = gtk_column_view_column_new ("Created", factory);
+  col = gtk_column_view_column_new (_("Created"), factory);
   gtk_column_view_column_set_fixed_width (col, 130);
   gtk_column_view_column_set_resizable (col, TRUE);
   prop_expr = gtk_property_expression_new (GTIMER_TYPE_TASK, NULL, "created-at");

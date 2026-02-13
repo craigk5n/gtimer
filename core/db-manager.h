@@ -3,52 +3,88 @@
 
 #include <sqlite3.h>
 #include <glib.h>
+#include <glib-object.h>
+
+#define GTIMER_TYPE_DB_MANAGER (gtimer_db_manager_get_type())
+#define GTIMER_DB_MANAGER(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTIMER_TYPE_DB_MANAGER, GTimerDBManager))
+#define GTIMER_IS_DB_MANAGER(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), GTIMER_TYPE_DB_MANAGER))
+
+#define GTIMER_DB_ERROR (gtimer_db_error_quark())
+#define GTIMER_DB_ERROR_SQL 1
+
+GQuark gtimer_db_error_quark(void);
 
 typedef struct _GTimerDBManager GTimerDBManager;
+typedef struct _GTimerDBManagerClass GTimerDBManagerClass;
 
-GTimerDBManager *gtimer_db_manager_new (const char *path, GError **error);
-void gtimer_db_manager_free (GTimerDBManager *self);
+struct _GTimerDBManager {
+	GObject parent_instance;
+	sqlite3 *db;
+};
 
-sqlite3 *gtimer_db_manager_get_db (GTimerDBManager *self);
+struct _GTimerDBManagerClass {
+	GObjectClass parent_class;
+};
 
-void gtimer_db_manager_create_task (GTimerDBManager *self, const char *name, int project_id);
-void gtimer_db_manager_update_task (GTimerDBManager *self, int task_id, const char *name, int project_id);
-void gtimer_db_manager_delete_task (GTimerDBManager *self, int task_id);
-void gtimer_db_manager_hide_task (GTimerDBManager *self, int task_id, gboolean hidden);
-GList *gtimer_db_manager_get_hidden_tasks (GTimerDBManager *self);
+GTimerDBManager *gtimer_db_manager_new(const char *path, GError **error);
 
-void gtimer_db_manager_create_project (GTimerDBManager *self, const char *name);
-void gtimer_db_manager_update_project (GTimerDBManager *self, int project_id, const char *name);
-GList *gtimer_db_manager_get_projects (GTimerDBManager *self);
+sqlite3 *gtimer_db_manager_get_db(GTimerDBManager *self);
 
-// Task time management
-gint64 gtimer_db_manager_get_task_total_time (GTimerDBManager *self, int task_id);
-gint64      gtimer_db_manager_get_task_today_time (GTimerDBManager *self, int task_id);
-void        gtimer_db_manager_add_task_time    (GTimerDBManager *self, int task_id, gint64 seconds);
-void        gtimer_db_manager_add_task_time_for_date (GTimerDBManager *self, int task_id, const char *date_str, gint64 seconds);
-void        gtimer_db_manager_set_task_today_time (GTimerDBManager *self, int task_id, gint64 seconds);
+void gtimer_db_manager_create_task(GTimerDBManager *self, const char *name,
+				    int project_id, GError **error);
+void gtimer_db_manager_update_task(GTimerDBManager *self, int task_id,
+				    const char *name, int project_id,
+				    GError **error);
+void gtimer_db_manager_delete_task(GTimerDBManager *self, int task_id,
+				    GError **error);
+void gtimer_db_manager_hide_task(GTimerDBManager *self, int task_id,
+				  gboolean hidden, GError **error);
+GList *gtimer_db_manager_get_hidden_tasks(GTimerDBManager *self);
+GList *gtimer_db_manager_get_all_tasks(GTimerDBManager *self);
 
-void gtimer_db_manager_start_task_timing (GTimerDBManager *self, int task_id);
-void gtimer_db_manager_stop_task_timing (GTimerDBManager *self, int task_id);
-gboolean gtimer_db_manager_is_task_timing (GTimerDBManager *self, int task_id);
+void gtimer_db_manager_create_project(GTimerDBManager *self,
+				       const char *name, GError **error);
+void gtimer_db_manager_update_project(GTimerDBManager *self, int project_id,
+				       const char *name, GError **error);
+GList *gtimer_db_manager_get_projects(GTimerDBManager *self);
+
+gint64 gtimer_db_manager_get_task_total_time(GTimerDBManager *self,
+					      int task_id);
+gint64 gtimer_db_manager_get_task_today_time(GTimerDBManager *self,
+					      int task_id);
+void gtimer_db_manager_add_task_time(GTimerDBManager *self, int task_id,
+				      gint64 seconds);
+void gtimer_db_manager_add_task_time_for_date(GTimerDBManager *self,
+					       int task_id,
+					       const char *date_str,
+					       gint64 seconds);
+void gtimer_db_manager_set_task_today_time(GTimerDBManager *self,
+					   int task_id, gint64 seconds);
+
+void gtimer_db_manager_start_task_timing(GTimerDBManager *self,
+					  int task_id);
+void gtimer_db_manager_stop_task_timing(GTimerDBManager *self, int task_id);
+gboolean gtimer_db_manager_is_task_timing(GTimerDBManager *self, int task_id);
 
 typedef struct {
-  char *task_name;
-  gint64 total_duration;
+	char *task_name;
+	gint64 total_duration;
 } GTimerReportRow;
 
-GList *gtimer_db_manager_get_daily_report (GTimerDBManager *self, int year, int month, int day);
-void gtimer_report_row_free (GTimerReportRow *row);
+GList *gtimer_db_manager_get_daily_report(GTimerDBManager *self, int year,
+					   int month, int day);
+void gtimer_report_row_free(GTimerReportRow *row);
 
 typedef struct {
-  gint64 id;
-  gint64 task_id;
-  gint64 created_at;
-  char *text;
+	gint64 id;
+	gint64 task_id;
+	gint64 created_at;
+	char *text;
 } GTimerAnnotation;
 
-GList *gtimer_db_manager_get_annotations (GTimerDBManager *self, int task_id);
-void gtimer_db_manager_add_annotation (GTimerDBManager *self, int task_id, const char *text);
-void gtimer_annotation_free (GTimerAnnotation *annotation);
+GList *gtimer_db_manager_get_annotations(GTimerDBManager *self, int task_id);
+void gtimer_db_manager_add_annotation(GTimerDBManager *self, int task_id,
+				      const char *text);
+void gtimer_annotation_free(GTimerAnnotation *annotation);
 
 #endif

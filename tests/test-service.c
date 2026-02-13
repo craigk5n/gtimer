@@ -44,7 +44,7 @@ test_service_tick (void)
   g_main_loop_unref (loop);
   g_object_unref (task);
   g_object_unref (service);
-  gtimer_db_manager_free (db_manager);
+  g_object_unref (db_manager);
 }
 
 static void
@@ -79,7 +79,7 @@ test_service_save (void)
 
   g_object_unref (task);
   g_object_unref (service);
-  gtimer_db_manager_free (db_manager);
+  g_object_unref (db_manager);
 }
 
 int

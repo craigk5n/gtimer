@@ -8,6 +8,7 @@
 #include "../core/report-generator.h"
 #include <glib/gi18n.h>
 #include <locale.h>
+#include <stdlib.h>
 
 typedef struct {
   GTimerDBManager *db_manager;
@@ -15,6 +16,249 @@ typedef struct {
   GTimerTimerService *timer_service;
   GTimerIdleMonitor *idle_monitor;
 } GTimerApp;
+
+typedef struct {
+  int task_id;
+  gboolean stop_timer;
+  gboolean stop_all_timers;
+  gboolean show_status;
+  gboolean list_tasks;
+  char *add_task;
+  int add_task_project;
+  char *report_type;
+  char *report_file;
+  char *export_csv;
+  char *import_csv;
+  gboolean show_version;
+  gboolean show_gui;
+  char *datadir;
+  gboolean verbose;
+  gboolean quiet;
+} GTimerCLIOptions;
+
+static void
+print_status(GTimerDBManager *db)
+{
+  GList *tasks = gtimer_db_manager_get_all_tasks(db);
+  GList *l;
+  int running_count = 0;
+
+  if (tasks) {
+    for (l = tasks; l != NULL; l = g_list_next(l)) {
+      GTimerTask *task = GTIMER_TASK(l->data);
+      if (!task)
+        continue;
+      if (gtimer_task_is_timing(task)) {
+        running_count++;
+        g_print("[%d] %s", gtimer_task_get_id(task), gtimer_task_get_name(task));
+        if (gtimer_task_get_project_name(task)) {
+          g_print(" (%s)", gtimer_task_get_project_name(task));
+        }
+        g_print("\n");
+      }
+    }
+    g_list_free_full(tasks, g_object_unref);
+  }
+
+  if (running_count == 0) {
+    g_print("No tasks are currently timing.\n");
+  }
+}
+
+static void
+list_all_tasks(GTimerDBManager *db)
+{
+  GList *tasks = gtimer_db_manager_get_all_tasks(db);
+  GList *l;
+
+  g_print("ID   Project                     Task Name\n");
+  g_print("---- --------------------------- --------------------------------\n");
+
+  if (tasks) {
+    for (l = tasks; l != NULL; l = g_list_next(l)) {
+      GTimerTask *task = GTIMER_TASK(l->data);
+      if (!task)
+        continue;
+      const char *project = gtimer_task_get_project_name(task) ? gtimer_task_get_project_name(task) : "-";
+      g_print("%-4d %-27s %s\n",
+              gtimer_task_get_id(task),
+              project,
+              gtimer_task_get_name(task));
+    }
+    g_list_free_full(tasks, g_object_unref);
+  }
+
+  g_print("\n%d tasks total.\n", tasks ? g_list_length(tasks) : 0);
+}
+
+static void
+handle_cli_options(GTimerCLIOptions *opts, GTimerDBManager *db)
+{
+  if (opts->show_version) {
+    g_print("GTimer %s\n", VERSION);
+    return;
+  }
+
+  if (opts->list_tasks) {
+    list_all_tasks(db);
+    return;
+  }
+
+  if (opts->show_status) {
+    print_status(db);
+    return;
+  }
+
+  if (opts->stop_all_timers) {
+    GList *tasks = gtimer_db_manager_get_all_tasks(db);
+    GList *l;
+    int count = 0;
+
+    for (l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK(l->data);
+      if (gtimer_task_is_timing(task)) {
+        gtimer_db_manager_stop_task_timing(db, gtimer_task_get_id(task));
+        count++;
+        g_print("Stopped: %s\n", gtimer_task_get_name(task));
+      }
+    }
+    g_list_free_full(tasks, g_object_unref);
+    g_print("Stopped %d task(s).\n", count);
+    return;
+  }
+
+  if (opts->stop_timer) {
+    GList *tasks = gtimer_db_manager_get_all_tasks(db);
+    GList *l;
+    int count = 0;
+    char *task_name = NULL;
+
+    for (l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK(l->data);
+      if (gtimer_task_is_timing(task)) {
+        task_name = g_strdup(gtimer_task_get_name(task));
+        gtimer_db_manager_stop_task_timing(db, gtimer_task_get_id(task));
+        count++;
+        g_print("Stopped: %s\n", task_name);
+        g_free(task_name);
+      }
+    }
+    g_list_free_full(tasks, g_object_unref);
+    if (count == 0) {
+      g_print("No task is currently timing.\n");
+    }
+    return;
+  }
+
+  if (opts->task_id > 0) {
+    GList *tasks = gtimer_db_manager_get_all_tasks(db);
+    GList *l;
+    GTimerTask *found = NULL;
+
+    for (l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK(l->data);
+      if (gtimer_task_get_id(task) == opts->task_id) {
+        found = task;
+        break;
+      }
+    }
+    g_list_free_full(tasks, g_object_unref);
+
+    if (!found) {
+      g_printerr("Error: Task with ID %d not found\n", opts->task_id);
+      return;
+    }
+
+    gtimer_db_manager_start_task_timing(db, opts->task_id);
+    g_print("Started timing: %s (ID: %d)\n", gtimer_task_get_name(found), opts->task_id);
+    g_object_unref(found);
+    return;
+  }
+
+  if (opts->add_task) {
+    GError *error = NULL;
+    gtimer_db_manager_create_task(db, opts->add_task, opts->add_task_project > 0 ? opts->add_task_project - 1 : -1, &error);
+    if (error) {
+      g_printerr("Error creating task: %s\n", error->message);
+      g_error_free(error);
+      return;
+    }
+    g_print("Created task: %s\n", opts->add_task);
+    return;
+  }
+
+  if (opts->report_type) {
+    GDateTime *now = g_date_time_new_now_local();
+    GDateTime *start_date = g_date_time_ref(now);
+    GDateTime *end_date = g_date_time_ref(now);
+
+    if (g_str_equal(opts->report_type, "weekly") || g_str_equal(opts->report_type, "w")) {
+      start_date = g_date_time_add_days(now, -7);
+    } else if (g_str_equal(opts->report_type, "monthly") || g_str_equal(opts->report_type, "m")) {
+      start_date = g_date_time_add_months(now, -1);
+    } else if (g_str_equal(opts->report_type, "yearly") || g_str_equal(opts->report_type, "y")) {
+      start_date = g_date_time_add_years(now, -1);
+    } else if (!g_str_equal(opts->report_type, "daily") && !g_str_equal(opts->report_type, "d")) {
+      g_printerr("Error: Unknown report type '%s'. Use daily, weekly, or monthly\n", opts->report_type);
+      g_date_time_unref(now);
+      g_date_time_unref(start_date);
+      g_date_time_unref(end_date);
+      return;
+    }
+
+    char *report = gtimer_report_generate(db, GTIMER_REPORT_DAILY, GTIMER_REPORT_TEXT,
+                                          start_date, end_date, NULL, 0);
+
+    if (opts->report_file) {
+      if (!g_file_set_contents(opts->report_file, report, -1, NULL)) {
+        g_printerr("Error: Failed to write report to %s\n", opts->report_file);
+      } else {
+        g_print("Report saved to: %s\n", opts->report_file);
+      }
+    } else {
+      g_print("%s\n", report);
+    }
+
+    g_free(report);
+    g_date_time_unref(now);
+    g_date_time_unref(start_date);
+    g_date_time_unref(end_date);
+    return;
+  }
+
+  if (opts->export_csv) {
+    GList *tasks = gtimer_db_manager_get_all_tasks(db);
+    GList *l;
+    GString *csv = g_string_new("task_id,task_name,project,is_timing,is_hidden,total_seconds,today_seconds\n");
+
+    for (l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK(l->data);
+      const char *project = gtimer_task_get_project_name(task) ? gtimer_task_get_project_name(task) : "";
+      g_string_append_printf(csv, "%d,\"%s\",\"%s\",%d,%d,%ld,%ld\n",
+                            gtimer_task_get_id(task),
+                            gtimer_task_get_name(task),
+                            project,
+                            gtimer_task_is_timing(task) ? 1 : 0,
+                            gtimer_task_is_hidden(task) ? 1 : 0,
+                            gtimer_task_get_total_time(task),
+                            gtimer_task_get_today_time(task));
+    }
+    g_list_free_full(tasks, g_object_unref);
+
+    if (!g_file_set_contents(opts->export_csv, csv->str, -1, NULL)) {
+      g_printerr("Error: Failed to write CSV to %s\n", opts->export_csv);
+    } else {
+      g_print("Exported %d tasks to: %s\n", g_list_length(tasks), opts->export_csv);
+    }
+    g_string_free(csv, TRUE);
+    return;
+  }
+
+  if (opts->import_csv) {
+    g_printerr("Error: CSV import not yet implemented\n");
+    return;
+  }
+}
 
 static void
 on_timer_tick (GTimerTimerService *service, gint64 elapsed, gpointer user_data)
@@ -504,8 +748,73 @@ main (int argc, char **argv)
   GError *error = NULL;
   int status;
 
+  GTimerCLIOptions cli_opts = {0};
+  GOptionContext *context;
+  GOptionEntry entries[] = {
+    { "start", 's', 0, G_OPTION_ARG_INT, &cli_opts.task_id, "Start timing task with given ID", "TASK-ID" },
+    { "stop", 't', 0, G_OPTION_ARG_NONE, &cli_opts.stop_timer, "Stop current timing task", NULL },
+    { "stop-all", 'S', 0, G_OPTION_ARG_NONE, &cli_opts.stop_all_timers, "Stop all timing tasks", NULL },
+    { "status", 'u', 0, G_OPTION_ARG_NONE, &cli_opts.show_status, "Show current timer status", NULL },
+    { "list-tasks", 'l', 0, G_OPTION_ARG_NONE, &cli_opts.list_tasks, "List all tasks", NULL },
+    { "add-task", 'a', 0, G_OPTION_ARG_STRING, &cli_opts.add_task, "Add a new task", "TASK-NAME" },
+    { "project", 'p', 0, G_OPTION_ARG_INT, &cli_opts.add_task_project, "Project ID for --add-task (1-based)", "PROJECT-ID" },
+    { "report", 'r', 0, G_OPTION_ARG_STRING, &cli_opts.report_type, "Generate report (daily, weekly, monthly)", "TYPE" },
+    { "report-file", 'f', 0, G_OPTION_ARG_STRING, &cli_opts.report_file, "Save report to file", "FILENAME" },
+    { "export-csv", 'e', 0, G_OPTION_ARG_STRING, &cli_opts.export_csv, "Export tasks to CSV", "FILENAME" },
+    { "import-csv", 'i', 0, G_OPTION_ARG_STRING, &cli_opts.import_csv, "Import tasks from CSV", "FILENAME" },
+    { "version", 'v', 0, G_OPTION_ARG_NONE, &cli_opts.show_version, "Show version number", NULL },
+    { "show", 'w', 0, G_OPTION_ARG_NONE, &cli_opts.show_gui, "Show GUI window", NULL },
+    { "datadir", 'd', 0, G_OPTION_ARG_STRING, &cli_opts.datadir, "Use alternate database directory", "PATH" },
+    { "verbose", 0, 0, G_OPTION_ARG_NONE, &cli_opts.verbose, "Enable verbose output", NULL },
+    { "quiet", 'q', 0, G_OPTION_ARG_NONE, &cli_opts.quiet, "Suppress non-essential output", NULL },
+    { NULL }
+  };
+
+  context = g_option_context_new("- GTimer time tracking application");
+  g_option_context_add_main_entries(context, entries, NULL);
+  g_option_context_set_ignore_unknown_options(context, TRUE);
+
+  if (!g_option_context_parse(context, &argc, &argv, &error)) {
+    g_printerr("Error parsing options: %s\n", error ? error->message : "unknown");
+    g_clear_error(&error);
+  }
+
+  if (cli_opts.verbose) {
+    g_setenv("G_MESSAGES_DEBUG", "all", TRUE);
+  }
+
   g_set_prgname ("us.k5n.GTimer");
   g_set_application_name ("GTimer");
+
+  const char *data_dir;
+  if (cli_opts.datadir) {
+    data_dir = cli_opts.datadir;
+  } else {
+    data_dir = g_get_user_data_dir();
+  }
+
+  char *gtimer_dir = g_build_filename(data_dir, "gtimer", NULL);
+  g_mkdir_with_parents(gtimer_dir, 0755);
+  char *db_path = g_build_filename(gtimer_dir, "gtimer.db", NULL);
+
+  gtimer_app.db_manager = gtimer_db_manager_new(db_path, &error);
+  if (!gtimer_app.db_manager) {
+    g_printerr("Failed to initialize database: %s\n", error->message);
+    return 1;
+  }
+
+  if (cli_opts.show_version || cli_opts.show_status || cli_opts.list_tasks ||
+      cli_opts.stop_timer || cli_opts.stop_all_timers || cli_opts.task_id > 0 ||
+      cli_opts.add_task || cli_opts.report_type || cli_opts.export_csv || cli_opts.import_csv) {
+    if (!cli_opts.quiet) {
+      g_print("GTimer %s\n", VERSION);
+    }
+    handle_cli_options(&cli_opts, gtimer_app.db_manager);
+    g_object_unref(gtimer_app.db_manager);
+    g_free(db_path);
+    g_free(gtimer_dir);
+    return 0;
+  }
 
   app = adw_application_new ("us.k5n.GTimer", G_APPLICATION_FLAGS_NONE);
 
@@ -522,19 +831,6 @@ main (int argc, char **argv)
   // Store gtimer_app for callbacks
   g_object_set_data (G_OBJECT (app), "gtimer-app", &gtimer_app);
 
-  // Initialize DB in XDG data dir
-  const char *data_dir = g_get_user_data_dir ();
-  char *gtimer_dir = g_build_filename (data_dir, "gtimer", NULL);
-  g_mkdir_with_parents (gtimer_dir, 0755);
-  char *db_path = g_build_filename (gtimer_dir, "gtimer.db", NULL);
-  g_print ("DEBUG: Using database at: %s\n", db_path);
-
-  gtimer_app.db_manager = gtimer_db_manager_new (db_path, &error);
-  if (!gtimer_app.db_manager) {
-    g_printerr ("Failed to initialize database: %s\n", error->message);
-    return 1;
-  }
-
   gtimer_app.task_list_model = gtimer_task_list_model_new (gtimer_app.db_manager);
   gtimer_task_list_model_refresh (gtimer_app.task_list_model);
 
@@ -544,9 +840,9 @@ main (int argc, char **argv)
   gtimer_app.idle_monitor = gtimer_idle_monitor_new ();
   if (gtimer_idle_monitor_is_available (gtimer_app.idle_monitor)) {
     gtimer_timer_service_set_idle_monitor (gtimer_app.timer_service, gtimer_app.idle_monitor);
-    g_print ("Idle monitoring enabled\n");
+    g_debug ("Idle monitoring enabled");
   } else {
-    g_print ("Idle monitoring not available (not running under GNOME/Mutter)\n");
+    g_debug ("Idle monitoring not available (not running under GNOME/Mutter)");
   }
 
   g_signal_connect (app, "activate", G_CALLBACK (activate), &gtimer_app);
@@ -585,7 +881,7 @@ main (int argc, char **argv)
   g_object_unref (gtimer_app.timer_service);
   g_object_unref (gtimer_app.task_list_model);
   g_clear_object (&gtimer_app.idle_monitor);
-  gtimer_db_manager_free (gtimer_app.db_manager);
+  g_object_unref (gtimer_app.db_manager);
   g_object_unref (app);
   g_free (db_path);
   g_free (gtimer_dir);

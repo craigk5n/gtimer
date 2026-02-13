@@ -29,7 +29,7 @@ test_model_refresh (void)
   g_object_unref (task);
 
   g_object_unref (model);
-  gtimer_db_manager_free (db_manager);
+  g_object_unref (db_manager);
 }
 
 int

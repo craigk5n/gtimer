@@ -14,6 +14,7 @@ GTimer is a lightweight, modern time tracking application for the GNOME desktop,
 - **Auto-save & Rollover**: Automatically saves data every minute and handles midnight transitions seamlessly.
 - **Flexible Reports**: Generate Plain Text or HTML reports for any time period (daily, weekly, monthly, yearly).
 - **Keyboard Friendly**: Full support for GNOME-compliant keyboard shortcuts.
+- **Command Line Interface**: Scriptable CLI for automation and integration with other tools.
 
 ## Building and Running
 
@@ -45,6 +46,79 @@ GSETTINGS_SCHEMA_DIR=data ./build/src/gtimer
 ```bash
 sudo meson install -C build
 ```
+
+## Command Line Usage
+
+GTimer supports command line options for scripting and automation:
+
+```bash
+# Show version
+gtimer --version
+
+# List all tasks
+gtimer --list-tasks
+
+# Show current timer status
+gtimer --status
+
+# Start timing a task (by ID from --list-tasks)
+gtimer --start 3
+
+# Stop current timer
+gtimer --stop
+
+# Stop all timers
+gtimer --stop-all
+
+# Add a new task
+gtimer --add-task "New Task"
+
+# Add task to a project (use project ID from list)
+gtimer --add-task "Task Name" --project 2
+
+# Generate a report
+gtimer --report daily
+gtimer --report weekly --report-file /tmp/report.txt
+
+# Export tasks to CSV
+gtimer --export-csv backup.csv
+
+# Use alternate database directory
+gtimer --datadir /path/to/data --list-tasks
+
+# Suppress non-essential output
+gtimer --quiet --status
+```
+
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+N` | New task |
+| `Ctrl+E` | Edit task |
+| `Alt+S` | Start/Stop selected task |
+| `Alt+T` | Stop all tasks |
+| `Ctrl+R` | Generate report |
+| `Ctrl+Q` | Quit |
+| `Ctrl+Shift+A` | Add annotation |
+| `Ctrl+Shift+H` | Hide task |
+| `Ctrl+Shift+U` | Unhide tasks |
+| `Ctrl+Delete` | Delete task |
+| `Ctrl+Shift+I/D` | Adjust time +/- 60 seconds |
+| `Ctrl+I/D` | Adjust time +/- 5 minutes |
+
+## Configuration
+
+GTimer stores configuration in GSettings under `us.k5n.GTimer`:
+
+- **auto-save**: Automatically save time entries every minute
+- **animate-running-tasks**: Animate running task indicators
+- **resume-on-startup**: Resume timing on application startup
+- **enable-idle-detection**: Detect idle time and pause timers
+- **idle-threshold**: Minutes of idle time before pausing
+- **midnight-offset**: Hour (0-23) to start new day
+
+Data is stored in SQLite at `$XDG_DATA_HOME/gtimer/gtimer.db` (typically `~/.local/share/gtimer/`).
 
 ## License
 

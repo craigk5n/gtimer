@@ -7,6 +7,7 @@ config.log
 config.status
 gtimer
 *.bak
+*~
 
 # Meson / Ninja
 build/
