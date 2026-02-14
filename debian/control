@@ -1,0 +1,38 @@
+Source: gtimer
+Section: utils
+Priority: optional
+Maintainer: Craig Knudsen <cknudsen@cknudsen.com>
+Build-Depends: debhelper-compat (= 13),
+               meson (>= 0.61.0),
+               ninja-build,
+               libgtk-4-dev (>= 4.6.0),
+               libadwaita-1-dev (>= 1.1.0),
+               libsqlite3-dev,
+               libx11-dev,
+               gettext
+Standards-Version: 4.6.0
+Homepage: http://www.k5n.us/gtimer.php
+Vcs-Browser: https://github.com/k5n/gtimer
+Vcs-Git: https://github.com/k5n/gtimer.git
+
+Package: gtimer
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         libgtk-4-1 (>= 4.6.0),
+         libadwaita-1-0 (>= 1.1.0),
+         libsqlite3-0
+Description: GTK 4 time tracking application
+ GTimer is a lightweight, modern time tracking application for the
+ GNOME desktop, built with GTK 4 and Libadwaita. It allows you to
+ track time spent on various tasks, organize them into projects,
+ and generate detailed reports.
+ .
+ Features:
+  * Daily-total model for robust time tracking
+  * Modern Libadwaita interface
+  * Real-time search and filtering
+  * Idle detection (Wayland and X11)
+  * Flexible reporting (Text and HTML)
+  * Keyboard shortcuts
+  * Command line interface

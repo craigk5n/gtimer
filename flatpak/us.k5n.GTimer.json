@@ -1,0 +1,29 @@
+{
+    "app-id": "us.k5n.GTimer",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "45",
+    "sdk": "org.gnome.Sdk",
+    "command": "gtimer",
+    "finish-args": [
+        "--share=ipc",
+        "--socket=fallback-x11",
+        "--socket=wayland",
+        "--device=dri",
+        "--filesystem=xdg-documents",
+        "--filesystem=xdg-download",
+        "--talk-name=org.freedesktop.Notifications"
+    ],
+    "modules": [
+        {
+            "name": "gtimer",
+            "buildsystem": "meson",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/k5n/gtimer.git",
+                    "tag": "v3.1.0"
+                }
+            ]
+        }
+    ]
+}

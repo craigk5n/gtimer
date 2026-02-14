@@ -1,0 +1,104 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  # Build on Ubuntu (baseline check)
+  build-ubuntu:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y meson ninja-build \
+          libgtk-4-dev libadwaita-1-dev libsqlite3-dev \
+          libx11-dev gettext appstream-util desktop-file-utils
+    
+    - name: Build
+      run: |
+        meson setup build --prefix=/usr
+        ninja -C build
+    
+    - name: Run tests
+      run: meson test -C build --verbose
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ubuntu-build
+        path: build/src/gtimer
+
+  # Build Flatpak package
+  flatpak:
+    runs-on: ubuntu-latest
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:freedesktop-23.08
+      options: --privileged
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build Flatpak
+      uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      with:
+        bundle: gtimer.flatpak
+        manifest-path: flatpak/us.k5n.GTimer.json
+        cache-key: flatpak-builder-${{ github.sha }}
+    
+    - name: Upload Flatpak
+      uses: actions/upload-artifact@v4
+      with:
+        name: flatpak-bundle
+        path: gtimer.flatpak
+
+  # Build Debian package
+  build-deb:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential debhelper meson \
+          libgtk-4-dev libadwaita-1-dev libsqlite3-dev libx11-dev \
+          gettext
+    
+    - name: Build Debian package
+      run: |
+        dpkg-buildpackage -us -uc -b
+        mkdir -p debian-package
+        mv ../*.deb debian-package/
+    
+    - name: Upload Debian package
+      uses: actions/upload-artifact@v4
+      with:
+        name: debian-package
+        path: debian-package/*.deb
+
+  # Create release with all packages
+  release:
+    needs: [build-ubuntu, flatpak, build-deb]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ubuntu-build/gtimer
+          flatpak-bundle/gtimer.flatpak
+          debian-package/*.deb
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,21 @@
+gtimer (3.1.0-1) unstable; urgency=medium
+
+  * New upstream release 3.1.0
+  * Added comprehensive command line interface
+  * Added JSON output support
+  * Added project management CLI commands
+  * Added annotation support
+  * Fixed various memory management issues
+  * Improved code quality and GObject integration
+
+ -- Craig Knudsen <cknudsen@cknudsen.com>  Thu, 13 Feb 2026 10:00:00 +0000
+
+gtimer (3.0.0-1) unstable; urgency=medium
+
+  * Initial GTK 4 / Libadwaita rewrite
+  * Modernized UI with Adwaita widgets
+  * Added idle detection
+  * Added HTML report generation
+  * Added keyboard shortcuts
+
+ -- Craig Knudsen <cknudsen@cknudsen.com>  Mon, 10 Feb 2026 12:00:00 +0000

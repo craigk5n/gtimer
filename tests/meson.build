@@ -52,9 +52,19 @@ test_idle_init_exe = executable('test-idle-init',
   dependencies: [core_dep, gtk_dep]
 )
 
+test_cli_sources = files(
+  'test-cli.c'
+)
+
+test_cli_exe = executable('test-cli',
+  test_cli_sources,
+  dependencies: [core_dep, gtk_dep]
+)
+
 test('basic', test_exe)
 test('db', test_db_exe)
 test('model', test_model_exe)
 test('utils', test_utils_exe)
 test('service', test_service_exe)
 test('idle-init', test_idle_init_exe)
+test('cli', test_cli_exe)
