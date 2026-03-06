@@ -28,6 +28,7 @@ struct _GTimerWindow
   GtkSearchEntry *search_entry;
   GtkStringFilter *string_filter;
 
+  GSettings *settings;
   gint64 time_buffer;
   guint tick_timeout_id;
 };
@@ -49,12 +50,10 @@ show_toast (GTimerWindow *self, const char *format, ...)
 static void
 save_window_state (GTimerWindow *self)
 {
-  GSettings *settings = g_settings_new ("us.k5n.GTimer");
   int width, height;
   gtk_window_get_default_size (GTK_WINDOW (self), &width, &height);
-  g_settings_set_int (settings, "window-width", width);
-  g_settings_set_int (settings, "window-height", height);
-  g_object_unref (settings);
+  g_settings_set_int (self->settings, "window-width", width);
+  g_settings_set_int (self->settings, "window-height", height);
 }
 
 static void
@@ -991,7 +990,7 @@ static void on_task_activated (GtkColumnView *column_view, guint position, gpoin
   g_object_unref (task); 
 }
 
-static void gtimer_window_dispose (GObject *object) { GTimerWindow *self = GTIMER_WINDOW (object); if (self->tick_timeout_id) { g_source_remove (self->tick_timeout_id); self->tick_timeout_id = 0; } G_OBJECT_CLASS (gtimer_window_parent_class)->dispose (object); }
+static void gtimer_window_dispose (GObject *object) { GTimerWindow *self = GTIMER_WINDOW (object); if (self->tick_timeout_id) { g_source_remove (self->tick_timeout_id); self->tick_timeout_id = 0; } g_clear_object (&self->settings); G_OBJECT_CLASS (gtimer_window_parent_class)->dispose (object); }
 static void gtimer_window_class_init (GTimerWindowClass *klass) { GObjectClass *object_class = G_OBJECT_CLASS (klass); object_class->dispose = gtimer_window_dispose; }
 
 static void
@@ -1242,11 +1241,10 @@ gtimer_window_init (GTimerWindow *self)
   self->tick_timeout_id = g_timeout_add_seconds (1, on_tick, self);
   gtk_window_set_icon_name (GTK_WINDOW (self), "us.k5n.GTimer");
 
-  GSettings *settings = g_settings_new ("us.k5n.GTimer");
-  int width = g_settings_get_int (settings, "window-width");
-  int height = g_settings_get_int (settings, "window-height");
+  self->settings = g_settings_new ("us.k5n.GTimer");
+  int width = g_settings_get_int (self->settings, "window-width");
+  int height = g_settings_get_int (self->settings, "window-height");
   gtk_window_set_default_size (GTK_WINDOW (self), width, height);
-  g_object_unref (settings);
 
   g_signal_connect (self, "notify::default-width", G_CALLBACK (on_window_size_notify), NULL);
   g_signal_connect (self, "notify::default-height", G_CALLBACK (on_window_size_notify), NULL);
@@ -1283,20 +1281,17 @@ gtimer_window_set_task_list_model (GTimerWindow *self, GTimerTaskListModel *mode
   update_window_title (self);
 
   // Resume on Startup
-  GSettings *settings = g_settings_new ("us.k5n.GTimer");
-  if (g_settings_get_boolean (settings, "resume-on-startup")) {
+  if (g_settings_get_boolean (self->settings, "resume-on-startup")) {
     GListModel *base_model = gtimer_task_list_model_get_model (model);
     guint n = g_list_model_get_n_items (base_model);
     for (guint i = 0; i < n; i++) {
       GTimerTask *task = GTIMER_TASK (g_list_model_get_item (base_model, i));
       if (gtimer_task_is_timing (task)) {
-        // If it's already marked as timing in DB, we should start the service for it
         gtimer_timer_service_start (self->timer_service, task);
       }
       g_object_unref (task);
     }
   }
-  g_object_unref (settings);
 }
 
 static void
@@ -1341,9 +1336,7 @@ on_timer_service_resumed (GTimerTimerService *service, gpointer user_data)
 {
   (void)service;
   GTimerWindow *self = GTIMER_WINDOW (user_data);
-  GSettings *settings = g_settings_new ("us.k5n.GTimer");
-  int threshold = g_settings_get_int (settings, "idle-threshold");
-  g_object_unref (settings);
+  int threshold = g_settings_get_int (self->settings, "idle-threshold");
 
   // User returned from idle!
   GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW (self),
