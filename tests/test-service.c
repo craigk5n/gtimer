@@ -25,6 +25,10 @@ test_service_tick (void)
 
   db_manager = gtimer_db_manager_new (":memory:", NULL);
   service = gtimer_timer_service_new (db_manager);
+
+  sqlite3 *db = gtimer_db_manager_get_db (db_manager);
+  sqlite3_exec (db, "INSERT INTO tasks (id, name) VALUES (1, 'Test Task');", NULL, NULL, NULL);
+
   task = gtimer_task_new (1, "Test Task", -1, NULL, 0, 0, FALSE, FALSE, 0, 0);
   loop = g_main_loop_new (NULL, FALSE);
 
@@ -82,6 +86,46 @@ test_service_save (void)
   g_object_unref (db_manager);
 }
 
+static void
+test_service_task_switching (void)
+{
+  GTimerDBManager *db_manager;
+  GTimerTimerService *service;
+  GTimerTask *task1, *task2;
+
+  db_manager = gtimer_db_manager_new (":memory:", NULL);
+  service = gtimer_timer_service_new (db_manager);
+  
+  sqlite3 *db = gtimer_db_manager_get_db (db_manager);
+  sqlite3_exec (db, "INSERT INTO tasks (id, name) VALUES (1, 'Task A');", NULL, NULL, NULL);
+  sqlite3_exec (db, "INSERT INTO tasks (id, name) VALUES (2, 'Task B');", NULL, NULL, NULL);
+  
+  task1 = gtimer_task_new (1, "Task A", -1, NULL, 0, 0, FALSE, FALSE, 0, 0);
+  task2 = gtimer_task_new (2, "Task B", -1, NULL, 0, 0, FALSE, FALSE, 0, 0);
+  
+  /* Start Task A */
+  gtimer_timer_service_start (service, task1);
+  g_assert_true (gtimer_task_is_timing (task1));
+  g_assert_nonnull (gtimer_timer_service_get_active_task (service));
+  g_assert_cmpint (gtimer_task_get_id (gtimer_timer_service_get_active_task (service)), ==, 1);
+  
+  /* Start Task B - should stop Task A */
+  gtimer_timer_service_start (service, task2);
+  g_assert_true (gtimer_task_is_timing (task2));
+  g_assert_false (gtimer_task_is_timing (task1));
+  g_assert_cmpint (gtimer_task_get_id (gtimer_timer_service_get_active_task (service)), ==, 2);
+  
+  /* Stop Task B */
+  gtimer_timer_service_stop (service);
+  g_assert_false (gtimer_task_is_timing (task2));
+  g_assert_null (gtimer_timer_service_get_active_task (service));
+  
+  g_object_unref (task1);
+  g_object_unref (task2);
+  g_object_unref (service);
+  g_object_unref (db_manager);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -89,6 +133,7 @@ main (int argc, char **argv)
 
   g_test_add_func ("/service/tick", test_service_tick);
   g_test_add_func ("/service/save", test_service_save);
+  g_test_add_func ("/service/switching", test_service_task_switching);
 
   return g_test_run ();
 }

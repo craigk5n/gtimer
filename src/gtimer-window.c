@@ -1303,7 +1303,7 @@ on_timer_service_resumed (GTimerTimerService *service, gpointer user_data)
 {
   (void)service;
   GTimerWindow *self = GTIMER_WINDOW (user_data);
-  GSettings *settings = g_settings_new ("org.craigknudsen.GTimer");
+  GSettings *settings = g_settings_new ("us.k5n.GTimer");
   int threshold = g_settings_get_int (settings, "idle-threshold");
   g_object_unref (settings);
 

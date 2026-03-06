@@ -87,6 +87,7 @@ static void gtimer_timer_service_finalize ( GObject * object )
   if ( self->auto_save_id )
     g_source_remove ( self->auto_save_id );
   g_clear_object ( &self->idle_monitor );
+  g_clear_object ( &self->db_manager );
   G_OBJECT_CLASS ( gtimer_timer_service_parent_class )->finalize ( object );
 }
 
@@ -138,7 +139,7 @@ on_idle_monitor_resume ( GTimerIdleMonitor * monitor, gpointer user_data )
 GTimerTimerService *gtimer_timer_service_new ( GTimerDBManager * db_manager )
 {
   GTimerTimerService *self = g_object_new ( GTIMER_TYPE_TIMER_SERVICE, NULL );
-  self->db_manager = db_manager;
+  self->db_manager = g_object_ref ( db_manager );
   return self;
 }
 

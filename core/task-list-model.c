@@ -14,6 +14,7 @@ G_DEFINE_TYPE ( GTimerTaskListModel, gtimer_task_list_model, G_TYPE_OBJECT )
 static void gtimer_task_list_model_finalize ( GObject * object )
 {
   GTimerTaskListModel *self = GTIMER_TASK_LIST_MODEL ( object );
+  g_clear_object ( &self->db_manager );
   g_object_unref ( self->store );
   G_OBJECT_CLASS ( gtimer_task_list_model_parent_class )->finalize ( object );
 }
@@ -35,7 +36,7 @@ GTimerTaskListModel *gtimer_task_list_model_new ( GTimerDBManager *
 {
   GTimerTaskListModel *self =
       g_object_new ( GTIMER_TYPE_TASK_LIST_MODEL, NULL );
-  self->db_manager = db_manager;
+  self->db_manager = g_object_ref ( db_manager );
   return self;
 }
 

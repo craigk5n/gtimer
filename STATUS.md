@@ -115,6 +115,49 @@ Before publishing to Flathub or distributions, the following issues must be reso
 - [x] Verify Ubuntu 22.04 compatibility (Libadwaita 1.1.7 minimum) - Tested: GTK 4.6.9, Libadwaita 1.1.7, all tests pass
 - [x] Verify Ubuntu 24.04 compatibility (Libadwaita 1.5.0+) - Verified: Ubuntu 24.04 ships Libadwaita 1.5.0+
 
+## Code Review Findings (2026-03-05)
+
+Prioritized list of issues found during comprehensive code review.
+
+### P0: Bugs
+
+- [x] **GSettings schema ID mismatch** — `gtimer-window.c:1306` uses `"org.craigknudsen.GTimer"` instead of `"us.k5n.GTimer"`. Will cause runtime failure.
+
+### P1: Correctness / Data Integrity
+
+- [x] **Unchecked `sqlite3_step()` return values** — `db-manager.c:519, 552, 570, 638, 709`. Write operations silently fail. All mutations should check the return code.
+- [x] **`SQLITE_STATIC` on stack variable** — `db-manager.c:437` (`get_daily_report`). Uses `SQLITE_STATIC` for local `date_str`; should be `SQLITE_TRANSIENT`.
+- [x] **Thread-unsafe `localtime()` calls** — `db-manager.c:22, 596-597, 608`. Returns pointer to static buffer. Replace with `localtime_r()`.
+- [x] **Unmanaged `db_manager` lifetime** — `timer-service.c:141` and `task-list-model.c:38` store raw pointer without `g_object_ref()`. Service can outlive its db_manager.
+
+### P2: Test Coverage Gaps
+
+Current: 35 tests across 9 files. Key gaps:
+
+- [ ] **`task-object` / `project-object`** — 0 unit tests for any getter/setter/property notification
+- [ ] **`update_task` / `update_project`** — core edit operations completely untested
+- [ ] **`report-generator`** — only text daily format tested via CLI; weekly/monthly/yearly and HTML never tested
+- [ ] **`timer-service` state machine** — `pause()`, `resume()`, `remove_time()`, `get_elapsed()` untested
+- [ ] **`db-manager` query functions** — `get_hidden_tasks`, `get_task_total_time`, `get_task_today_time`, `start_task_timing`, `is_task_timing` untested
+- [ ] **Concurrent task timing** — multiple simultaneous tasks is a supported feature with zero tests
+- [ ] **test-db-manager.c isolation** — shared static DB across 7 tests creates order dependencies; needs per-test setup/teardown
+
+### P3: Code Quality
+
+- [ ] **Decompose `handle_cli_options()`** — `main.c`, 600+ lines. Split into per-operation handler functions.
+- [ ] **Decompose `gtimer_window_init()`** — `gtimer-window.c`, 217 lines. Extract `setup_actions()`, `setup_header_bar()`, `setup_menus()`, `setup_column_view()`, etc.
+- [ ] **Cache GSettings on window instance** — `save_window_state()`, `gtimer_window_init()`, `on_timer_service_resumed()` each create a new GSettings object. Store once on self.
+- [ ] **Replace `g_object_set_data()` with typed structs** — extensive string-keyed data on widgets (e.g., `"project-id"`) has no type safety.
+- [ ] **Idle monitor: static `handler_id`** — `idle-monitor.c:162`. Shared across all instances; only one idle monitor can work correctly.
+- [ ] **Idle monitor: cache X11 display** — `idle-monitor.c:95-121`. Opens/closes display every 5-second tick. Should cache connection.
+
+### P4: Accessibility
+
+- [ ] **Add accessible labels/descriptions** — no `gtk_accessible_set_description()` on toolbar buttons or dialog controls. Screen readers won't work well.
+- [ ] **Associate labels with controls in dialogs** — preferences switches and spin buttons lack programmatic label associations.
+
+---
+
 ## Current State
 
 The project has achieved all primary objectives defined in the PRD and UI specification. The application is a modern, stable, and feature-complete successor to the legacy GTimer.

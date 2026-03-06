@@ -1,0 +1,260 @@
+#include "../core/db-manager.h"
+#include "../core/task-object.h"
+#include "../core/project-object.h"
+#include <glib.h>
+#include <glib/gstdio.h>
+#include <stdio.h>
+#include <sqlite3.h>
+#include <time.h>
+
+static GTimerDBManager *db = NULL;
+
+static void
+test_cli_add_project(void)
+{
+  GError *error = NULL;
+  int count_before = g_list_length(gtimer_db_manager_get_projects(db));
+  
+  gtimer_db_manager_create_project(db, "CLI Test Project", &error);
+  g_assert_no_error(error);
+  
+  GList *projects = gtimer_db_manager_get_projects(db);
+  int count_after = g_list_length(projects);
+  
+  g_assert_cmpint(count_after, ==, count_before + 1);
+  
+  g_list_free_full(projects, g_object_unref);
+}
+
+static void
+test_cli_add_task(void)
+{
+  GError *error = NULL;
+  int count_before = g_list_length(gtimer_db_manager_get_all_tasks(db));
+  
+  gtimer_db_manager_create_task(db, "CLI Test Task", -1, &error);
+  g_assert_no_error(error);
+  
+  GList *tasks = gtimer_db_manager_get_all_tasks(db);
+  int count_after = g_list_length(tasks);
+  
+  g_assert_cmpint(count_after, ==, count_before + 1);
+  
+  g_list_free_full(tasks, g_object_unref);
+}
+
+static void
+test_cli_hide_unhide_task(void)
+{
+  GError *error = NULL;
+  
+  /* Create a task first */
+  gtimer_db_manager_create_task(db, "Hide Test Task", -1, &error);
+  g_assert_no_error(error);
+  
+  GList *tasks = gtimer_db_manager_get_all_tasks(db);
+  GTimerTask *task = GTIMER_TASK(tasks->data);
+  int task_id = gtimer_task_get_id(task);
+  g_list_free_full(tasks, g_object_unref);
+  
+  /* Hide it */
+  gtimer_db_manager_hide_task(db, task_id, TRUE, &error);
+  g_assert_no_error(error);
+  
+  tasks = gtimer_db_manager_get_all_tasks(db);
+  gboolean found = FALSE;
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *t = GTIMER_TASK(l->data);
+    if (gtimer_task_get_id(t) == task_id) {
+      found = TRUE;
+      g_assert_true(gtimer_task_is_hidden(t));
+    }
+    g_object_unref(t);
+  }
+  g_list_free(tasks);
+  g_assert_true(found);
+  
+  /* Unhide it */
+  gtimer_db_manager_hide_task(db, task_id, FALSE, &error);
+  g_assert_no_error(error);
+}
+
+static void
+test_cli_annotations(void)
+{
+  GError *error = NULL;
+  
+  /* Create a task */
+  gtimer_db_manager_create_task(db, "Annotation Test Task", -1, &error);
+  g_assert_no_error(error);
+  
+  GList *tasks = gtimer_db_manager_get_all_tasks(db);
+  GTimerTask *task = GTIMER_TASK(tasks->data);
+  int task_id = gtimer_task_get_id(task);
+  g_list_free_full(tasks, g_object_unref);
+  
+  /* Add annotation */
+  gtimer_db_manager_add_annotation(db, task_id, "Test annotation");
+  
+  /* Get annotations */
+  GList *annotations = gtimer_db_manager_get_annotations(db, task_id);
+  g_assert_nonnull(annotations);
+  g_assert_cmpint(g_list_length(annotations), >, 0);
+  
+  g_list_free_full(annotations, (GDestroyNotify)gtimer_annotation_free);
+}
+
+static void
+test_db_midnight_rollover(void)
+{
+  GError *error = NULL;
+  gtimer_db_manager_create_task(db, "Rollover Task", -1, &error);
+  g_assert_no_error(error);
+  
+  /* Manually set is_timing and last_start_time to 11:30 PM yesterday */
+  time_t now = time(NULL);
+  struct tm tm;
+  localtime_r(&now, &tm);
+  tm.tm_mday--;
+  tm.tm_hour = 23;
+  tm.tm_min = 30;
+  tm.tm_sec = 0;
+  time_t yesterday_night = mktime(&tm);
+  
+  sqlite3 *sql_db = gtimer_db_manager_get_db(db);
+  char *sql = g_strdup_printf("UPDATE tasks SET is_timing = 1, last_start_time = %ld WHERE id = 1;", (long)yesterday_night);
+  sqlite3_exec(sql_db, sql, NULL, NULL, NULL);
+  g_free(sql);
+  
+  /* Stop timing now. It should split 30 mins to yesterday and ~N mins to today */
+  gtimer_db_manager_stop_task_timing(db, 1);
+  
+  /* Verify daily_time entries */
+  sqlite3_stmt *stmt;
+  sqlite3_prepare_v2(sql_db, "SELECT date, seconds FROM daily_time WHERE task_id = 1 ORDER BY date ASC;", -1, &stmt, NULL);
+  
+  /* Yesterday's entry: 1800 seconds */
+  g_assert_cmpint(sqlite3_step(stmt), ==, SQLITE_ROW);
+  g_assert_cmpint(sqlite3_column_int(stmt, 1), ==, 1800);
+  
+  /* Today's entry: > 0 seconds */
+  g_assert_cmpint(sqlite3_step(stmt), ==, SQLITE_ROW);
+  g_assert_cmpint(sqlite3_column_int(stmt, 1), >, 0);
+  
+  sqlite3_finalize(stmt);
+}
+
+static void
+test_db_project_deletion_fk(void)
+{
+  GError *error = NULL;
+  
+  /* Create project and task */
+  gtimer_db_manager_create_project(db, "FK Project", &error);
+  g_assert_no_error(error);
+  
+  /* Get project ID (should be 2, as 1 was created in previous test) */
+  GList *projects = gtimer_db_manager_get_projects(db);
+  int project_id = 0;
+  for (GList *l = projects; l != NULL; l = l->next) {
+    GTimerProject *p = l->data;
+    if (g_strcmp0(gtimer_project_get_name(p), "FK Project") == 0) {
+      project_id = gtimer_project_get_id(p);
+    }
+    g_object_unref(p);
+  }
+  g_list_free(projects);
+  g_assert_cmpint(project_id, >, 0);
+  
+  gtimer_db_manager_create_task(db, "FK Task", project_id, &error);
+  g_assert_no_error(error);
+  
+  /* Get task ID */
+  GList *tasks = gtimer_db_manager_get_all_tasks(db);
+  int task_id = 0;
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *t = l->data;
+    if (g_strcmp0(gtimer_task_get_name(t), "FK Task") == 0) {
+      task_id = gtimer_task_get_id(t);
+      g_assert_cmpint(gtimer_task_get_project_id(t), ==, project_id);
+    }
+    g_object_unref(t);
+  }
+  g_list_free(tasks);
+  g_assert_cmpint(task_id, >, 0);
+  
+  /* Delete project - requires manual SQL as delete_project isn't exposed in public API yet, 
+     but we want to test the DB schema ON DELETE behavior */
+  sqlite3 *sql_db = gtimer_db_manager_get_db(db);
+  char *sql = g_strdup_printf("DELETE FROM projects WHERE id = %d;", project_id);
+  sqlite3_exec(sql_db, sql, NULL, NULL, NULL);
+  g_free(sql);
+  
+  /* Verify task's project_id is now NULL (or -1 in our GTimerTask representation) */
+  tasks = gtimer_db_manager_get_all_tasks(db);
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *t = l->data;
+    if (gtimer_task_get_id(t) == task_id) {
+      /* In GTimerTask, a NULL project in DB maps to project_id -1 or 0? 
+         Let's check task-object.c or just check project_name is NULL */
+      g_assert_null(gtimer_task_get_project_name(t));
+    }
+    g_object_unref(t);
+  }
+  g_list_free(tasks);
+}
+
+static void
+test_db_migration_schema(void)
+{
+  /* Create a raw SQLite DB with an old schema */
+  char *db_path = g_build_filename(g_get_tmp_dir(), "gtimer-migration-test.db", NULL);
+  g_remove(db_path);
+  
+  sqlite3 *raw_db;
+  sqlite3_open(db_path, &raw_db);
+  sqlite3_exec(raw_db, "CREATE TABLE tasks (id INTEGER PRIMARY KEY, name TEXT);", NULL, NULL, NULL);
+  sqlite3_close(raw_db);
+  
+  /* Open with DB Manager - should trigger migration */
+  GError *error = NULL;
+  GTimerDBManager *mig_db = gtimer_db_manager_new(db_path, &error);
+  g_assert_no_error(error);
+  g_assert_nonnull(mig_db);
+  
+  /* Verify new columns exist by trying to use them */
+  sqlite3 *sql_db = gtimer_db_manager_get_db(mig_db);
+  sqlite3_stmt *stmt;
+  int rc = sqlite3_prepare_v2(sql_db, "SELECT is_hidden, is_timing, last_start_time FROM tasks;", -1, &stmt, NULL);
+  g_assert_cmpint(rc, ==, SQLITE_OK);
+  sqlite3_finalize(stmt);
+  
+  g_object_unref(mig_db);
+  g_remove(db_path);
+  g_free(db_path);
+}
+
+int
+main(int argc, char **argv)
+{
+  g_test_init(&argc, &argv, NULL);
+  
+  GError *error = NULL;
+  db = gtimer_db_manager_new(":memory:", &error);
+  g_assert_no_error(error);
+  g_assert_nonnull(db);
+  
+  g_test_add_func("/cli/add_project", test_cli_add_project);
+  g_test_add_func("/cli/add_task", test_cli_add_task);
+  g_test_add_func("/cli/hide_unhide_task", test_cli_hide_unhide_task);
+  g_test_add_func("/cli/annotations", test_cli_annotations);
+  g_test_add_func("/db/midnight_rollover", test_db_midnight_rollover);
+  g_test_add_func("/db/project_deletion_fk", test_db_project_deletion_fk);
+  g_test_add_func("/db/migration_schema", test_db_migration_schema);
+  
+  int result = g_test_run();
+  
+  g_object_unref(db);
+  
+  return result;
+}

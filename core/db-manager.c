@@ -19,9 +19,10 @@ GQuark gtimer_db_error_quark(void)
 static char *get_today_date_string(void)
 {
 	time_t t = time(NULL);
-	struct tm *tm = localtime(&t);
+	struct tm tm;
+	localtime_r(&t, &tm);
 	char buf[11];
-	strftime(buf, sizeof(buf), "%Y-%m-%d", tm);
+	strftime(buf, sizeof(buf), "%Y-%m-%d", &tm);
 	return g_strdup(buf);
 }
 
@@ -434,7 +435,7 @@ GList *gtimer_db_manager_get_daily_report(GTimerDBManager *self, int year,
 	if (rc != SQLITE_OK)
 		return NULL;
 
-	sqlite3_bind_text(stmt, 1, date_str, -1, SQLITE_STATIC);
+	sqlite3_bind_text(stmt, 1, date_str, -1, SQLITE_TRANSIENT);
 
 	while (sqlite3_step(stmt) == SQLITE_ROW) {
 		GTimerReportRow *row = g_new0(GTimerReportRow, 1);
@@ -516,7 +517,9 @@ void gtimer_db_manager_add_task_time_for_date(GTimerDBManager *self,
 		sqlite3_bind_int(stmt, 1, task_id);
 		sqlite3_bind_text(stmt, 2, date_str, -1, SQLITE_TRANSIENT);
 		sqlite3_bind_int64(stmt, 3, seconds);
-		sqlite3_step(stmt);
+		rc = sqlite3_step(stmt);
+		if (rc != SQLITE_DONE)
+			g_warning("Failed to add task time: %s", sqlite3_errmsg(self->db));
 		sqlite3_finalize(stmt);
 	}
 }
@@ -549,7 +552,9 @@ void gtimer_db_manager_set_task_today_time(GTimerDBManager *self,
 		sqlite3_bind_int(stmt, 1, task_id);
 		sqlite3_bind_text(stmt, 2, date_str, -1, SQLITE_TRANSIENT);
 		sqlite3_bind_int64(stmt, 3, seconds);
-		sqlite3_step(stmt);
+		rc = sqlite3_step(stmt);
+		if (rc != SQLITE_DONE)
+			g_warning("Failed to set task today time: %s", sqlite3_errmsg(self->db));
 		sqlite3_finalize(stmt);
 	}
 	g_free(date_str);
@@ -567,7 +572,9 @@ void gtimer_db_manager_start_task_timing(GTimerDBManager *self, int task_id)
 	rc = sqlite3_prepare_v2(self->db, sql, -1, &stmt, NULL);
 	if (rc == SQLITE_OK) {
 		sqlite3_bind_int(stmt, 1, task_id);
-		sqlite3_step(stmt);
+		rc = sqlite3_step(stmt);
+		if (rc != SQLITE_DONE)
+			g_warning("Failed to start task timing: %s", sqlite3_errmsg(self->db));
 		sqlite3_finalize(stmt);
 	}
 }
@@ -593,8 +600,9 @@ void gtimer_db_manager_stop_task_timing(GTimerDBManager *self, int task_id)
 	if (last_start > 0) {
 		gint64 now = time(NULL);
 
-		struct tm start_tm = *localtime((time_t *)&last_start);
-		struct tm now_tm = *localtime((time_t *)&now);
+		struct tm start_tm, now_tm;
+		localtime_r((time_t *)&last_start, &start_tm);
+		localtime_r((time_t *)&now, &now_tm);
 
 		if (start_tm.tm_mday == now_tm.tm_mday &&
 		    start_tm.tm_mon == now_tm.tm_mon &&
@@ -604,8 +612,8 @@ void gtimer_db_manager_stop_task_timing(GTimerDBManager *self, int task_id)
 		} else {
 			gint64 current = last_start;
 			while (TRUE) {
-				struct tm cur_tm =
-					*localtime((time_t *)&current);
+				struct tm cur_tm;
+				localtime_r((time_t *)&current, &cur_tm);
 				char date_str[11];
 				strftime(date_str, sizeof(date_str),
 					 "%Y-%m-%d", &cur_tm);
@@ -635,7 +643,9 @@ void gtimer_db_manager_stop_task_timing(GTimerDBManager *self, int task_id)
 	if (sqlite3_prepare_v2(self->db, update_sql, -1, &stmt, NULL) ==
 	    SQLITE_OK) {
 		sqlite3_bind_int(stmt, 1, task_id);
-		sqlite3_step(stmt);
+		int rc = sqlite3_step(stmt);
+		if (rc != SQLITE_DONE)
+			g_warning("Failed to stop task timing: %s", sqlite3_errmsg(self->db));
 		sqlite3_finalize(stmt);
 	}
 }
@@ -706,7 +716,9 @@ void gtimer_db_manager_add_annotation(GTimerDBManager *self, int task_id,
 	if (rc == SQLITE_OK) {
 		sqlite3_bind_int(stmt, 1, task_id);
 		sqlite3_bind_text(stmt, 2, text, -1, SQLITE_TRANSIENT);
-		sqlite3_step(stmt);
+		rc = sqlite3_step(stmt);
+		if (rc != SQLITE_DONE)
+			g_warning("Failed to add annotation: %s", sqlite3_errmsg(self->db));
 		sqlite3_finalize(stmt);
 	}
 }
