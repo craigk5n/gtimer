@@ -139,7 +139,7 @@ Current: 35 tests across 9 files. Key gaps:
 - [x] **`report-generator`** — only text daily format tested via CLI; weekly/monthly/yearly and HTML never tested
 - [x] **`timer-service` state machine** — `pause()`, `resume()`, `remove_time()`, `get_elapsed()` untested
 - [x] **`db-manager` query functions** — `get_hidden_tasks`, `get_task_total_time`, `get_task_today_time`, `start_task_timing`, `is_task_timing` untested
-- [ ] **Concurrent task timing** — multiple simultaneous tasks is a supported feature with zero tests
+- [x] **Concurrent task timing** — multiple simultaneous tasks is a supported feature with zero tests
 - [ ] **test-db-manager.c isolation** — shared static DB across 7 tests creates order dependencies; needs per-test setup/teardown
 
 ### P3: Code Quality

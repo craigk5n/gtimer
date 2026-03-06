@@ -477,6 +477,69 @@ test_db_start_stop_timing(void)
   g_assert_false(gtimer_db_manager_is_task_timing(db, 99999));
 }
 
+static void
+test_db_concurrent_timing(void)
+{
+  /* Use a fresh in-memory DB to avoid interference from shared state */
+  GError *error = NULL;
+  GTimerDBManager *cdb = gtimer_db_manager_new(":memory:", &error);
+  g_assert_no_error(error);
+
+  /* Create two tasks */
+  gtimer_db_manager_create_task(cdb, "Task A", -1, &error);
+  g_assert_no_error(error);
+  gtimer_db_manager_create_task(cdb, "Task B", -1, &error);
+  g_assert_no_error(error);
+
+  GList *tasks = gtimer_db_manager_get_all_tasks(cdb);
+  int id_a = 0, id_b = 0;
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *t = l->data;
+    if (g_strcmp0(gtimer_task_get_name(t), "Task A") == 0)
+      id_a = gtimer_task_get_id(t);
+    else if (g_strcmp0(gtimer_task_get_name(t), "Task B") == 0)
+      id_b = gtimer_task_get_id(t);
+  }
+  g_list_free_full(tasks, g_object_unref);
+  g_assert_cmpint(id_a, >, 0);
+  g_assert_cmpint(id_b, >, 0);
+
+  /* Start both tasks simultaneously */
+  gtimer_db_manager_start_task_timing(cdb, id_a);
+  gtimer_db_manager_start_task_timing(cdb, id_b);
+
+  g_assert_true(gtimer_db_manager_is_task_timing(cdb, id_a));
+  g_assert_true(gtimer_db_manager_is_task_timing(cdb, id_b));
+
+  /* Manually add time to simulate elapsed duration (avoid sleeps) */
+  gtimer_db_manager_add_task_time(cdb, id_a, 600);
+  gtimer_db_manager_add_task_time(cdb, id_b, 300);
+
+  /* Stop task A - should not affect task B */
+  gtimer_db_manager_stop_task_timing(cdb, id_a);
+  g_assert_false(gtimer_db_manager_is_task_timing(cdb, id_a));
+  g_assert_true(gtimer_db_manager_is_task_timing(cdb, id_b));
+
+  /* Add more time to B while A is stopped */
+  gtimer_db_manager_add_task_time(cdb, id_b, 200);
+
+  /* Stop task B */
+  gtimer_db_manager_stop_task_timing(cdb, id_b);
+  g_assert_false(gtimer_db_manager_is_task_timing(cdb, id_b));
+
+  /* Verify independent time tracking */
+  gint64 total_a = gtimer_db_manager_get_task_total_time(cdb, id_a);
+  gint64 total_b = gtimer_db_manager_get_task_total_time(cdb, id_b);
+
+  /* Task A: 600s from manual add (stop_task_timing adds 0 because
+     last_start_time is set by strftime('%s','now') and stop is immediate) */
+  g_assert_cmpint(total_a, >=, 600);
+  /* Task B: 300 + 200 = 500s minimum */
+  g_assert_cmpint(total_b, >=, 500);
+
+  g_object_unref(cdb);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -499,7 +562,8 @@ main(int argc, char **argv)
   g_test_add_func("/db/get_hidden_tasks", test_db_get_hidden_tasks);
   g_test_add_func("/db/task_time_queries", test_db_task_time_queries);
   g_test_add_func("/db/start_stop_timing", test_db_start_stop_timing);
-  
+  g_test_add_func("/db/concurrent_timing", test_db_concurrent_timing);
+
   int result = g_test_run();
   
   g_object_unref(db);
