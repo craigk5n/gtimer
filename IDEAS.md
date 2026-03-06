@@ -110,10 +110,11 @@ Add a text entry (Ctrl+Space or similar) that accepts "task@project" format for 
 
 ### Priority 2: Medium Value, Lower Effort
 
-**2.1 JSON Export**
+**2.1 JSON Export** -- DONE
 Add JSON as an export format alongside CSV. Useful for scripting and integration.
 - *Why*: Standard interchange format. Timewarrior and Watson both support it.
 - *Effort*: Low. Serialize existing data structures.
+- *Implemented*: `--export-json FILE` for full data export (projects, tasks, annotations); `--json` flag now works with `--summary`, `--total-time`, `--active-time`; proper JSON string escaping across all JSON output.
 
 **2.2 Tracking Reminders**
 Optional notification if no task is being timed for a configurable duration (e.g., 15 minutes). Preference to enable/disable.

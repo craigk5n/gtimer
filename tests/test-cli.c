@@ -412,11 +412,98 @@ test_cli_negative_cases (void)
   g_free (db_path);
 }
 
+static void
+test_cli_export_json (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-json-export.db", NULL);
+  char *json_path = g_build_filename (g_get_tmp_dir (), "gtimer-export.json", NULL);
+  g_remove (db_path);
+  g_remove (json_path);
+
+  /* Add project and task */
+  char *args = g_strdup_printf ("--database %s --add-project 'JSON Project'", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  args = g_strdup_printf ("--database %s --add-task 'JSON Export Task' --project 1", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  /* Add annotation */
+  args = g_strdup_printf ("--database %s --annotate 'A test note' --annotate-task 1", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  /* Export to JSON */
+  args = g_strdup_printf ("--database %s --export-json %s", db_path, json_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_free (output);
+
+  /* Verify JSON file */
+  g_assert_true (g_file_test (json_path, G_FILE_TEST_EXISTS));
+  char *json_content = NULL;
+  g_file_get_contents (json_path, &json_content, NULL, NULL);
+  g_assert_nonnull (json_content);
+  g_assert_nonnull (strstr (json_content, "\"projects\""));
+  g_assert_nonnull (strstr (json_content, "\"tasks\""));
+  g_assert_nonnull (strstr (json_content, "JSON Project"));
+  g_assert_nonnull (strstr (json_content, "JSON Export Task"));
+  g_assert_nonnull (strstr (json_content, "\"annotations\""));
+  g_assert_nonnull (strstr (json_content, "A test note"));
+  g_assert_nonnull (strstr (json_content, "\"total_time\""));
+  g_assert_nonnull (strstr (json_content, "\"is_timing\""));
+  g_free (json_content);
+
+  g_remove (db_path);
+  g_remove (json_path);
+  g_free (db_path);
+  g_free (json_path);
+}
+
+static void
+test_cli_summary_json (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-summary-json.db", NULL);
+  g_remove (db_path);
+
+  /* Add task */
+  char *args = g_strdup_printf ("--database %s --add-task 'Summary Task'", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  /* Summary in JSON */
+  args = g_strdup_printf ("--database %s --summary --json", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_assert_nonnull (strstr (output, "\"running\""));
+  g_assert_nonnull (strstr (output, "\"total_tasks\""));
+  g_assert_nonnull (strstr (output, "\"today_seconds\""));
+  g_free (output);
+
+  /* Total time in JSON */
+  args = g_strdup_printf ("--database %s --total-time --json", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_assert_nonnull (strstr (output, "\"total_seconds\""));
+  g_free (output);
+
+  g_remove (db_path);
+  g_free (db_path);
+}
+
 int
 main (int argc, char **argv)
 {
   g_test_init (&argc, &argv, NULL);
-  
+
   g_test_add_func ("/cli/version", test_cli_version);
   g_test_add_func ("/cli/help", test_cli_help);
   g_test_add_func ("/cli/database-override", test_cli_database_override);
@@ -425,11 +512,13 @@ main (int argc, char **argv)
   g_test_add_func ("/cli/seed-and-list", test_cli_seed_and_list);
   g_test_add_func ("/cli/task-management", test_cli_task_management);
   g_test_add_func ("/cli/json-output", test_cli_json_output);
+  g_test_add_func ("/cli/export-json", test_cli_export_json);
+  g_test_add_func ("/cli/summary-json", test_cli_summary_json);
   g_test_add_func ("/cli/report", test_cli_report);
   g_test_add_func ("/cli/csv-export", test_cli_csv_export);
   g_test_add_func ("/cli/annotations", test_cli_annotations);
   g_test_add_func ("/cli/backup-restore", test_cli_backup_restore);
   g_test_add_func ("/cli/negative", test_cli_negative_cases);
-  
+
   return g_test_run ();
 }

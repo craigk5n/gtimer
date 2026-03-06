@@ -10,6 +10,7 @@
 #include <glib/gi18n.h>
 #include <locale.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct {
   GTimerDBManager *db_manager;
@@ -67,6 +68,7 @@ typedef struct {
   char *note_text;
   /* Data/export */
   gboolean output_json;
+  char *export_json;
   char *backup_file;
   char *restore_file;
   char *import_gtimer2;
@@ -80,6 +82,30 @@ typedef struct {
   gboolean vacuum_db;
   int edit_task_id;
 } GTimerCLIOptions;
+
+/* Escape a string for safe JSON output. Caller must g_free() the result. */
+static char *
+json_escape (const char *str)
+{
+  if (!str) return g_strdup ("");
+  GString *out = g_string_sized_new (strlen (str) + 16);
+  for (const char *p = str; *p; p++) {
+    switch (*p) {
+      case '"':  g_string_append (out, "\\\""); break;
+      case '\\': g_string_append (out, "\\\\"); break;
+      case '\n': g_string_append (out, "\\n"); break;
+      case '\r': g_string_append (out, "\\r"); break;
+      case '\t': g_string_append (out, "\\t"); break;
+      default:
+        if ((unsigned char)*p < 0x20)
+          g_string_append_printf (out, "\\u%04x", (unsigned char)*p);
+        else
+          g_string_append_c (out, *p);
+        break;
+    }
+  }
+  return g_string_free (out, FALSE);
+}
 
 static void
 print_status(GTimerDBManager *db, gboolean json)
@@ -101,10 +127,10 @@ print_status(GTimerDBManager *db, gboolean json)
       if (gtimer_task_is_timing(task)) {
         running_count++;
         if (json) {
+          g_autofree char *ename = json_escape (gtimer_task_get_name (task));
+          g_autofree char *eproj = json_escape (gtimer_task_get_project_name (task));
           g_string_append_printf(json_output, "  {\"id\": %d, \"name\": \"%s\", \"project\": \"%s\"}",
-                                gtimer_task_get_id(task),
-                                gtimer_task_get_name(task),
-                                gtimer_task_get_project_name(task) ? gtimer_task_get_project_name(task) : "");
+                                gtimer_task_get_id(task), ename, eproj);
           if (l->next) g_string_append(json_output, ",");
           g_string_append(json_output, "\n");
         } else {
@@ -149,10 +175,10 @@ list_all_tasks(GTimerDBManager *db, gboolean json)
         continue;
       const char *project = gtimer_task_get_project_name(task) ? gtimer_task_get_project_name(task) : "";
       if (json) {
+        g_autofree char *ename = json_escape (gtimer_task_get_name (task));
+        g_autofree char *eproj = json_escape (project);
         g_print("  {\"id\": %d, \"name\": \"%s\", \"project\": \"%s\", \"total_time\": %ld, \"today_time\": %ld}",
-                gtimer_task_get_id(task),
-                gtimer_task_get_name(task),
-                project,
+                gtimer_task_get_id(task), ename, eproj,
                 gtimer_task_get_total_time(task),
                 gtimer_task_get_today_time(task));
         if (l->next) g_print(",");
@@ -369,10 +395,12 @@ handle_cli_task_management (GTimerCLIOptions *opts, GTimerDBManager *db)
       return TRUE;
     }
     if (opts->output_json) {
+      g_autofree char *ename = json_escape (gtimer_task_get_name (found));
+      g_autofree char *eproj = json_escape (gtimer_task_get_project_name (found));
       g_print ("{\n");
       g_print ("  \"id\": %d,\n", gtimer_task_get_id (found));
-      g_print ("  \"name\": \"%s\",\n", gtimer_task_get_name (found));
-      g_print ("  \"project\": \"%s\",\n", gtimer_task_get_project_name (found) ? gtimer_task_get_project_name (found) : "");
+      g_print ("  \"name\": \"%s\",\n", ename);
+      g_print ("  \"project\": \"%s\",\n", eproj);
       g_print ("  \"total_time\": %ld,\n", gtimer_task_get_total_time (found));
       g_print ("  \"today_time\": %ld,\n", gtimer_task_get_today_time (found));
       g_print ("  \"is_timing\": %s,\n", gtimer_task_is_timing (found) ? "true" : "false");
@@ -414,8 +442,9 @@ handle_cli_project_management (GTimerCLIOptions *opts, GTimerDBManager *db)
       g_print ("[\n");
       for (GList *l = projects; l != NULL; l = l->next) {
         GTimerProject *project = GTIMER_PROJECT (l->data);
+        g_autofree char *ename = json_escape (gtimer_project_get_name (project));
         g_print ("  {\"id\": %d, \"name\": \"%s\"}",
-            gtimer_project_get_id (project), gtimer_project_get_name (project));
+            gtimer_project_get_id (project), ename);
         if (l->next) g_print (",");
         g_print ("\n");
       }
@@ -557,7 +586,8 @@ handle_cli_annotations (GTimerCLIOptions *opts, GTimerDBManager *db)
         GTimerAnnotation *ann = l->data;
         GDateTime *dt = g_date_time_new_from_unix_local (ann->created_at);
         char *date_str = g_date_time_format (dt, "%Y-%m-%d %H:%M");
-        g_print ("  {\"date\": \"%s\", \"text\": \"%s\"}", date_str, ann->text);
+        g_autofree char *etext = json_escape (ann->text);
+        g_print ("  {\"date\": \"%s\", \"text\": \"%s\"}", date_str, etext);
         if (l->next) g_print (",");
         g_print ("\n");
         g_free (date_str);
@@ -630,6 +660,71 @@ handle_cli_data_ops (GTimerCLIOptions *opts, GTimerDBManager *db, const char *db
     return TRUE;
   }
 
+  if (opts->export_json) {
+    GList *tasks = gtimer_db_manager_get_all_tasks (db);
+    GList *projects = gtimer_db_manager_get_projects (db);
+    GString *out = g_string_new ("{\n  \"projects\": [\n");
+
+    for (GList *l = projects; l != NULL; l = l->next) {
+      GTimerProject *proj = GTIMER_PROJECT (l->data);
+      g_autofree char *ename = json_escape (gtimer_project_get_name (proj));
+      g_string_append_printf (out, "    {\"id\": %d, \"name\": \"%s\"}",
+          gtimer_project_get_id (proj), ename);
+      if (l->next) g_string_append (out, ",");
+      g_string_append (out, "\n");
+    }
+    g_list_free_full (projects, g_object_unref);
+
+    g_string_append (out, "  ],\n  \"tasks\": [\n");
+
+    for (GList *l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK (l->data);
+      g_autofree char *ename = json_escape (gtimer_task_get_name (task));
+      g_autofree char *eproj = json_escape (gtimer_task_get_project_name (task));
+      int task_id = gtimer_task_get_id (task);
+
+      g_string_append_printf (out,
+          "    {\"id\": %d, \"name\": \"%s\", \"project\": \"%s\", "
+          "\"total_time\": %ld, \"today_time\": %ld, "
+          "\"is_timing\": %s, \"is_hidden\": %s",
+          task_id, ename, eproj,
+          gtimer_task_get_total_time (task), gtimer_task_get_today_time (task),
+          gtimer_task_is_timing (task) ? "true" : "false",
+          gtimer_task_is_hidden (task) ? "true" : "false");
+
+      GList *annotations = gtimer_db_manager_get_annotations (db, task_id);
+      if (annotations) {
+        g_string_append (out, ", \"annotations\": [");
+        for (GList *a = annotations; a != NULL; a = a->next) {
+          GTimerAnnotation *ann = a->data;
+          GDateTime *dt = g_date_time_new_from_unix_local (ann->created_at);
+          g_autofree char *date_str = g_date_time_format (dt, "%Y-%m-%d %H:%M");
+          g_autofree char *etext = json_escape (ann->text);
+          g_string_append_printf (out, "{\"date\": \"%s\", \"text\": \"%s\"}", date_str, etext);
+          if (a->next) g_string_append (out, ", ");
+          g_date_time_unref (dt);
+        }
+        g_string_append (out, "]");
+        g_list_free_full (annotations, (GDestroyNotify)gtimer_annotation_free);
+      }
+
+      g_string_append (out, "}");
+      if (l->next) g_string_append (out, ",");
+      g_string_append (out, "\n");
+    }
+    int count = g_list_length (tasks);
+    g_list_free_full (tasks, g_object_unref);
+
+    g_string_append (out, "  ]\n}\n");
+
+    if (!g_file_set_contents (opts->export_json, out->str, -1, NULL))
+      g_printerr ("Error: Failed to write JSON to %s\n", opts->export_json);
+    else
+      g_print ("Exported %d tasks to: %s\n", count, opts->export_json);
+    g_string_free (out, TRUE);
+    return TRUE;
+  }
+
   if (opts->import_csv) {
     g_printerr ("Error: CSV import not yet implemented\n");
     return TRUE;
@@ -666,14 +761,21 @@ handle_cli_utility (GTimerCLIOptions *opts, GTimerDBManager *db)
     }
     g_list_free_full (tasks, g_object_unref);
 
-    int hours = total / 3600;
-    int mins = (total % 3600) / 60;
-    g_print ("Total time tracked: %d hours %d minutes\n", hours, mins);
+    if (opts->output_json) {
+      g_print ("{\"total_seconds\": %ld}\n", (long)total);
+    } else {
+      int hours = total / 3600;
+      int mins = (total % 3600) / 60;
+      g_print ("Total time tracked: %d hours %d minutes\n", hours, mins);
+    }
     return TRUE;
   }
 
   if (opts->show_active_time) {
     GList *tasks = gtimer_db_manager_get_all_tasks (db);
+    gboolean first = TRUE;
+
+    if (opts->output_json) g_print ("[\n");
 
     for (GList *l = tasks; l != NULL; l = l->next) {
       GTimerTask *task = GTIMER_TASK (l->data);
@@ -682,32 +784,49 @@ handle_cli_utility (GTimerCLIOptions *opts, GTimerDBManager *db)
         if (last_start > 0) {
           gint64 now = time (NULL);
           gint64 elapsed = now - last_start;
-          int hours = elapsed / 3600;
-          int mins = (elapsed % 3600) / 60;
-          int secs = elapsed % 60;
-          g_print ("%s: %02d:%02d:%02d\n", gtimer_task_get_name (task), hours, mins, secs);
+          if (opts->output_json) {
+            g_autofree char *ename = json_escape (gtimer_task_get_name (task));
+            if (!first) g_print (",\n");
+            g_print ("  {\"id\": %d, \"name\": \"%s\", \"elapsed_seconds\": %ld}",
+                gtimer_task_get_id (task), ename, (long)elapsed);
+            first = FALSE;
+          } else {
+            int hours = elapsed / 3600;
+            int mins = (elapsed % 3600) / 60;
+            int secs = elapsed % 60;
+            g_print ("%s: %02d:%02d:%02d\n", gtimer_task_get_name (task), hours, mins, secs);
+          }
         }
       }
     }
     g_list_free_full (tasks, g_object_unref);
+
+    if (opts->output_json) g_print ("\n]\n");
     return TRUE;
   }
 
   if (opts->show_summary) {
     GList *tasks = gtimer_db_manager_get_all_tasks (db);
     int running = 0;
+    int total_tasks = 0;
     gint64 today_total = 0;
 
     for (GList *l = tasks; l != NULL; l = l->next) {
       GTimerTask *task = GTIMER_TASK (l->data);
       if (gtimer_task_is_timing (task)) running++;
       today_total += gtimer_task_get_today_time (task);
+      total_tasks++;
     }
     g_list_free_full (tasks, g_object_unref);
 
-    int hours = today_total / 3600;
-    int mins = (today_total % 3600) / 60;
-    g_print ("%d tasks running, %d:%02d today\n", running, hours, mins);
+    if (opts->output_json) {
+      g_print ("{\"running\": %d, \"total_tasks\": %d, \"today_seconds\": %ld}\n",
+          running, total_tasks, (long)today_total);
+    } else {
+      int hours = today_total / 3600;
+      int mins = (today_total % 3600) / 60;
+      g_print ("%d tasks running, %d:%02d today\n", running, hours, mins);
+    }
     return TRUE;
   }
 
@@ -1282,6 +1401,7 @@ main (int argc, char **argv)
     { "note", 0, 0, G_OPTION_ARG_STRING, &cli_opts.note_text, "Add note to current task", "TEXT" },
     /* Data/export */
     { "json", 'j', 0, G_OPTION_ARG_NONE, &cli_opts.output_json, "Output in JSON format", NULL },
+    { "export-json", 'J', 0, G_OPTION_ARG_STRING, &cli_opts.export_json, "Export all data to JSON file", "FILENAME" },
     { "backup", 0, 0, G_OPTION_ARG_STRING, &cli_opts.backup_file, "Backup database to file", "FILE" },
     { "restore", 0, 0, G_OPTION_ARG_STRING, &cli_opts.restore_file, "Restore database from file", "FILE" },
     { "export-sqlite", 0, 0, G_OPTION_ARG_STRING, &cli_opts.export_sqlite, "Export raw SQLite database", "FILE" },
@@ -1336,7 +1456,7 @@ main (int argc, char **argv)
 
   if (cli_opts.show_version || cli_opts.show_status || cli_opts.list_tasks ||
       cli_opts.stop_timer || cli_opts.stop_all_timers || cli_opts.task_id > 0 ||
-      cli_opts.add_task || cli_opts.report_type || cli_opts.export_csv || cli_opts.import_csv ||
+      cli_opts.add_task || cli_opts.report_type || cli_opts.export_csv || cli_opts.export_json || cli_opts.import_csv ||
       cli_opts.show_today || cli_opts.show_week || cli_opts.show_month ||
       cli_opts.since_date || cli_opts.until_date || cli_opts.specific_date ||
       cli_opts.delete_task_id > 0 || cli_opts.hide_task_id > 0 || cli_opts.unhide_task_id > 0 ||
