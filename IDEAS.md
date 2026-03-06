@@ -121,10 +121,11 @@ Optional notification if no task is being timed for a configurable duration (e.g
 - *Why*: Helps users who forget to start tracking. Toggl's most-loved feature.
 - *Effort*: Low. Timer + GNotification, similar to existing idle detection.
 
-**2.3 Undo for Destructive Operations**
+**2.3 Undo for Destructive Operations** -- DONE
 Implement undo for: delete task, time adjustments, stop-all. Show "Undo" button in AdwToast.
 - *Why*: Safety net. AdwToast already supports action buttons.
 - *Effort*: Low-moderate. Buffer the previous state, revert on undo click.
+- *Implemented*: Undo for hide task (unhides), stop all (restarts previously-running timers), and time adjustments (reverses the change). Uses AdwToast with "Undo" button wired to `win.undo` action. Delete task retains confirmation dialog instead.
 
 **2.4 Day Navigation**
 Add left/right arrows or date picker in footer/header to browse past days' data in the main task list view (showing that day's time column).

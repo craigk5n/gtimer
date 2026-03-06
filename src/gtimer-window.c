@@ -5,7 +5,24 @@
 #include "../core/timer-utils.h"
 #include "../core/db-manager.h"
 #include <time.h>
+#include <string.h>
 #include <glib/gi18n.h>
+
+/* Undo support */
+typedef enum {
+  UNDO_NONE,
+  UNDO_HIDE_TASK,
+  UNDO_STOP_ALL,
+  UNDO_ADJUST_TIME,
+} UndoType;
+
+typedef struct {
+  UndoType type;
+  int task_id;          /* hide, adjust-time */
+  gint64 seconds;       /* adjust-time: amount to reverse */
+  int *task_ids;        /* stop-all: array of task IDs that were running */
+  int task_count;       /* stop-all: length of task_ids */
+} UndoState;
 
 struct _GTimerWindow
 {
@@ -31,6 +48,8 @@ struct _GTimerWindow
   GSettings *settings;
   gint64 time_buffer;
   guint tick_timeout_id;
+
+  UndoState undo;
 };
 
 G_DEFINE_TYPE (GTimerWindow, gtimer_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -69,6 +88,56 @@ show_toast (GTimerWindow *self, const char *format, ...)
 
   adw_toast_overlay_add_toast (self->toast_overlay, adw_toast_new (msg));
   g_free (msg);
+}
+
+static void update_window_title (GTimerWindow *self);
+
+static void
+clear_undo (GTimerWindow *self)
+{
+  g_free (self->undo.task_ids);
+  memset (&self->undo, 0, sizeof (UndoState));
+}
+
+static void
+show_undoable_toast (GTimerWindow *self, const char *message)
+{
+  AdwToast *toast = adw_toast_new (message);
+  adw_toast_set_button_label (toast, "Undo");
+  adw_toast_set_action_name (toast, "win.undo");
+  adw_toast_overlay_add_toast (self->toast_overlay, toast);
+}
+
+static void
+on_undo_action (GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+  (void)action; (void)parameter;
+  GTimerWindow *self = GTIMER_WINDOW (user_data);
+
+  switch (self->undo.type) {
+    case UNDO_HIDE_TASK:
+      gtimer_db_manager_hide_task (self->db_manager, self->undo.task_id, FALSE, NULL);
+      show_toast (self, "Task unhidden");
+      break;
+
+    case UNDO_STOP_ALL:
+      for (int i = 0; i < self->undo.task_count; i++)
+        gtimer_db_manager_start_task_timing (self->db_manager, self->undo.task_ids[i]);
+      show_toast (self, "%d timer(s) restarted", self->undo.task_count);
+      break;
+
+    case UNDO_ADJUST_TIME:
+      gtimer_db_manager_add_task_time (self->db_manager, self->undo.task_id, -self->undo.seconds);
+      show_toast (self, "Time adjustment undone");
+      break;
+
+    case UNDO_NONE:
+      break;
+  }
+
+  clear_undo (self);
+  gtimer_task_list_model_refresh (self->model);
+  update_window_title (self);
 }
 
 static void
@@ -276,14 +345,30 @@ on_stop_all_action (GSimpleAction *action, GVariant *parameter, gpointer user_da
   GTimerWindow *self = GTIMER_WINDOW (user_data);
   GListModel *model = gtimer_task_list_model_get_model (self->model);
   guint n_items = g_list_model_get_n_items (model);
-  
+
+  /* Collect running task IDs for undo */
+  GArray *running = g_array_new (FALSE, FALSE, sizeof (int));
+
   for (guint i = 0; i < n_items; i++) {
     GTimerTask *task = GTIMER_TASK (g_list_model_get_item (model, i));
     if (gtimer_task_is_timing (task)) {
-      gtimer_db_manager_stop_task_timing (self->db_manager, gtimer_task_get_id (task));
+      int id = gtimer_task_get_id (task);
+      g_array_append_val (running, id);
+      gtimer_db_manager_stop_task_timing (self->db_manager, id);
     }
     g_object_unref (task);
   }
+
+  if (running->len > 0) {
+    clear_undo (self);
+    self->undo.type = UNDO_STOP_ALL;
+    self->undo.task_count = running->len;
+    self->undo.task_ids = (int *)g_array_free (running, FALSE);
+    show_undoable_toast (self, "All timers stopped");
+  } else {
+    g_array_free (running, TRUE);
+  }
+
   gtimer_task_list_model_refresh (self->model);
   update_window_title (self);
 }
@@ -452,7 +537,20 @@ on_adjust_time_action (GSimpleAction *action, GVariant *parameter, gpointer user
   GtkSelectionModel *selection = gtk_column_view_get_model (self->column_view);
   GObject *item = gtk_single_selection_get_selected_item (GTK_SINGLE_SELECTION (selection));
   if (GTIMER_IS_TASK (item)) {
-    gtimer_db_manager_add_task_time (self->db_manager, gtimer_task_get_id (GTIMER_TASK (item)), seconds);
+    int task_id = gtimer_task_get_id (GTIMER_TASK (item));
+    gtimer_db_manager_add_task_time (self->db_manager, task_id, seconds);
+
+    clear_undo (self);
+    self->undo.type = UNDO_ADJUST_TIME;
+    self->undo.task_id = task_id;
+    self->undo.seconds = seconds;
+
+    int abs_secs = seconds < 0 ? -seconds : seconds;
+    int mins = abs_secs / 60;
+    g_autofree char *msg = g_strdup_printf ("%s %d minute(s)",
+        seconds > 0 ? "Added" : "Removed", mins);
+    show_undoable_toast (self, msg);
+
     gtimer_task_list_model_refresh (self->model);
     update_window_title (self);
   }
@@ -505,8 +603,14 @@ on_hide_task_action (GSimpleAction *action, GVariant *parameter, gpointer user_d
   GtkSelectionModel *selection = gtk_column_view_get_model (self->column_view);
   GObject *item = gtk_single_selection_get_selected_item (GTK_SINGLE_SELECTION (selection));
   if (GTIMER_IS_TASK (item)) {
-    gtimer_db_manager_hide_task (self->db_manager, gtimer_task_get_id (GTIMER_TASK (item)), TRUE, NULL);
-    show_toast (self, "Task hidden");
+    int task_id = gtimer_task_get_id (GTIMER_TASK (item));
+    gtimer_db_manager_hide_task (self->db_manager, task_id, TRUE, NULL);
+
+    clear_undo (self);
+    self->undo.type = UNDO_HIDE_TASK;
+    self->undo.task_id = task_id;
+    show_undoable_toast (self, "Task hidden");
+
     gtimer_task_list_model_refresh (self->model);
     update_window_title (self);
   }
@@ -1007,7 +1111,7 @@ static void on_task_activated (GtkColumnView *column_view, guint position, gpoin
   g_object_unref (task); 
 }
 
-static void gtimer_window_dispose (GObject *object) { GTimerWindow *self = GTIMER_WINDOW (object); if (self->tick_timeout_id) { g_source_remove (self->tick_timeout_id); self->tick_timeout_id = 0; } g_clear_object (&self->settings); G_OBJECT_CLASS (gtimer_window_parent_class)->dispose (object); }
+static void gtimer_window_dispose (GObject *object) { GTimerWindow *self = GTIMER_WINDOW (object); if (self->tick_timeout_id) { g_source_remove (self->tick_timeout_id); self->tick_timeout_id = 0; } clear_undo (self); g_clear_object (&self->settings); G_OBJECT_CLASS (gtimer_window_parent_class)->dispose (object); }
 static void gtimer_window_class_init (GTimerWindowClass *klass) { GObjectClass *object_class = G_OBJECT_CLASS (klass); object_class->dispose = gtimer_window_dispose; }
 
 static void
@@ -1031,6 +1135,7 @@ setup_actions (GTimerWindow *self)
     { .name = "new-project", .activate = on_new_project_action },
     { .name = "edit-project", .activate = on_edit_project_action },
     { .name = "shortcuts", .activate = on_shortcuts_action },
+    { .name = "undo", .activate = on_undo_action },
   };
   g_action_map_add_action_entries (G_ACTION_MAP (self), entries, G_N_ELEMENTS (entries), self);
 }
