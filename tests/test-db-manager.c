@@ -105,6 +105,124 @@ test_cli_annotations(void)
 }
 
 static void
+test_db_update_task(void)
+{
+  GError *error = NULL;
+
+  /* Create a project and a task */
+  gtimer_db_manager_create_project(db, "Update Project", &error);
+  g_assert_no_error(error);
+
+  GList *projects = gtimer_db_manager_get_projects(db);
+  int project_id = 0;
+  for (GList *l = projects; l != NULL; l = l->next) {
+    GTimerProject *p = l->data;
+    if (g_strcmp0(gtimer_project_get_name(p), "Update Project") == 0)
+      project_id = gtimer_project_get_id(p);
+  }
+  g_list_free_full(projects, g_object_unref);
+  g_assert_cmpint(project_id, >, 0);
+
+  gtimer_db_manager_create_task(db, "Before Update", project_id, &error);
+  g_assert_no_error(error);
+
+  /* Find the task we just created */
+  GList *tasks = gtimer_db_manager_get_all_tasks(db);
+  int task_id = 0;
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *t = l->data;
+    if (g_strcmp0(gtimer_task_get_name(t), "Before Update") == 0) {
+      task_id = gtimer_task_get_id(t);
+      g_assert_cmpint(gtimer_task_get_project_id(t), ==, project_id);
+    }
+  }
+  g_list_free_full(tasks, g_object_unref);
+  g_assert_cmpint(task_id, >, 0);
+
+  /* Update the task name and remove project */
+  gtimer_db_manager_update_task(db, task_id, "After Update", -1, &error);
+  g_assert_no_error(error);
+
+  /* Verify the update */
+  tasks = gtimer_db_manager_get_all_tasks(db);
+  gboolean found = FALSE;
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *t = l->data;
+    if (gtimer_task_get_id(t) == task_id) {
+      found = TRUE;
+      g_assert_cmpstr(gtimer_task_get_name(t), ==, "After Update");
+      g_assert_null(gtimer_task_get_project_name(t));
+    }
+  }
+  g_list_free_full(tasks, g_object_unref);
+  g_assert_true(found);
+
+  /* Update with a project assignment */
+  gtimer_db_manager_update_task(db, task_id, "After Update", project_id, &error);
+  g_assert_no_error(error);
+
+  tasks = gtimer_db_manager_get_all_tasks(db);
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *t = l->data;
+    if (gtimer_task_get_id(t) == task_id) {
+      g_assert_cmpint(gtimer_task_get_project_id(t), ==, project_id);
+      g_assert_cmpstr(gtimer_task_get_project_name(t), ==, "Update Project");
+    }
+  }
+  g_list_free_full(tasks, g_object_unref);
+}
+
+static void
+test_db_update_project(void)
+{
+  GError *error = NULL;
+
+  gtimer_db_manager_create_project(db, "Old Name", &error);
+  g_assert_no_error(error);
+
+  /* Find the project */
+  GList *projects = gtimer_db_manager_get_projects(db);
+  int project_id = 0;
+  for (GList *l = projects; l != NULL; l = l->next) {
+    GTimerProject *p = l->data;
+    if (g_strcmp0(gtimer_project_get_name(p), "Old Name") == 0)
+      project_id = gtimer_project_get_id(p);
+  }
+  g_list_free_full(projects, g_object_unref);
+  g_assert_cmpint(project_id, >, 0);
+
+  /* Rename it */
+  gtimer_db_manager_update_project(db, project_id, "New Name", &error);
+  g_assert_no_error(error);
+
+  /* Verify */
+  projects = gtimer_db_manager_get_projects(db);
+  gboolean found = FALSE;
+  for (GList *l = projects; l != NULL; l = l->next) {
+    GTimerProject *p = l->data;
+    if (gtimer_project_get_id(p) == project_id) {
+      found = TRUE;
+      g_assert_cmpstr(gtimer_project_get_name(p), ==, "New Name");
+    }
+  }
+  g_list_free_full(projects, g_object_unref);
+  g_assert_true(found);
+
+  /* Verify tasks with this project see the updated name */
+  gtimer_db_manager_create_task(db, "Project Name Task", project_id, &error);
+  g_assert_no_error(error);
+
+  GList *tasks = gtimer_db_manager_get_all_tasks(db);
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *t = l->data;
+    if (g_strcmp0(gtimer_task_get_name(t), "Project Name Task") == 0) {
+      g_assert_cmpstr(gtimer_task_get_project_name(t), ==, "New Name");
+    }
+  }
+  g_list_free_full(tasks, g_object_unref);
+}
+
+static void
 test_db_midnight_rollover(void)
 {
   GError *error = NULL;
@@ -248,6 +366,8 @@ main(int argc, char **argv)
   g_test_add_func("/cli/add_task", test_cli_add_task);
   g_test_add_func("/cli/hide_unhide_task", test_cli_hide_unhide_task);
   g_test_add_func("/cli/annotations", test_cli_annotations);
+  g_test_add_func("/db/update_task", test_db_update_task);
+  g_test_add_func("/db/update_project", test_db_update_project);
   g_test_add_func("/db/midnight_rollover", test_db_midnight_rollover);
   g_test_add_func("/db/project_deletion_fk", test_db_project_deletion_fk);
   g_test_add_func("/db/migration_schema", test_db_migration_schema);
