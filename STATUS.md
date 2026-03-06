@@ -169,6 +169,11 @@ Current: 35 tests across 9 files. Key gaps:
 - [x] UI: Tags entry in new/edit task dialogs
 - [x] UI: Tags column in main column view (sortable, ellipsized)
 
+### P2.2: Tracking Reminders ✅
+- [x] GSettings: `enable-tracking-reminder` and `tracking-reminder-interval`
+- [x] GNotification sent when no task running for N minutes (repeats at interval)
+- [x] Preferences UI: switch + spin button on General page
+
 ### P2.1: JSON Export ✅
 - [x] `--export-json FILE` for full data export
 - [x] `--json` flag for `--summary`, `--total-time`, `--active-time`

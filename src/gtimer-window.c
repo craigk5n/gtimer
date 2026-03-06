@@ -49,6 +49,9 @@ struct _GTimerWindow
   gint64 time_buffer;
   guint tick_timeout_id;
 
+  gint64 idle_since;         /* timestamp when all tasks stopped, 0 if any running */
+  gint64 last_reminder_time; /* timestamp of last tracking reminder notification */
+
   UndoState undo;
 };
 
@@ -205,6 +208,41 @@ on_tick (gpointer user_data)
   GTimerWindow *self = GTIMER_WINDOW (user_data);
   gtimer_task_list_model_refresh (self->model);
   update_window_title (self);
+
+  /* Tracking reminder: notify if no task running for N minutes */
+  if (self->settings && g_settings_get_boolean (self->settings, "enable-tracking-reminder")) {
+    GListModel *model = gtimer_task_list_model_get_model (self->model);
+    guint n = g_list_model_get_n_items (model);
+    gboolean any_running = FALSE;
+    for (guint i = 0; i < n; i++) {
+      GTimerTask *t = GTIMER_TASK (g_list_model_get_item (model, i));
+      if (gtimer_task_is_timing (t)) any_running = TRUE;
+      g_object_unref (t);
+      if (any_running) break;
+    }
+
+    gint64 now = (gint64)time (NULL);
+    if (any_running) {
+      self->idle_since = 0;
+      self->last_reminder_time = 0;
+    } else {
+      if (self->idle_since == 0)
+        self->idle_since = now;
+      int interval = g_settings_get_int (self->settings, "tracking-reminder-interval");
+      gint64 idle_seconds = now - self->idle_since;
+      if (interval > 0 && idle_seconds >= interval * 60 &&
+          now - self->last_reminder_time >= interval * 60) {
+        GApplication *app = G_APPLICATION (gtk_window_get_application (GTK_WINDOW (self)));
+        GNotification *notif = g_notification_new (_("No Task Running"));
+        g_notification_set_body (notif, _("You haven't been tracking time. Start a task?"));
+        g_notification_set_default_action (notif, "app.activate");
+        g_application_send_notification (app, "tracking-reminder", notif);
+        g_object_unref (notif);
+        self->last_reminder_time = now;
+      }
+    }
+  }
+
   return TRUE;
 }
 

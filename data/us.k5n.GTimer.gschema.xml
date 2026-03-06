@@ -37,5 +37,13 @@
       <default>1</default>
       <summary>Week start day (0=Sunday, 1=Monday)</summary>
     </key>
+    <key name="enable-tracking-reminder" type="b">
+      <default>false</default>
+      <summary>Remind when no task is being tracked</summary>
+    </key>
+    <key name="tracking-reminder-interval" type="i">
+      <default>15</default>
+      <summary>Tracking reminder interval in minutes</summary>
+    </key>
   </schema>
 </schemalist>

@@ -1314,6 +1314,24 @@ on_preferences_action (GSimpleAction *action, GVariant *parameter, gpointer user
   adw_preferences_group_add (group, GTK_WIDGET (resume_row));
   g_settings_bind (settings, "resume-on-startup", resume_switch, "active", G_SETTINGS_BIND_DEFAULT);
 
+  // Tracking Reminder
+  AdwActionRow *reminder_row = ADW_ACTION_ROW (adw_action_row_new ());
+  adw_preferences_row_set_title (ADW_PREFERENCES_ROW (reminder_row), _("Remind When Not Tracking"));
+  adw_action_row_set_subtitle (reminder_row, _("Notify if no task is running"));
+  GtkWidget *reminder_switch = gtk_switch_new ();
+  gtk_widget_set_valign (reminder_switch, GTK_ALIGN_CENTER);
+  adw_action_row_add_suffix (reminder_row, reminder_switch);
+  adw_preferences_group_add (group, GTK_WIDGET (reminder_row));
+  g_settings_bind (settings, "enable-tracking-reminder", reminder_switch, "active", G_SETTINGS_BIND_DEFAULT);
+
+  AdwActionRow *reminder_interval_row = ADW_ACTION_ROW (adw_action_row_new ());
+  adw_preferences_row_set_title (ADW_PREFERENCES_ROW (reminder_interval_row), _("Reminder Interval (minutes)"));
+  GtkWidget *reminder_spin = gtk_spin_button_new (gtk_adjustment_new (15, 1, 120, 1, 10, 0), 1, 0);
+  gtk_widget_set_valign (reminder_spin, GTK_ALIGN_CENTER);
+  adw_action_row_add_suffix (reminder_interval_row, reminder_spin);
+  adw_preferences_group_add (group, GTK_WIDGET (reminder_interval_row));
+  g_settings_bind (settings, "tracking-reminder-interval", reminder_spin, "value", G_SETTINGS_BIND_DEFAULT);
+
   // Idle Detection Page
   page = ADW_PREFERENCES_PAGE (adw_preferences_page_new ());
   adw_preferences_page_set_title (page, _("Idle Detection"));

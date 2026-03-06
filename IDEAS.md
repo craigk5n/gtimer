@@ -117,10 +117,11 @@ Add JSON as an export format alongside CSV. Useful for scripting and integration
 - *Effort*: Low. Serialize existing data structures.
 - *Implemented*: `--export-json FILE` for full data export (projects, tasks, annotations); `--json` flag now works with `--summary`, `--total-time`, `--active-time`; proper JSON string escaping across all JSON output.
 
-**2.2 Tracking Reminders**
+**2.2 Tracking Reminders** -- DONE
 Optional notification if no task is being timed for a configurable duration (e.g., 15 minutes). Preference to enable/disable.
 - *Why*: Helps users who forget to start tracking. Toggl's most-loved feature.
 - *Effort*: Low. Timer + GNotification, similar to existing idle detection.
+- *Implemented*: GSettings keys `enable-tracking-reminder` (bool, default false) and `tracking-reminder-interval` (int, default 15 min). Checked in `on_tick` — sends GNotification "No Task Running" when idle exceeds interval. Repeats at interval. Preferences UI with switch and spin button on General page.
 
 **2.3 Undo for Destructive Operations** -- DONE
 Implement undo for: delete task, time adjustments, stop-all. Show "Undo" button in AdwToast.
