@@ -158,8 +158,26 @@ Current: 35 tests across 9 files. Key gaps:
 
 ---
 
+## Post-Release Features (IDEAS.md)
+
+### P1.1: Tags/Labels System ✅
+- [x] DB schema (`tags`, `task_tags` junction table with CASCADE)
+- [x] DB functions (add/remove/get tags, get tasks by tag)
+- [x] Task object `tags` property (comma-separated)
+- [x] CLI: `--add-tag`, `--remove-tag`, `--list-tags`, `--tag` filter
+- [x] Tags in `--list-tasks`, `--task-details`, `--export-csv`, `--export-json`
+- [x] UI: Tags entry in new/edit task dialogs
+- [x] UI: Tags column in main column view (sortable, ellipsized)
+
+### P2.1: JSON Export ✅
+- [x] `--export-json FILE` for full data export
+- [x] `--json` flag for `--summary`, `--total-time`, `--active-time`
+
+### P2.3: Undo for Destructive Operations ✅
+- [x] Undo hide task, stop all, time adjustments via AdwToast
+
 ## Current State
 
 The project has achieved all primary objectives defined in the PRD and UI specification. The application is a modern, stable, and feature-complete successor to the legacy GTimer.
 
-**Phase**: Feature Complete → Pre-Release Polish
+**Phase**: Feature Complete → Post-Release Feature Development

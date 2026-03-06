@@ -57,6 +57,7 @@ G_DEFINE_TYPE (GTimerWindow, gtimer_window, ADW_TYPE_APPLICATION_WINDOW)
 /* Typed structs for dialog data (replaces string-keyed g_object_set_data) */
 typedef struct {
   GtkWidget *entry;
+  GtkWidget *tags_entry;
   GtkDropDown *dropdown;
   GListStore *id_model;
   GTimerTask *task;  /* NULL for new-task dialog */
@@ -242,6 +243,36 @@ get_selected_project_id (GtkDropDown *dropdown, GListStore *id_model)
   return project_id;
 }
 
+/* Sync tags for a task: remove old tags not in new set, add new ones. */
+static void
+sync_task_tags (GTimerDBManager *db, int task_id, const char *tags_text)
+{
+  /* Remove all existing tags first */
+  GList *old_tags = gtimer_db_manager_get_task_tags (db, task_id);
+  for (GList *l = old_tags; l != NULL; l = l->next)
+    gtimer_db_manager_remove_tag_from_task (db, task_id, (const char *)l->data);
+  g_list_free_full (old_tags, g_free);
+
+  /* Add new tags from comma-separated text */
+  if (!tags_text || !tags_text[0])
+    return;
+
+  g_auto(GStrv) parts = g_strsplit (tags_text, ",", -1);
+  for (int i = 0; parts[i]; i++) {
+    g_strstrip (parts[i]);
+    if (parts[i][0])
+      gtimer_db_manager_add_tag_to_task (db, task_id, parts[i]);
+  }
+}
+
+/* Get the last-inserted task ID from the DB */
+static int
+get_last_task_id (GTimerDBManager *db)
+{
+  sqlite3 *sql_db = gtimer_db_manager_get_db (db);
+  return (int)sqlite3_last_insert_rowid (sql_db);
+}
+
 static void
 on_add_task_response (GtkDialog *dialog, int response_id, gpointer user_data)
 {
@@ -253,6 +284,9 @@ on_add_task_response (GtkDialog *dialog, int response_id, gpointer user_data)
 
     if (name && strlen (name) > 0) {
       gtimer_db_manager_create_task (self->db_manager, name, project_id, NULL);
+      int new_id = get_last_task_id (self->db_manager);
+      const char *tags_text = gtk_editable_get_text (GTK_EDITABLE (data->tags_entry));
+      sync_task_tags (self->db_manager, new_id, tags_text);
       show_toast (self, "Task '%s' added", name);
       if (self->model) {
         gtimer_task_list_model_refresh (self->model);
@@ -310,9 +344,16 @@ on_new_task_dialog (GTimerWindow *self)
   gtk_box_append (GTK_BOX (content_area), gtk_label_new ("Task Name:"));
   gtk_box_append (GTK_BOX (content_area), entry);
   gtk_entry_set_activates_default (GTK_ENTRY (entry), TRUE);
-  
+
+  // Tags Entry
+  GtkWidget *tags_entry = gtk_entry_new ();
+  gtk_entry_set_placeholder_text (GTK_ENTRY (tags_entry), "e.g. meeting, billable");
+  gtk_box_append (GTK_BOX (content_area), gtk_label_new ("Tags:"));
+  gtk_box_append (GTK_BOX (content_area), tags_entry);
+
   TaskDialogData *data = g_new0 (TaskDialogData, 1);
   data->entry = entry;
+  data->tags_entry = tags_entry;
   data->dropdown = dropdown;
   data->id_model = project_obj_store;
   g_object_set_data_full (G_OBJECT (dialog), "dialog-data", data, g_free);
@@ -390,7 +431,10 @@ on_edit_task_response (GtkDialog *dialog, int response_id, gpointer user_data)
     int project_id = get_selected_project_id (data->dropdown, data->id_model);
 
     if (name && strlen (name) > 0) {
-      gtimer_db_manager_update_task (self->db_manager, gtimer_task_get_id (data->task), name, project_id, NULL);
+      int task_id = gtimer_task_get_id (data->task);
+      gtimer_db_manager_update_task (self->db_manager, task_id, name, project_id, NULL);
+      const char *tags_text = gtk_editable_get_text (GTK_EDITABLE (data->tags_entry));
+      sync_task_tags (self->db_manager, task_id, tags_text);
       show_toast (self, "Task '%s' updated", name);
       gtimer_task_list_model_refresh (self->model);
       update_window_title (self);
@@ -457,9 +501,19 @@ on_edit_task_action (GSimpleAction *action, GVariant *parameter, gpointer user_d
     gtk_box_append (GTK_BOX (content_area), gtk_label_new ("Task Name:"));
     gtk_box_append (GTK_BOX (content_area), entry);
     gtk_entry_set_activates_default (GTK_ENTRY (entry), TRUE);
-    
+
+    // Tags Entry (pre-populated)
+    GtkWidget *tags_entry = gtk_entry_new ();
+    gtk_entry_set_placeholder_text (GTK_ENTRY (tags_entry), "e.g. meeting, billable");
+    const char *existing_tags = gtimer_task_get_tags (task);
+    if (existing_tags && existing_tags[0])
+      gtk_editable_set_text (GTK_EDITABLE (tags_entry), existing_tags);
+    gtk_box_append (GTK_BOX (content_area), gtk_label_new ("Tags:"));
+    gtk_box_append (GTK_BOX (content_area), tags_entry);
+
     TaskDialogData *data = g_new0 (TaskDialogData, 1);
     data->entry = entry;
+    data->tags_entry = tags_entry;
     data->dropdown = dropdown;
     data->id_model = project_obj_store;
     data->task = task;
@@ -1004,6 +1058,16 @@ static void bind_project_cb (GtkSignalListItemFactory *factory, GtkListItem *lis
   g_signal_connect_object (task, "notify::is-timing", G_CALLBACK (on_task_is_timing_notify), box, 0); 
 }
 static void bind_task_name_cb (GtkSignalListItemFactory *factory, GtkListItem *list_item, gpointer user_data) { (void)factory; (void)user_data; GTimerTask *task = GTIMER_TASK (gtk_list_item_get_item (list_item)); GtkWidget *label = gtk_list_item_get_child (list_item); gtk_label_set_text (GTK_LABEL (label), gtimer_task_get_name (task)); g_signal_connect_object (task, "notify::name", G_CALLBACK (on_task_name_notify), label, 0); }
+static void
+on_task_tags_notify (GObject *object, GParamSpec *pspec, gpointer user_data)
+{
+  (void)pspec;
+  GtkLabel *label = GTK_LABEL (user_data);
+  GTimerTask *task = GTIMER_TASK (object);
+  const char *tags = gtimer_task_get_tags (task);
+  gtk_label_set_text (label, tags ? tags : "");
+}
+static void bind_tags_cb (GtkSignalListItemFactory *factory, GtkListItem *list_item, gpointer user_data) { (void)factory; (void)user_data; GTimerTask *task = GTIMER_TASK (gtk_list_item_get_item (list_item)); GtkWidget *label = gtk_list_item_get_child (list_item); const char *tags = gtimer_task_get_tags (task); gtk_label_set_text (GTK_LABEL (label), tags ? tags : ""); gtk_label_set_ellipsize (GTK_LABEL (label), PANGO_ELLIPSIZE_END); gtk_widget_add_css_class (label, "dim-label"); g_signal_connect_object (task, "notify::tags", G_CALLBACK (on_task_tags_notify), label, 0); }
 static void bind_today_time_cb (GtkSignalListItemFactory *factory, GtkListItem *list_item, gpointer user_data) { (void)factory; (void)user_data; GTimerTask *task = GTIMER_TASK (gtk_list_item_get_item (list_item)); GtkWidget *label = gtk_list_item_get_child (list_item); char *formatted = gtimer_utils_format_duration (gtimer_task_get_today_time (task)); gtk_label_set_text (GTK_LABEL (label), formatted); g_free (formatted); g_signal_connect_object (task, "notify::today-time", G_CALLBACK (on_task_today_time_notify), label, 0); }
 static void bind_total_time_cb (GtkSignalListItemFactory *factory, GtkListItem *list_item, gpointer user_data) { (void)factory; (void)user_data; GTimerTask *task = GTIMER_TASK (gtk_list_item_get_item (list_item)); GtkWidget *label = gtk_list_item_get_child (list_item); char *formatted = gtimer_utils_format_duration (gtimer_task_get_total_time (task)); gtk_label_set_text (GTK_LABEL (label), formatted); g_free (formatted); g_signal_connect_object (task, "notify::total-time", G_CALLBACK (on_task_total_time_notify), label, 0); }
 
@@ -1289,6 +1353,19 @@ setup_column_view (GTimerWindow *self, GtkWidget *main_box)
   gtk_column_view_column_set_expand (col, TRUE);
   gtk_column_view_column_set_resizable (col, TRUE);
   prop_expr = gtk_property_expression_new (GTIMER_TYPE_TASK, NULL, "name");
+  string_sorter = gtk_string_sorter_new (prop_expr);
+  gtk_column_view_column_set_sorter (col, GTK_SORTER (string_sorter));
+  g_object_unref (string_sorter);
+  gtk_column_view_append_column (self->column_view, col);
+
+  /* Tags column */
+  factory = gtk_signal_list_item_factory_new ();
+  g_signal_connect (factory, "setup", G_CALLBACK (setup_label_cb), NULL);
+  g_signal_connect (factory, "bind", G_CALLBACK (bind_tags_cb), NULL);
+  col = gtk_column_view_column_new (_("Tags"), factory);
+  gtk_column_view_column_set_fixed_width (col, 150);
+  gtk_column_view_column_set_resizable (col, TRUE);
+  prop_expr = gtk_property_expression_new (GTIMER_TYPE_TASK, NULL, "tags");
   string_sorter = gtk_string_sorter_new (prop_expr);
   gtk_column_view_column_set_sorter (col, GTK_SORTER (string_sorter));
   g_object_unref (string_sorter);
