@@ -33,6 +33,7 @@ typedef struct {
   gboolean show_version;
   gboolean show_gui;
   char *datadir;
+  char *database;
   gboolean verbose;
   gboolean quiet;
   /* Date-based options */
@@ -174,614 +175,572 @@ list_all_tasks(GTimerDBManager *db, gboolean json)
   }
 }
 
-static void
-handle_cli_options(GTimerCLIOptions *opts, GTimerDBManager *db, const char *db_path)
+/* Helper: find a task by ID from the full task list. Caller must unref. */
+static GTimerTask *
+find_task_by_id (GTimerDBManager *db, int task_id)
 {
-  /* Note: Version is already printed in main() before this function is called */
+  GList *tasks = gtimer_db_manager_get_all_tasks (db);
+  GTimerTask *found = NULL;
 
-  if (opts->list_tasks) {
-    list_all_tasks(db, opts->output_json);
-    return;
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *task = GTIMER_TASK (l->data);
+    if (gtimer_task_get_id (task) == task_id) {
+      found = g_object_ref (task);
+      break;
+    }
   }
+  g_list_free_full (tasks, g_object_unref);
+  return found;
+}
 
-  if (opts->show_status) {
-    print_status(db, opts->output_json);
-    return;
+/* Copy a file with error reporting. Returns TRUE on success. */
+static gboolean
+copy_file (const char *src_path, const char *dst_path,
+           const char *success_msg, const char *fail_msg)
+{
+  GFile *src = g_file_new_for_path (src_path);
+  GFile *dst = g_file_new_for_path (dst_path);
+  GError *err = NULL;
+
+  gboolean ok = g_file_copy (src, dst, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &err);
+  if (ok) {
+    g_print ("%s: %s\n", success_msg, dst_path);
+  } else {
+    g_printerr ("%s: %s\n", fail_msg, err->message);
+    g_error_free (err);
   }
+  g_object_unref (src);
+  g_object_unref (dst);
+  return ok;
+}
 
+static gboolean
+handle_cli_timer_control (GTimerCLIOptions *opts, GTimerDBManager *db)
+{
   if (opts->stop_all_timers) {
-    GList *tasks = gtimer_db_manager_get_all_tasks(db);
-    GList *l;
+    GList *tasks = gtimer_db_manager_get_all_tasks (db);
     int count = 0;
 
-    for (l = tasks; l != NULL; l = l->next) {
-      GTimerTask *task = GTIMER_TASK(l->data);
-      if (gtimer_task_is_timing(task)) {
-        gtimer_db_manager_stop_task_timing(db, gtimer_task_get_id(task));
+    for (GList *l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK (l->data);
+      if (gtimer_task_is_timing (task)) {
+        gtimer_db_manager_stop_task_timing (db, gtimer_task_get_id (task));
         count++;
-        g_print("Stopped: %s\n", gtimer_task_get_name(task));
+        g_print ("Stopped: %s\n", gtimer_task_get_name (task));
       }
     }
-    g_list_free_full(tasks, g_object_unref);
-    g_print("Stopped %d task(s).\n", count);
-    return;
+    g_list_free_full (tasks, g_object_unref);
+    g_print ("Stopped %d task(s).\n", count);
+    return TRUE;
   }
 
   if (opts->stop_timer) {
-    GList *tasks = gtimer_db_manager_get_all_tasks(db);
-    GList *l;
+    GList *tasks = gtimer_db_manager_get_all_tasks (db);
     int count = 0;
-    char *task_name = NULL;
 
-    for (l = tasks; l != NULL; l = l->next) {
-      GTimerTask *task = GTIMER_TASK(l->data);
-      if (gtimer_task_is_timing(task)) {
-        task_name = g_strdup(gtimer_task_get_name(task));
-        gtimer_db_manager_stop_task_timing(db, gtimer_task_get_id(task));
+    for (GList *l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK (l->data);
+      if (gtimer_task_is_timing (task)) {
+        char *name = g_strdup (gtimer_task_get_name (task));
+        gtimer_db_manager_stop_task_timing (db, gtimer_task_get_id (task));
         count++;
-        g_print("Stopped: %s\n", task_name);
-        g_free(task_name);
+        g_print ("Stopped: %s\n", name);
+        g_free (name);
       }
     }
-    g_list_free_full(tasks, g_object_unref);
-    if (count == 0) {
-      g_print("No task is currently timing.\n");
-    }
-    return;
+    g_list_free_full (tasks, g_object_unref);
+    if (count == 0)
+      g_print ("No task is currently timing.\n");
+    return TRUE;
   }
 
   if (opts->task_id > 0) {
-    GList *tasks = gtimer_db_manager_get_all_tasks(db);
-    GList *l;
-    GTimerTask *found = NULL;
-
-    for (l = tasks; l != NULL; l = l->next) {
-      GTimerTask *task = GTIMER_TASK(l->data);
-      if (gtimer_task_get_id(task) == opts->task_id) {
-        found = task;
-        break;
-      }
-    }
-    g_list_free_full(tasks, g_object_unref);
-
+    GTimerTask *found = find_task_by_id (db, opts->task_id);
     if (!found) {
-      g_printerr("Error: Task with ID %d not found\n", opts->task_id);
-      return;
+      g_printerr ("Error: Task with ID %d not found\n", opts->task_id);
+      return TRUE;
     }
-
-    gtimer_db_manager_start_task_timing(db, opts->task_id);
-    g_print("Started timing: %s (ID: %d)\n", gtimer_task_get_name(found), opts->task_id);
-    g_object_unref(found);
-    return;
+    gtimer_db_manager_start_task_timing (db, opts->task_id);
+    g_print ("Started timing: %s (ID: %d)\n", gtimer_task_get_name (found), opts->task_id);
+    g_object_unref (found);
+    return TRUE;
   }
 
+  return FALSE;
+}
+
+static gboolean
+handle_cli_task_management (GTimerCLIOptions *opts, GTimerDBManager *db)
+{
   if (opts->add_task) {
     GError *error = NULL;
-    gtimer_db_manager_create_task(db, opts->add_task, opts->add_task_project > 0 ? opts->add_task_project - 1 : -1, &error);
+    gtimer_db_manager_create_task (db, opts->add_task,
+        opts->add_task_project > 0 ? opts->add_task_project : -1, &error);
     if (error) {
-      g_printerr("Error creating task: %s\n", error->message);
-      g_error_free(error);
-      return;
-    }
-    g_print("Created task: %s\n", opts->add_task);
-    return;
-  }
-
-  if (opts->report_type) {
-    GDateTime *now = g_date_time_new_now_local();
-    GDateTime *start_date = g_date_time_ref(now);
-    GDateTime *end_date = g_date_time_ref(now);
-
-    if (g_str_equal(opts->report_type, "weekly") || g_str_equal(opts->report_type, "w")) {
-      start_date = g_date_time_add_days(now, -7);
-    } else if (g_str_equal(opts->report_type, "monthly") || g_str_equal(opts->report_type, "m")) {
-      start_date = g_date_time_add_months(now, -1);
-    } else if (g_str_equal(opts->report_type, "yearly") || g_str_equal(opts->report_type, "y")) {
-      start_date = g_date_time_add_years(now, -1);
-    } else if (!g_str_equal(opts->report_type, "daily") && !g_str_equal(opts->report_type, "d")) {
-      g_printerr("Error: Unknown report type '%s'. Use daily, weekly, or monthly\n", opts->report_type);
-      g_date_time_unref(now);
-      g_date_time_unref(start_date);
-      g_date_time_unref(end_date);
-      return;
-    }
-
-    char *report = gtimer_report_generate(db, GTIMER_REPORT_DAILY, GTIMER_REPORT_TEXT,
-                                          start_date, end_date, NULL, 0);
-
-    if (opts->report_file) {
-      if (!g_file_set_contents(opts->report_file, report, -1, NULL)) {
-        g_printerr("Error: Failed to write report to %s\n", opts->report_file);
-      } else {
-        g_print("Report saved to: %s\n", opts->report_file);
-      }
+      g_printerr ("Error creating task: %s\n", error->message);
+      g_error_free (error);
     } else {
-      g_print("%s\n", report);
+      g_print ("Created task: %s\n", opts->add_task);
     }
-
-    g_free(report);
-    g_date_time_unref(now);
-    g_date_time_unref(start_date);
-    g_date_time_unref(end_date);
-    return;
+    return TRUE;
   }
 
-  if (opts->export_csv) {
-    GList *tasks = gtimer_db_manager_get_all_tasks(db);
-    GList *l;
-    GString *csv = g_string_new("task_id,task_name,project,is_timing,is_hidden,total_seconds,today_seconds\n");
-
-    for (l = tasks; l != NULL; l = l->next) {
-      GTimerTask *task = GTIMER_TASK(l->data);
-      const char *project = gtimer_task_get_project_name(task) ? gtimer_task_get_project_name(task) : "";
-      g_string_append_printf(csv, "%d,\"%s\",\"%s\",%d,%d,%ld,%ld\n",
-                            gtimer_task_get_id(task),
-                            gtimer_task_get_name(task),
-                            project,
-                            gtimer_task_is_timing(task) ? 1 : 0,
-                            gtimer_task_is_hidden(task) ? 1 : 0,
-                            gtimer_task_get_total_time(task),
-                            gtimer_task_get_today_time(task));
-    }
-    g_list_free_full(tasks, g_object_unref);
-
-    if (!g_file_set_contents(opts->export_csv, csv->str, -1, NULL)) {
-      g_printerr("Error: Failed to write CSV to %s\n", opts->export_csv);
-    } else {
-      g_print("Exported %d tasks to: %s\n", g_list_length(tasks), opts->export_csv);
-    }
-    g_string_free(csv, TRUE);
-    return;
-  }
-
-  if (opts->import_csv) {
-    g_printerr("Error: CSV import not yet implemented\n");
-    return;
-  }
-
-  /* Date-based operations */
-  if (opts->show_today || opts->show_week || opts->show_month ||
-      opts->since_date || opts->until_date || opts->specific_date) {
-    GDateTime *start = g_date_time_new_now_local();
-    GDateTime *end = g_date_time_ref(start);
-
-    if (opts->specific_date) {
-      /* Parse specific date */
-      g_print("Report for %s:\n", opts->specific_date);
-    } else if (opts->since_date || opts->until_date) {
-      g_print("Report from %s to %s:\n",
-              opts->since_date ? opts->since_date : "beginning",
-              opts->until_date ? opts->until_date : "now");
-    } else if (opts->show_week) {
-      start = g_date_time_add_days(start, -7);
-      g_print("Weekly Report:\n");
-    } else if (opts->show_month) {
-      start = g_date_time_add_months(start, -1);
-      g_print("Monthly Report:\n");
-    } else {
-      g_print("Today's Summary:\n");
-    }
-
-    char *report = gtimer_report_generate(db, GTIMER_REPORT_DAILY, GTIMER_REPORT_TEXT,
-                                          start, end, NULL, 0);
-    g_print("%s\n", report);
-    g_free(report);
-    g_date_time_unref(start);
-    g_date_time_unref(end);
-    return;
-  }
-
-  /* Task management */
   if (opts->delete_task_id > 0) {
     GError *err = NULL;
-    gtimer_db_manager_delete_task(db, opts->delete_task_id, &err);
+    gtimer_db_manager_delete_task (db, opts->delete_task_id, &err);
     if (err) {
-      g_printerr("Error deleting task: %s\n", err->message);
-      g_error_free(err);
+      g_printerr ("Error deleting task: %s\n", err->message);
+      g_error_free (err);
     } else {
-      g_print("Deleted task ID %d\n", opts->delete_task_id);
+      g_print ("Deleted task ID %d\n", opts->delete_task_id);
     }
-    return;
+    return TRUE;
   }
 
   if (opts->hide_task_id > 0) {
     GError *err = NULL;
-    gtimer_db_manager_hide_task(db, opts->hide_task_id, TRUE, &err);
+    gtimer_db_manager_hide_task (db, opts->hide_task_id, TRUE, &err);
     if (err) {
-      g_printerr("Error hiding task: %s\n", err->message);
-      g_error_free(err);
+      g_printerr ("Error hiding task: %s\n", err->message);
+      g_error_free (err);
     } else {
-      g_print("Hidden task ID %d\n", opts->hide_task_id);
+      g_print ("Hidden task ID %d\n", opts->hide_task_id);
     }
-    return;
+    return TRUE;
   }
 
   if (opts->unhide_task_id > 0) {
     GError *err = NULL;
-    gtimer_db_manager_hide_task(db, opts->unhide_task_id, FALSE, &err);
+    gtimer_db_manager_hide_task (db, opts->unhide_task_id, FALSE, &err);
     if (err) {
-      g_printerr("Error unhiding task: %s\n", err->message);
-      g_error_free(err);
+      g_printerr ("Error unhiding task: %s\n", err->message);
+      g_error_free (err);
     } else {
-      g_print("Unhidden task ID %d\n", opts->unhide_task_id);
+      g_print ("Unhidden task ID %d\n", opts->unhide_task_id);
     }
-    return;
+    return TRUE;
   }
 
   if (opts->rename_task && opts->rename_task_id > 0) {
-    GList *tasks = gtimer_db_manager_get_all_tasks(db);
-    GList *l;
-    GTimerTask *found = NULL;
-
-    for (l = tasks; l != NULL; l = g_list_next(l)) {
-      GTimerTask *task = GTIMER_TASK(l->data);
-      if (gtimer_task_get_id(task) == opts->rename_task_id) {
-        found = task;
-        break;
-      }
-    }
-    g_list_free_full(tasks, g_object_unref);
-
+    GTimerTask *found = find_task_by_id (db, opts->rename_task_id);
     if (!found) {
-      g_printerr("Task ID %d not found\n", opts->rename_task_id);
-      return;
+      g_printerr ("Task ID %d not found\n", opts->rename_task_id);
+      return TRUE;
     }
+    int project_id = gtimer_task_get_project_id (found);
+    g_object_unref (found);
 
-    int project_id = gtimer_task_get_project_id(found);
     GError *err = NULL;
-    gtimer_db_manager_update_task(db, opts->rename_task_id, opts->rename_task,
-                                  project_id >= 0 ? project_id : -1, &err);
-    g_object_unref(found);
-
+    gtimer_db_manager_update_task (db, opts->rename_task_id, opts->rename_task,
+        project_id >= 0 ? project_id : -1, &err);
     if (err) {
-      g_printerr("Error renaming task: %s\n", err->message);
-      g_error_free(err);
+      g_printerr ("Error renaming task: %s\n", err->message);
+      g_error_free (err);
     } else {
-      g_print("Renamed task %d to: %s\n", opts->rename_task_id, opts->rename_task);
+      g_print ("Renamed task %d to: %s\n", opts->rename_task_id, opts->rename_task);
     }
-    return;
+    return TRUE;
   }
 
   if (opts->move_task_id > 0 && opts->move_to_project >= 0) {
-    GList *tasks = gtimer_db_manager_get_all_tasks(db);
-    GList *l;
-    GTimerTask *found = NULL;
-
-    for (l = tasks; l != NULL; l = g_list_next(l)) {
-      GTimerTask *task = GTIMER_TASK(l->data);
-      if (gtimer_task_get_id(task) == opts->move_task_id) {
-        found = task;
-        break;
-      }
-    }
-    g_list_free_full(tasks, g_object_unref);
-
+    GTimerTask *found = find_task_by_id (db, opts->move_task_id);
     if (!found) {
-      g_printerr("Task ID %d not found\n", opts->move_task_id);
-      return;
+      g_printerr ("Task ID %d not found\n", opts->move_task_id);
+      return TRUE;
     }
-
-    const char *name = gtimer_task_get_name(found);
+    const char *name = gtimer_task_get_name (found);
     GError *err = NULL;
-    gtimer_db_manager_update_task(db, opts->move_task_id, name,
-                                  opts->move_to_project, &err);
-    g_object_unref(found);
-
+    gtimer_db_manager_update_task (db, opts->move_task_id, name,
+        opts->move_to_project, &err);
+    g_object_unref (found);
     if (err) {
-      g_printerr("Error moving task: %s\n", err->message);
-      g_error_free(err);
+      g_printerr ("Error moving task: %s\n", err->message);
+      g_error_free (err);
     } else {
-      g_print("Moved task %d to project %d\n", opts->move_task_id, opts->move_to_project);
+      g_print ("Moved task %d to project %d\n", opts->move_task_id, opts->move_to_project);
     }
-    return;
+    return TRUE;
   }
 
   if (opts->task_details_id > 0) {
-    GList *tasks = gtimer_db_manager_get_all_tasks(db);
-    GList *l;
-    GTimerTask *found = NULL;
-
-    for (l = tasks; l != NULL; l = g_list_next(l)) {
-      GTimerTask *task = GTIMER_TASK(l->data);
-      if (gtimer_task_get_id(task) == opts->task_details_id) {
-        found = task;
-        break;
-      }
-    }
-    g_list_free_full(tasks, g_object_unref);
-
+    GTimerTask *found = find_task_by_id (db, opts->task_details_id);
     if (!found) {
-      g_printerr("Task ID %d not found\n", opts->task_details_id);
-      return;
+      g_printerr ("Task ID %d not found\n", opts->task_details_id);
+      return TRUE;
     }
-
     if (opts->output_json) {
-      g_print("{\n");
-      g_print("  \"id\": %d,\n", gtimer_task_get_id(found));
-      g_print("  \"name\": \"%s\",\n", gtimer_task_get_name(found));
-      g_print("  \"project\": \"%s\",\n", gtimer_task_get_project_name(found) ? gtimer_task_get_project_name(found) : "");
-      g_print("  \"total_time\": %ld,\n", gtimer_task_get_total_time(found));
-      g_print("  \"today_time\": %ld,\n", gtimer_task_get_today_time(found));
-      g_print("  \"is_timing\": %s,\n", gtimer_task_is_timing(found) ? "true" : "false");
-      g_print("  \"is_hidden\": %s\n", gtimer_task_is_hidden(found) ? "true" : "false");
-      g_print("}\n");
+      g_print ("{\n");
+      g_print ("  \"id\": %d,\n", gtimer_task_get_id (found));
+      g_print ("  \"name\": \"%s\",\n", gtimer_task_get_name (found));
+      g_print ("  \"project\": \"%s\",\n", gtimer_task_get_project_name (found) ? gtimer_task_get_project_name (found) : "");
+      g_print ("  \"total_time\": %ld,\n", gtimer_task_get_total_time (found));
+      g_print ("  \"today_time\": %ld,\n", gtimer_task_get_today_time (found));
+      g_print ("  \"is_timing\": %s,\n", gtimer_task_is_timing (found) ? "true" : "false");
+      g_print ("  \"is_hidden\": %s\n", gtimer_task_is_hidden (found) ? "true" : "false");
+      g_print ("}\n");
     } else {
-      g_print("Task Details:\n");
-      g_print("  ID: %d\n", gtimer_task_get_id(found));
-      g_print("  Name: %s\n", gtimer_task_get_name(found));
-      g_print("  Project: %s\n", gtimer_task_get_project_name(found) ? gtimer_task_get_project_name(found) : "(none)");
-      g_print("  Total Time: %ld seconds\n", gtimer_task_get_total_time(found));
-      g_print("  Today: %ld seconds\n", gtimer_task_get_today_time(found));
-      g_print("  Status: %s\n", gtimer_task_is_timing(found) ? "timing" : "stopped");
+      g_print ("Task Details:\n");
+      g_print ("  ID: %d\n", gtimer_task_get_id (found));
+      g_print ("  Name: %s\n", gtimer_task_get_name (found));
+      g_print ("  Project: %s\n", gtimer_task_get_project_name (found) ? gtimer_task_get_project_name (found) : "(none)");
+      g_print ("  Total Time: %ld seconds\n", gtimer_task_get_total_time (found));
+      g_print ("  Today: %ld seconds\n", gtimer_task_get_today_time (found));
+      g_print ("  Status: %s\n", gtimer_task_is_timing (found) ? "timing" : "stopped");
     }
-    g_object_unref(found);
-    return;
+    g_object_unref (found);
+    return TRUE;
   }
 
   if (opts->reset_task_id > 0) {
-    g_printerr("Reset task not yet implemented (requires db function)\n");
-    return;
+    g_printerr ("Reset task not yet implemented (requires db function)\n");
+    return TRUE;
   }
 
   if (opts->duplicate_task_id > 0) {
-    g_printerr("Duplicate task not yet implemented (requires db function)\n");
-    return;
+    g_printerr ("Duplicate task not yet implemented (requires db function)\n");
+    return TRUE;
   }
 
-  /* Project management */
+  return FALSE;
+}
+
+static gboolean
+handle_cli_project_management (GTimerCLIOptions *opts, GTimerDBManager *db)
+{
   if (opts->list_projects) {
-    GList *projects = gtimer_db_manager_get_projects(db);
-    GList *l;
+    GList *projects = gtimer_db_manager_get_projects (db);
 
     if (opts->output_json) {
-      g_print("[\n");
-      for (l = projects; l != NULL; l = g_list_next(l)) {
-        GTimerProject *project = GTIMER_PROJECT(l->data);
-        g_print("  {\"id\": %d, \"name\": \"%s\"}",
-                gtimer_project_get_id(project),
-                gtimer_project_get_name(project));
-        if (l->next) g_print(",");
-        g_print("\n");
-        g_object_unref(project);
+      g_print ("[\n");
+      for (GList *l = projects; l != NULL; l = l->next) {
+        GTimerProject *project = GTIMER_PROJECT (l->data);
+        g_print ("  {\"id\": %d, \"name\": \"%s\"}",
+            gtimer_project_get_id (project), gtimer_project_get_name (project));
+        if (l->next) g_print (",");
+        g_print ("\n");
       }
-      g_print("]\n");
+      g_print ("]\n");
     } else {
-      g_print("ID   Project Name\n");
-      g_print("---- ---------------------------\n");
-
-      for (l = projects; l != NULL; l = g_list_next(l)) {
-        GTimerProject *project = GTIMER_PROJECT(l->data);
-        g_print("%-4d %s\n", gtimer_project_get_id(project), gtimer_project_get_name(project));
-        g_object_unref(project);
+      g_print ("ID   Project Name\n");
+      g_print ("---- ---------------------------\n");
+      for (GList *l = projects; l != NULL; l = l->next) {
+        GTimerProject *project = GTIMER_PROJECT (l->data);
+        g_print ("%-4d %s\n", gtimer_project_get_id (project), gtimer_project_get_name (project));
       }
-      g_print("\n%d projects total.\n", g_list_length(projects));
+      g_print ("\n%d projects total.\n", g_list_length (projects));
     }
-    g_list_free(projects);
-    return;
+    g_list_free_full (projects, g_object_unref);
+    return TRUE;
   }
 
   if (opts->add_project) {
     GError *err = NULL;
-    gtimer_db_manager_create_project(db, opts->add_project, &err);
+    gtimer_db_manager_create_project (db, opts->add_project, &err);
     if (err) {
-      g_printerr("Error creating project: %s\n", err->message);
-      g_error_free(err);
+      g_printerr ("Error creating project: %s\n", err->message);
+      g_error_free (err);
     } else {
-      g_print("Created project: %s\n", opts->add_project);
+      g_print ("Created project: %s\n", opts->add_project);
     }
-    return;
+    return TRUE;
   }
 
   if (opts->delete_project_id > 0) {
-    g_printerr("Delete project not yet implemented (requires db function)\n");
-    return;
+    g_printerr ("Delete project not yet implemented (requires db function)\n");
+    return TRUE;
   }
 
   if (opts->rename_project_id > 0 && opts->rename_project_name) {
     GError *err = NULL;
-    gtimer_db_manager_update_project(db, opts->rename_project_id, opts->rename_project_name, &err);
+    gtimer_db_manager_update_project (db, opts->rename_project_id, opts->rename_project_name, &err);
     if (err) {
-      g_printerr("Error renaming project: %s\n", err->message);
-      g_error_free(err);
+      g_printerr ("Error renaming project: %s\n", err->message);
+      g_error_free (err);
     } else {
-      g_print("Renamed project %d to: %s\n", opts->rename_project_id, opts->rename_project_name);
+      g_print ("Renamed project %d to: %s\n", opts->rename_project_id, opts->rename_project_name);
     }
-    return;
+    return TRUE;
   }
 
-  /* Annotations */
+  return FALSE;
+}
+
+static gboolean
+handle_cli_reports (GTimerCLIOptions *opts, GTimerDBManager *db)
+{
+  if (opts->report_type) {
+    GDateTime *now = g_date_time_new_now_local ();
+    GDateTime *start_date = g_date_time_ref (now);
+    GDateTime *end_date = g_date_time_ref (now);
+
+    if (g_str_equal (opts->report_type, "weekly") || g_str_equal (opts->report_type, "w")) {
+      start_date = g_date_time_add_days (now, -7);
+    } else if (g_str_equal (opts->report_type, "monthly") || g_str_equal (opts->report_type, "m")) {
+      start_date = g_date_time_add_months (now, -1);
+    } else if (g_str_equal (opts->report_type, "yearly") || g_str_equal (opts->report_type, "y")) {
+      start_date = g_date_time_add_years (now, -1);
+    } else if (!g_str_equal (opts->report_type, "daily") && !g_str_equal (opts->report_type, "d")) {
+      g_printerr ("Error: Unknown report type '%s'. Use daily, weekly, or monthly\n", opts->report_type);
+      g_date_time_unref (now);
+      g_date_time_unref (start_date);
+      g_date_time_unref (end_date);
+      return TRUE;
+    }
+
+    char *report = gtimer_report_generate (db, GTIMER_REPORT_DAILY, GTIMER_REPORT_TEXT,
+        start_date, end_date, NULL, 0);
+
+    if (opts->report_file) {
+      if (!g_file_set_contents (opts->report_file, report, -1, NULL))
+        g_printerr ("Error: Failed to write report to %s\n", opts->report_file);
+      else
+        g_print ("Report saved to: %s\n", opts->report_file);
+    } else {
+      g_print ("%s\n", report);
+    }
+
+    g_free (report);
+    g_date_time_unref (now);
+    g_date_time_unref (start_date);
+    g_date_time_unref (end_date);
+    return TRUE;
+  }
+
+  if (opts->show_today || opts->show_week || opts->show_month ||
+      opts->since_date || opts->until_date || opts->specific_date) {
+    GDateTime *start = g_date_time_new_now_local ();
+    GDateTime *end = g_date_time_ref (start);
+
+    if (opts->specific_date) {
+      g_print ("Report for %s:\n", opts->specific_date);
+    } else if (opts->since_date || opts->until_date) {
+      g_print ("Report from %s to %s:\n",
+          opts->since_date ? opts->since_date : "beginning",
+          opts->until_date ? opts->until_date : "now");
+    } else if (opts->show_week) {
+      start = g_date_time_add_days (start, -7);
+      g_print ("Weekly Report:\n");
+    } else if (opts->show_month) {
+      start = g_date_time_add_months (start, -1);
+      g_print ("Monthly Report:\n");
+    } else {
+      g_print ("Today's Summary:\n");
+    }
+
+    char *report = gtimer_report_generate (db, GTIMER_REPORT_DAILY, GTIMER_REPORT_TEXT,
+        start, end, NULL, 0);
+    g_print ("%s\n", report);
+    g_free (report);
+    g_date_time_unref (start);
+    g_date_time_unref (end);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+static gboolean
+handle_cli_annotations (GTimerCLIOptions *opts, GTimerDBManager *db)
+{
   if (opts->annotate_text && opts->annotate_task_id > 0) {
-    gtimer_db_manager_add_annotation(db, opts->annotate_task_id, opts->annotate_text);
-    g_print("Added annotation to task %d\n", opts->annotate_task_id);
-    return;
+    gtimer_db_manager_add_annotation (db, opts->annotate_task_id, opts->annotate_text);
+    g_print ("Added annotation to task %d\n", opts->annotate_task_id);
+    return TRUE;
   }
 
   if (opts->list_annotations_id > 0) {
-    GList *annotations = gtimer_db_manager_get_annotations(db, opts->list_annotations_id);
-    GList *l;
+    GList *annotations = gtimer_db_manager_get_annotations (db, opts->list_annotations_id);
 
     if (opts->output_json) {
-      g_print("[\n");
-      for (l = annotations; l != NULL; l = g_list_next(l)) {
+      g_print ("[\n");
+      for (GList *l = annotations; l != NULL; l = l->next) {
         GTimerAnnotation *ann = l->data;
-        GDateTime *dt = g_date_time_new_from_unix_local(ann->created_at);
-        char *date_str = g_date_time_format(dt, "%Y-%m-%d %H:%M");
-        g_print("  {\"date\": \"%s\", \"text\": \"%s\"}", date_str, ann->text);
-        if (l->next) g_print(",");
-        g_print("\n");
-        g_free(date_str);
-        g_date_time_unref(dt);
+        GDateTime *dt = g_date_time_new_from_unix_local (ann->created_at);
+        char *date_str = g_date_time_format (dt, "%Y-%m-%d %H:%M");
+        g_print ("  {\"date\": \"%s\", \"text\": \"%s\"}", date_str, ann->text);
+        if (l->next) g_print (",");
+        g_print ("\n");
+        g_free (date_str);
+        g_date_time_unref (dt);
       }
-      g_print("]\n");
+      g_print ("]\n");
     } else {
-      g_print("Annotations for task %d:\n", opts->list_annotations_id);
-      for (l = annotations; l != NULL; l = g_list_next(l)) {
+      g_print ("Annotations for task %d:\n", opts->list_annotations_id);
+      for (GList *l = annotations; l != NULL; l = l->next) {
         GTimerAnnotation *ann = l->data;
-        GDateTime *dt = g_date_time_new_from_unix_local(ann->created_at);
-        char *date_str = g_date_time_format(dt, "%Y-%m-%d %H:%M");
-        g_print("  [%s] %s\n", date_str, ann->text);
-        g_free(date_str);
-        g_date_time_unref(dt);
+        GDateTime *dt = g_date_time_new_from_unix_local (ann->created_at);
+        char *date_str = g_date_time_format (dt, "%Y-%m-%d %H:%M");
+        g_print ("  [%s] %s\n", date_str, ann->text);
+        g_free (date_str);
+        g_date_time_unref (dt);
       }
-      if (!annotations) {
-        g_print("  (no annotations)\n");
-      }
+      if (!annotations)
+        g_print ("  (no annotations)\n");
     }
-
-    g_list_free_full(annotations, (GDestroyNotify)gtimer_annotation_free);
-    return;
+    g_list_free_full (annotations, (GDestroyNotify)gtimer_annotation_free);
+    return TRUE;
   }
 
   if (opts->note_text) {
-    /* Add note to currently running task */
-    GList *tasks = gtimer_db_manager_get_all_tasks(db);
-    GList *l;
+    GList *tasks = gtimer_db_manager_get_all_tasks (db);
     int running_id = 0;
 
-    for (l = tasks; l != NULL; l = g_list_next(l)) {
-      GTimerTask *task = GTIMER_TASK(l->data);
-      if (gtimer_task_is_timing(task)) {
-        running_id = gtimer_task_get_id(task);
-      }
-      g_object_unref(task);
+    for (GList *l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK (l->data);
+      if (gtimer_task_is_timing (task))
+        running_id = gtimer_task_get_id (task);
     }
-    g_list_free(tasks);
+    g_list_free_full (tasks, g_object_unref);
 
     if (running_id > 0) {
-      gtimer_db_manager_add_annotation(db, running_id, opts->note_text);
-      g_print("Added note to task %d\n", running_id);
+      gtimer_db_manager_add_annotation (db, running_id, opts->note_text);
+      g_print ("Added note to task %d\n", running_id);
     } else {
-      g_printerr("No task is currently running\n");
+      g_printerr ("No task is currently running\n");
     }
-    return;
+    return TRUE;
   }
 
-  /* Data/Export */
-  if (opts->backup_file) {
-    GFile *src = g_file_new_for_path(db_path);
-    GFile *dst = g_file_new_for_path(opts->backup_file);
-    GError *err = NULL;
+  return FALSE;
+}
 
-    if (g_file_copy(src, dst, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &err)) {
-      g_print("Database backed up to: %s\n", opts->backup_file);
-    } else {
-      g_printerr("Backup failed: %s\n", err->message);
-      g_error_free(err);
+static gboolean
+handle_cli_data_ops (GTimerCLIOptions *opts, GTimerDBManager *db, const char *db_path)
+{
+  if (opts->export_csv) {
+    GList *tasks = gtimer_db_manager_get_all_tasks (db);
+    GString *csv = g_string_new ("task_id,task_name,project,is_timing,is_hidden,total_seconds,today_seconds\n");
+    int count = g_list_length (tasks);
+
+    for (GList *l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK (l->data);
+      const char *project = gtimer_task_get_project_name (task) ? gtimer_task_get_project_name (task) : "";
+      g_string_append_printf (csv, "%d,\"%s\",\"%s\",%d,%d,%ld,%ld\n",
+          gtimer_task_get_id (task), gtimer_task_get_name (task), project,
+          gtimer_task_is_timing (task) ? 1 : 0, gtimer_task_is_hidden (task) ? 1 : 0,
+          gtimer_task_get_total_time (task), gtimer_task_get_today_time (task));
     }
-    g_object_unref(src);
-    g_object_unref(dst);
-    return;
+    g_list_free_full (tasks, g_object_unref);
+
+    if (!g_file_set_contents (opts->export_csv, csv->str, -1, NULL))
+      g_printerr ("Error: Failed to write CSV to %s\n", opts->export_csv);
+    else
+      g_print ("Exported %d tasks to: %s\n", count, opts->export_csv);
+    g_string_free (csv, TRUE);
+    return TRUE;
+  }
+
+  if (opts->import_csv) {
+    g_printerr ("Error: CSV import not yet implemented\n");
+    return TRUE;
+  }
+
+  if (opts->backup_file) {
+    copy_file (db_path, opts->backup_file, "Database backed up to", "Backup failed");
+    return TRUE;
   }
 
   if (opts->restore_file) {
-    GFile *src = g_file_new_for_path(opts->restore_file);
-    GFile *dst = g_file_new_for_path(db_path);
-    GError *err = NULL;
-
-    if (g_file_copy(src, dst, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &err)) {
-      g_print("Database restored from: %s\n", opts->restore_file);
-    } else {
-      g_printerr("Restore failed: %s\n", err->message);
-      g_error_free(err);
-    }
-    g_object_unref(src);
-    g_object_unref(dst);
-    return;
+    copy_file (opts->restore_file, db_path, "Database restored from", "Restore failed");
+    return TRUE;
   }
 
   if (opts->export_sqlite) {
-    GFile *src = g_file_new_for_path(db_path);
-    GFile *dst = g_file_new_for_path(opts->export_sqlite);
-    GError *err = NULL;
-
-    if (g_file_copy(src, dst, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &err)) {
-      g_print("SQLite database exported to: %s\n", opts->export_sqlite);
-    } else {
-      g_printerr("Export failed: %s\n", err->message);
-      g_error_free(err);
-    }
-    g_object_unref(src);
-    g_object_unref(dst);
-    return;
+    copy_file (db_path, opts->export_sqlite, "SQLite database exported to", "Export failed");
+    return TRUE;
   }
 
-  /* Utility */
+  return FALSE;
+}
+
+static gboolean
+handle_cli_utility (GTimerCLIOptions *opts, GTimerDBManager *db)
+{
   if (opts->show_total_time) {
-    GList *tasks = gtimer_db_manager_get_all_tasks(db);
-    GList *l;
+    GList *tasks = gtimer_db_manager_get_all_tasks (db);
     gint64 total = 0;
 
-    for (l = tasks; l != NULL; l = g_list_next(l)) {
-      GTimerTask *task = GTIMER_TASK(l->data);
-      total += gtimer_task_get_total_time(task);
-      g_object_unref(task);
+    for (GList *l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK (l->data);
+      total += gtimer_task_get_total_time (task);
     }
-    g_list_free(tasks);
+    g_list_free_full (tasks, g_object_unref);
 
     int hours = total / 3600;
     int mins = (total % 3600) / 60;
-    g_print("Total time tracked: %d hours %d minutes\n", hours, mins);
-    return;
+    g_print ("Total time tracked: %d hours %d minutes\n", hours, mins);
+    return TRUE;
   }
 
   if (opts->show_active_time) {
-    GList *tasks = gtimer_db_manager_get_all_tasks(db);
-    GList *l;
+    GList *tasks = gtimer_db_manager_get_all_tasks (db);
 
-    for (l = tasks; l != NULL; l = g_list_next(l)) {
-      GTimerTask *task = GTIMER_TASK(l->data);
-      if (gtimer_task_is_timing(task)) {
-        gint64 last_start = gtimer_task_get_last_start_time(task);
+    for (GList *l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK (l->data);
+      if (gtimer_task_is_timing (task)) {
+        gint64 last_start = gtimer_task_get_last_start_time (task);
         if (last_start > 0) {
-          gint64 now = time(NULL);
+          gint64 now = time (NULL);
           gint64 elapsed = now - last_start;
           int hours = elapsed / 3600;
           int mins = (elapsed % 3600) / 60;
           int secs = elapsed % 60;
-          g_print("%s: %02d:%02d:%02d\n", gtimer_task_get_name(task), hours, mins, secs);
+          g_print ("%s: %02d:%02d:%02d\n", gtimer_task_get_name (task), hours, mins, secs);
         }
       }
-      g_object_unref(task);
     }
-    g_list_free(tasks);
-    return;
+    g_list_free_full (tasks, g_object_unref);
+    return TRUE;
   }
 
   if (opts->show_summary) {
-    GList *tasks = gtimer_db_manager_get_all_tasks(db);
-    GList *l;
+    GList *tasks = gtimer_db_manager_get_all_tasks (db);
     int running = 0;
     gint64 today_total = 0;
 
-    for (l = tasks; l != NULL; l = g_list_next(l)) {
-      GTimerTask *task = GTIMER_TASK(l->data);
-      if (gtimer_task_is_timing(task)) running++;
-      today_total += gtimer_task_get_today_time(task);
-      g_object_unref(task);
+    for (GList *l = tasks; l != NULL; l = l->next) {
+      GTimerTask *task = GTIMER_TASK (l->data);
+      if (gtimer_task_is_timing (task)) running++;
+      today_total += gtimer_task_get_today_time (task);
     }
-    g_list_free(tasks);
+    g_list_free_full (tasks, g_object_unref);
 
     int hours = today_total / 3600;
     int mins = (today_total % 3600) / 60;
-    g_print("%d tasks running, %d:%02d today\n", running, hours, mins);
-    return;
+    g_print ("%d tasks running, %d:%02d today\n", running, hours, mins);
+    return TRUE;
   }
 
   if (opts->merge_source_id > 0 && opts->merge_target_id > 0) {
-    g_printerr("Merge task not yet implemented (requires db function)\n");
-    return;
+    g_printerr ("Merge task not yet implemented (requires db function)\n");
+    return TRUE;
   }
 
   if (opts->vacuum_db) {
-    sqlite3 *sql_db = gtimer_db_manager_get_db(db);
-    int rc = sqlite3_exec(sql_db, "VACUUM;", NULL, NULL, NULL);
-    if (rc == SQLITE_OK) {
-      g_print("Database compacted\n");
-    } else {
-      g_printerr("Vacuum failed\n");
-    }
-    return;
+    sqlite3 *sql_db = gtimer_db_manager_get_db (db);
+    int rc = sqlite3_exec (sql_db, "VACUUM;", NULL, NULL, NULL);
+    if (rc == SQLITE_OK)
+      g_print ("Database compacted\n");
+    else
+      g_printerr ("Vacuum failed\n");
+    return TRUE;
   }
+
+  return FALSE;
+}
+
+static void
+handle_cli_options (GTimerCLIOptions *opts, GTimerDBManager *db, const char *db_path)
+{
+  if (opts->list_tasks) { list_all_tasks (db, opts->output_json); return; }
+  if (opts->show_status) { print_status (db, opts->output_json); return; }
+  if (handle_cli_timer_control (opts, db)) return;
+  if (handle_cli_task_management (opts, db)) return;
+  if (handle_cli_reports (opts, db)) return;
+  if (handle_cli_project_management (opts, db)) return;
+  if (handle_cli_annotations (opts, db)) return;
+  if (handle_cli_data_ops (opts, db, db_path)) return;
+  if (handle_cli_utility (opts, db)) return;
 }
 
 static void
@@ -1289,6 +1248,7 @@ main (int argc, char **argv)
     { "version", 'v', 0, G_OPTION_ARG_NONE, &cli_opts.show_version, "Show version number", NULL },
     { "show", 'w', 0, G_OPTION_ARG_NONE, &cli_opts.show_gui, "Show GUI window", NULL },
     { "datadir", 'd', 0, G_OPTION_ARG_STRING, &cli_opts.datadir, "Use alternate database directory", "PATH" },
+    { "database", 'D', 0, G_OPTION_ARG_STRING, &cli_opts.database, "Use specific database file", "FILE" },
     { "verbose", 0, 0, G_OPTION_ARG_NONE, &cli_opts.verbose, "Enable verbose output", NULL },
     { "quiet", 'q', 0, G_OPTION_ARG_NONE, &cli_opts.quiet, "Suppress non-essential output", NULL },
     /* Date-based */
@@ -1352,15 +1312,21 @@ main (int argc, char **argv)
   g_set_application_name ("GTimer");
 
   const char *data_dir;
-  if (cli_opts.datadir) {
-    data_dir = cli_opts.datadir;
-  } else {
-    data_dir = g_get_user_data_dir();
-  }
+  char *db_path = NULL;
+  char *gtimer_dir = NULL;
 
-  char *gtimer_dir = g_build_filename(data_dir, "gtimer", NULL);
-  g_mkdir_with_parents(gtimer_dir, 0755);
-  char *db_path = g_build_filename(gtimer_dir, "gtimer.db", NULL);
+  if (cli_opts.database) {
+    db_path = g_strdup(cli_opts.database);
+  } else {
+    if (cli_opts.datadir) {
+      data_dir = cli_opts.datadir;
+    } else {
+      data_dir = g_get_user_data_dir();
+    }
+    gtimer_dir = g_build_filename(data_dir, "gtimer", NULL);
+    g_mkdir_with_parents(gtimer_dir, 0755);
+    db_path = g_build_filename(gtimer_dir, "gtimer.db", NULL);
+  }
 
   gtimer_app.db_manager = gtimer_db_manager_new(db_path, &error);
   if (!gtimer_app.db_manager) {
