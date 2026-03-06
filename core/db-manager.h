@@ -87,4 +87,14 @@ void gtimer_db_manager_add_annotation(GTimerDBManager *self, int task_id,
 				      const char *text);
 void gtimer_annotation_free(GTimerAnnotation *annotation);
 
+/* Tags */
+void gtimer_db_manager_add_tag_to_task(GTimerDBManager *self, int task_id,
+				       const char *tag_name);
+void gtimer_db_manager_remove_tag_from_task(GTimerDBManager *self, int task_id,
+					    const char *tag_name);
+GList *gtimer_db_manager_get_task_tags(GTimerDBManager *self, int task_id);
+GList *gtimer_db_manager_get_all_tags(GTimerDBManager *self);
+GList *gtimer_db_manager_get_tasks_by_tag(GTimerDBManager *self,
+					  const char *tag_name);
+
 #endif

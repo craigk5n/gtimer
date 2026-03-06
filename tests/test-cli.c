@@ -499,6 +499,85 @@ test_cli_summary_json (void)
   g_free (db_path);
 }
 
+static void
+test_cli_tags (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-tags-test.db", NULL);
+  g_remove (db_path);
+
+  /* Create task */
+  char *args = g_strdup_printf ("--database %s --add-task 'Tag Test'", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  /* Add tags */
+  args = g_strdup_printf ("--database %s --add-tag meeting --add-tag-task 1", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_assert_nonnull (strstr (output, "Added tag 'meeting'"));
+  g_free (output);
+
+  args = g_strdup_printf ("--database %s --add-tag billable --add-tag-task 1", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  /* List tags */
+  args = g_strdup_printf ("--database %s --list-tags", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_nonnull (strstr (output, "billable"));
+  g_assert_nonnull (strstr (output, "meeting"));
+  g_free (output);
+
+  /* List tasks shows tags */
+  args = g_strdup_printf ("--database %s --list-tasks", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_nonnull (strstr (output, "[billable, meeting]"));
+  g_free (output);
+
+  /* List tasks with JSON shows tags */
+  args = g_strdup_printf ("--database %s --list-tasks --json", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_nonnull (strstr (output, "\"tags\""));
+  g_assert_nonnull (strstr (output, "billable"));
+  g_free (output);
+
+  /* Filter by tag */
+  args = g_strdup_printf ("--database %s --add-task 'No Tags'", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  args = g_strdup_printf ("--database %s --list-tasks --tag meeting", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_nonnull (strstr (output, "Tag Test"));
+  g_assert_null (strstr (output, "No Tags"));
+  g_free (output);
+
+  /* Remove tag */
+  args = g_strdup_printf ("--database %s --remove-tag billable --remove-tag-task 1", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_nonnull (strstr (output, "Removed tag"));
+  g_free (output);
+
+  /* Verify removal */
+  args = g_strdup_printf ("--database %s --task-details 1", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_null (strstr (output, "billable"));
+  g_assert_nonnull (strstr (output, "meeting"));
+  g_free (output);
+
+  g_remove (db_path);
+  g_free (db_path);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -519,6 +598,7 @@ main (int argc, char **argv)
   g_test_add_func ("/cli/annotations", test_cli_annotations);
   g_test_add_func ("/cli/backup-restore", test_cli_backup_restore);
   g_test_add_func ("/cli/negative", test_cli_negative_cases);
+  g_test_add_func ("/cli/tags", test_cli_tags);
 
   return g_test_run ();
 }

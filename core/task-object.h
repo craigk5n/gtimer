@@ -18,6 +18,7 @@ gboolean    gtimer_task_is_timing      (GTimerTask *self);
 gboolean    gtimer_task_is_hidden      (GTimerTask *self);
 gint64      gtimer_task_get_last_start_time (GTimerTask *self);
 gint64      gtimer_task_get_created_at (GTimerTask *self);
+const char *gtimer_task_get_tags       (GTimerTask *self);
 
 void        gtimer_task_set_name       (GTimerTask *self, const char *name);
 void        gtimer_task_set_project_id (GTimerTask *self, int project_id);
@@ -28,6 +29,7 @@ void        gtimer_task_set_is_timing  (GTimerTask *self, gboolean is_timing);
 void        gtimer_task_set_is_hidden  (GTimerTask *self, gboolean is_hidden);
 void        gtimer_task_set_last_start_time (GTimerTask *self, gint64 last_start_time);
 void        gtimer_task_set_created_at (GTimerTask *self, gint64 created_at);
+void        gtimer_task_set_tags       (GTimerTask *self, const char *tags);
 
 #endif
 

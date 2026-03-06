@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <sqlite3.h>
 #include <time.h>
+#include <string.h>
 
 /* Test fixture: each test gets a fresh in-memory DB */
 typedef struct {
@@ -490,6 +491,100 @@ test_db_concurrent_timing (DbFixture *f, gconstpointer data)
   g_assert_cmpint (total_b, >=, 500);
 }
 
+static void
+test_db_tags (DbFixture *f, gconstpointer data)
+{
+  (void)data;
+  GError *error = NULL;
+
+  /* Create two tasks */
+  gtimer_db_manager_create_task (f->db, "Tagged Task A", -1, &error);
+  g_assert_no_error (error);
+  gtimer_db_manager_create_task (f->db, "Tagged Task B", -1, &error);
+  g_assert_no_error (error);
+
+  /* Add tags */
+  gtimer_db_manager_add_tag_to_task (f->db, 1, "meeting");
+  gtimer_db_manager_add_tag_to_task (f->db, 1, "billable");
+  gtimer_db_manager_add_tag_to_task (f->db, 2, "meeting");
+
+  /* Verify task tags */
+  GList *tags1 = gtimer_db_manager_get_task_tags (f->db, 1);
+  g_assert_cmpint (g_list_length (tags1), ==, 2);
+  /* Tags are ordered by name: billable, meeting */
+  g_assert_cmpstr ((char *)tags1->data, ==, "billable");
+  g_assert_cmpstr ((char *)tags1->next->data, ==, "meeting");
+  g_list_free_full (tags1, g_free);
+
+  GList *tags2 = gtimer_db_manager_get_task_tags (f->db, 2);
+  g_assert_cmpint (g_list_length (tags2), ==, 1);
+  g_assert_cmpstr ((char *)tags2->data, ==, "meeting");
+  g_list_free_full (tags2, g_free);
+
+  /* Verify all tags */
+  GList *all_tags = gtimer_db_manager_get_all_tags (f->db);
+  g_assert_cmpint (g_list_length (all_tags), ==, 2);
+  g_list_free_full (all_tags, g_free);
+
+  /* Verify tasks by tag */
+  GList *meeting_tasks = gtimer_db_manager_get_tasks_by_tag (f->db, "meeting");
+  g_assert_cmpint (g_list_length (meeting_tasks), ==, 2);
+  g_list_free (meeting_tasks);
+
+  GList *billable_tasks = gtimer_db_manager_get_tasks_by_tag (f->db, "billable");
+  g_assert_cmpint (g_list_length (billable_tasks), ==, 1);
+  g_list_free (billable_tasks);
+
+  /* Remove tag */
+  gtimer_db_manager_remove_tag_from_task (f->db, 1, "billable");
+  tags1 = gtimer_db_manager_get_task_tags (f->db, 1);
+  g_assert_cmpint (g_list_length (tags1), ==, 1);
+  g_assert_cmpstr ((char *)tags1->data, ==, "meeting");
+  g_list_free_full (tags1, g_free);
+
+  /* Adding duplicate tag is idempotent */
+  gtimer_db_manager_add_tag_to_task (f->db, 1, "meeting");
+  tags1 = gtimer_db_manager_get_task_tags (f->db, 1);
+  g_assert_cmpint (g_list_length (tags1), ==, 1);
+  g_list_free_full (tags1, g_free);
+
+  /* Tags appear in get_all_tasks via task object */
+  GList *tasks = gtimer_db_manager_get_all_tasks (f->db);
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *task = GTIMER_TASK (l->data);
+    if (gtimer_task_get_id (task) == 1) {
+      g_assert_nonnull (gtimer_task_get_tags (task));
+      g_assert_nonnull (strstr (gtimer_task_get_tags (task), "meeting"));
+    }
+  }
+  g_list_free_full (tasks, g_object_unref);
+}
+
+static void
+test_db_tag_cascade_delete (DbFixture *f, gconstpointer data)
+{
+  (void)data;
+  GError *error = NULL;
+
+  gtimer_db_manager_create_task (f->db, "Doomed Task", -1, &error);
+  g_assert_no_error (error);
+
+  gtimer_db_manager_add_tag_to_task (f->db, 1, "temp-tag");
+
+  /* Delete the task - should cascade delete task_tags */
+  gtimer_db_manager_delete_task (f->db, 1, &error);
+  g_assert_no_error (error);
+
+  /* Tag should still exist in tags table but no task_tags rows */
+  GList *all_tags = gtimer_db_manager_get_all_tags (f->db);
+  g_assert_cmpint (g_list_length (all_tags), ==, 1);
+  g_list_free_full (all_tags, g_free);
+
+  GList *tasks_for_tag = gtimer_db_manager_get_tasks_by_tag (f->db, "temp-tag");
+  g_assert_cmpint (g_list_length (tasks_for_tag), ==, 0);
+  g_list_free (tasks_for_tag);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -521,6 +616,10 @@ main (int argc, char **argv)
       db_fixture_setup, test_db_start_stop_timing, db_fixture_teardown);
   g_test_add ("/db/concurrent_timing", DbFixture, NULL,
       db_fixture_setup, test_db_concurrent_timing, db_fixture_teardown);
+  g_test_add ("/db/tags", DbFixture, NULL,
+      db_fixture_setup, test_db_tags, db_fixture_teardown);
+  g_test_add ("/db/tag_cascade_delete", DbFixture, NULL,
+      db_fixture_setup, test_db_tag_cascade_delete, db_fixture_teardown);
 
   return g_test_run ();
 }

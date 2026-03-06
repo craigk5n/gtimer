@@ -32,6 +32,17 @@ static const char *schema_sql =
   "  task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,"
   "  created_at INTEGER NOT NULL,"
   "  text TEXT NOT NULL"
+  ");"
+  ""
+  "CREATE TABLE IF NOT EXISTS tags ("
+  "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
+  "  name TEXT NOT NULL UNIQUE"
+  ");"
+  ""
+  "CREATE TABLE IF NOT EXISTS task_tags ("
+  "  task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,"
+  "  tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,"
+  "  PRIMARY KEY (task_id, tag_id)"
   ");";
 
 #endif

@@ -402,6 +402,24 @@ GList *gtimer_db_manager_get_all_tasks(GTimerDBManager *self)
 	}
 
 	sqlite3_finalize(stmt);
+
+	/* Load tags for each task */
+	for (GList *l = tasks; l != NULL; l = l->next) {
+		GTimerTask *task = GTIMER_TASK(l->data);
+		GList *tag_list = gtimer_db_manager_get_task_tags(self, gtimer_task_get_id(task));
+		if (tag_list) {
+			GString *tags_str = g_string_new(NULL);
+			for (GList *t = tag_list; t != NULL; t = t->next) {
+				if (tags_str->len > 0)
+					g_string_append(tags_str, ", ");
+				g_string_append(tags_str, (const char *)t->data);
+			}
+			gtimer_task_set_tags(task, tags_str->str);
+			g_string_free(tags_str, TRUE);
+			g_list_free_full(tag_list, g_free);
+		}
+	}
+
 	return tasks;
 }
 
@@ -729,4 +747,149 @@ void gtimer_annotation_free(GTimerAnnotation *annotation)
 		g_free(annotation->text);
 		g_free(annotation);
 	}
+}
+
+/* Ensure a tag exists in the tags table and return its ID */
+static int ensure_tag(GTimerDBManager *self, const char *tag_name)
+{
+	sqlite3_stmt *stmt;
+	int tag_id = -1;
+	int rc;
+
+	/* Try to find existing tag */
+	rc = sqlite3_prepare_v2(self->db,
+		"SELECT id FROM tags WHERE name = ?;", -1, &stmt, NULL);
+	if (rc == SQLITE_OK) {
+		sqlite3_bind_text(stmt, 1, tag_name, -1, SQLITE_TRANSIENT);
+		if (sqlite3_step(stmt) == SQLITE_ROW)
+			tag_id = sqlite3_column_int(stmt, 0);
+		sqlite3_finalize(stmt);
+	}
+
+	if (tag_id >= 0)
+		return tag_id;
+
+	/* Create new tag */
+	rc = sqlite3_prepare_v2(self->db,
+		"INSERT INTO tags (name) VALUES (?);", -1, &stmt, NULL);
+	if (rc == SQLITE_OK) {
+		sqlite3_bind_text(stmt, 1, tag_name, -1, SQLITE_TRANSIENT);
+		rc = sqlite3_step(stmt);
+		if (rc == SQLITE_DONE)
+			tag_id = (int)sqlite3_last_insert_rowid(self->db);
+		else
+			g_warning("Failed to create tag '%s': %s", tag_name, sqlite3_errmsg(self->db));
+		sqlite3_finalize(stmt);
+	}
+
+	return tag_id;
+}
+
+void gtimer_db_manager_add_tag_to_task(GTimerDBManager *self, int task_id,
+				       const char *tag_name)
+{
+	g_return_if_fail(GTIMER_IS_DB_MANAGER(self));
+	g_return_if_fail(tag_name != NULL);
+
+	int tag_id = ensure_tag(self, tag_name);
+	if (tag_id < 0)
+		return;
+
+	sqlite3_stmt *stmt;
+	int rc = sqlite3_prepare_v2(self->db,
+		"INSERT OR IGNORE INTO task_tags (task_id, tag_id) VALUES (?, ?);",
+		-1, &stmt, NULL);
+	if (rc == SQLITE_OK) {
+		sqlite3_bind_int(stmt, 1, task_id);
+		sqlite3_bind_int(stmt, 2, tag_id);
+		rc = sqlite3_step(stmt);
+		if (rc != SQLITE_DONE)
+			g_warning("Failed to add tag to task: %s", sqlite3_errmsg(self->db));
+		sqlite3_finalize(stmt);
+	}
+}
+
+void gtimer_db_manager_remove_tag_from_task(GTimerDBManager *self, int task_id,
+					    const char *tag_name)
+{
+	g_return_if_fail(GTIMER_IS_DB_MANAGER(self));
+	g_return_if_fail(tag_name != NULL);
+
+	sqlite3_stmt *stmt;
+	int rc = sqlite3_prepare_v2(self->db,
+		"DELETE FROM task_tags WHERE task_id = ? AND tag_id = "
+		"(SELECT id FROM tags WHERE name = ?);",
+		-1, &stmt, NULL);
+	if (rc == SQLITE_OK) {
+		sqlite3_bind_int(stmt, 1, task_id);
+		sqlite3_bind_text(stmt, 2, tag_name, -1, SQLITE_TRANSIENT);
+		rc = sqlite3_step(stmt);
+		if (rc != SQLITE_DONE)
+			g_warning("Failed to remove tag from task: %s", sqlite3_errmsg(self->db));
+		sqlite3_finalize(stmt);
+	}
+}
+
+GList *gtimer_db_manager_get_task_tags(GTimerDBManager *self, int task_id)
+{
+	g_return_val_if_fail(GTIMER_IS_DB_MANAGER(self), NULL);
+
+	sqlite3_stmt *stmt;
+	GList *tags = NULL;
+	int rc = sqlite3_prepare_v2(self->db,
+		"SELECT t.name FROM tags t "
+		"JOIN task_tags tt ON t.id = tt.tag_id "
+		"WHERE tt.task_id = ? ORDER BY t.name;",
+		-1, &stmt, NULL);
+	if (rc == SQLITE_OK) {
+		sqlite3_bind_int(stmt, 1, task_id);
+		while (sqlite3_step(stmt) == SQLITE_ROW) {
+			const char *name = (const char *)sqlite3_column_text(stmt, 0);
+			tags = g_list_append(tags, g_strdup(name));
+		}
+		sqlite3_finalize(stmt);
+	}
+	return tags;
+}
+
+GList *gtimer_db_manager_get_all_tags(GTimerDBManager *self)
+{
+	g_return_val_if_fail(GTIMER_IS_DB_MANAGER(self), NULL);
+
+	sqlite3_stmt *stmt;
+	GList *tags = NULL;
+	int rc = sqlite3_prepare_v2(self->db,
+		"SELECT name FROM tags ORDER BY name;", -1, &stmt, NULL);
+	if (rc == SQLITE_OK) {
+		while (sqlite3_step(stmt) == SQLITE_ROW) {
+			const char *name = (const char *)sqlite3_column_text(stmt, 0);
+			tags = g_list_append(tags, g_strdup(name));
+		}
+		sqlite3_finalize(stmt);
+	}
+	return tags;
+}
+
+GList *gtimer_db_manager_get_tasks_by_tag(GTimerDBManager *self,
+					  const char *tag_name)
+{
+	g_return_val_if_fail(GTIMER_IS_DB_MANAGER(self), NULL);
+	g_return_val_if_fail(tag_name != NULL, NULL);
+
+	sqlite3_stmt *stmt;
+	GList *task_ids = NULL;
+	int rc = sqlite3_prepare_v2(self->db,
+		"SELECT tt.task_id FROM task_tags tt "
+		"JOIN tags t ON t.id = tt.tag_id "
+		"WHERE t.name = ?;",
+		-1, &stmt, NULL);
+	if (rc == SQLITE_OK) {
+		sqlite3_bind_text(stmt, 1, tag_name, -1, SQLITE_TRANSIENT);
+		while (sqlite3_step(stmt) == SQLITE_ROW) {
+			int id = sqlite3_column_int(stmt, 0);
+			task_ids = g_list_append(task_ids, GINT_TO_POINTER(id));
+		}
+		sqlite3_finalize(stmt);
+	}
+	return task_ids;
 }

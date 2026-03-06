@@ -73,6 +73,13 @@ typedef struct {
   char *restore_file;
   char *import_gtimer2;
   char *export_sqlite;
+  /* Tags */
+  char *add_tag;
+  int add_tag_task_id;
+  char *remove_tag;
+  int remove_tag_task_id;
+  gboolean list_tags;
+  char *filter_tag;
   /* Utility */
   gboolean show_total_time;
   gboolean show_active_time;
@@ -156,10 +163,15 @@ print_status(GTimerDBManager *db, gboolean json)
 }
 
 static void
-list_all_tasks(GTimerDBManager *db, gboolean json)
+list_all_tasks(GTimerDBManager *db, gboolean json, const char *filter_tag)
 {
   GList *tasks = gtimer_db_manager_get_all_tasks(db);
   GList *l;
+
+  /* If filtering by tag, get the set of matching task IDs */
+  GList *tag_task_ids = NULL;
+  if (filter_tag)
+    tag_task_ids = gtimer_db_manager_get_tasks_by_tag(db, filter_tag);
 
   if (json) {
     g_print("[\n");
@@ -168,36 +180,60 @@ list_all_tasks(GTimerDBManager *db, gboolean json)
     g_print("---- --------------------------- --------------------------------\n");
   }
 
+  gboolean first_json = TRUE;
+  int displayed = 0;
   if (tasks) {
     for (l = tasks; l != NULL; l = g_list_next(l)) {
       GTimerTask *task = GTIMER_TASK(l->data);
       if (!task)
         continue;
+
+      /* Apply tag filter */
+      if (filter_tag) {
+        gboolean found = FALSE;
+        for (GList *t = tag_task_ids; t != NULL; t = t->next) {
+          if (GPOINTER_TO_INT(t->data) == gtimer_task_get_id(task)) { found = TRUE; break; }
+        }
+        if (!found) continue;
+      }
+
+      displayed++;
       const char *project = gtimer_task_get_project_name(task) ? gtimer_task_get_project_name(task) : "";
+      const char *tags = gtimer_task_get_tags(task);
       if (json) {
         g_autofree char *ename = json_escape (gtimer_task_get_name (task));
         g_autofree char *eproj = json_escape (project);
-        g_print("  {\"id\": %d, \"name\": \"%s\", \"project\": \"%s\", \"total_time\": %ld, \"today_time\": %ld}",
-                gtimer_task_get_id(task), ename, eproj,
+        g_autofree char *etags = json_escape (tags);
+        if (!first_json) g_print(",\n");
+        g_print("  {\"id\": %d, \"name\": \"%s\", \"project\": \"%s\", \"tags\": \"%s\", \"total_time\": %ld, \"today_time\": %ld}",
+                gtimer_task_get_id(task), ename, eproj, etags,
                 gtimer_task_get_total_time(task),
                 gtimer_task_get_today_time(task));
-        if (l->next) g_print(",");
-        g_print("\n");
+        first_json = FALSE;
       } else {
-        g_print("%-4d %-27s %s\n",
-                gtimer_task_get_id(task),
-                project[0] ? project : "-",
-                gtimer_task_get_name(task));
+        if (tags && tags[0]) {
+          g_print("%-4d %-27s %s [%s]\n",
+                  gtimer_task_get_id(task),
+                  project[0] ? project : "-",
+                  gtimer_task_get_name(task), tags);
+        } else {
+          g_print("%-4d %-27s %s\n",
+                  gtimer_task_get_id(task),
+                  project[0] ? project : "-",
+                  gtimer_task_get_name(task));
+        }
       }
       g_object_unref(task);
     }
     g_list_free(tasks);
   }
 
+  g_list_free (tag_task_ids);
+
   if (json) {
-    g_print("]\n");
+    g_print("\n]\n");
   } else {
-    g_print("\n%d tasks total.\n", tasks ? g_list_length(tasks) : 0);
+    g_print("\n%d tasks total.\n", displayed);
   }
 }
 
@@ -397,20 +433,24 @@ handle_cli_task_management (GTimerCLIOptions *opts, GTimerDBManager *db)
     if (opts->output_json) {
       g_autofree char *ename = json_escape (gtimer_task_get_name (found));
       g_autofree char *eproj = json_escape (gtimer_task_get_project_name (found));
+      g_autofree char *etags = json_escape (gtimer_task_get_tags (found));
       g_print ("{\n");
       g_print ("  \"id\": %d,\n", gtimer_task_get_id (found));
       g_print ("  \"name\": \"%s\",\n", ename);
       g_print ("  \"project\": \"%s\",\n", eproj);
+      g_print ("  \"tags\": \"%s\",\n", etags);
       g_print ("  \"total_time\": %ld,\n", gtimer_task_get_total_time (found));
       g_print ("  \"today_time\": %ld,\n", gtimer_task_get_today_time (found));
       g_print ("  \"is_timing\": %s,\n", gtimer_task_is_timing (found) ? "true" : "false");
       g_print ("  \"is_hidden\": %s\n", gtimer_task_is_hidden (found) ? "true" : "false");
       g_print ("}\n");
     } else {
+      const char *tags = gtimer_task_get_tags (found);
       g_print ("Task Details:\n");
       g_print ("  ID: %d\n", gtimer_task_get_id (found));
       g_print ("  Name: %s\n", gtimer_task_get_name (found));
       g_print ("  Project: %s\n", gtimer_task_get_project_name (found) ? gtimer_task_get_project_name (found) : "(none)");
+      g_print ("  Tags: %s\n", (tags && tags[0]) ? tags : "(none)");
       g_print ("  Total Time: %ld seconds\n", gtimer_task_get_total_time (found));
       g_print ("  Today: %ld seconds\n", gtimer_task_get_today_time (found));
       g_print ("  Status: %s\n", gtimer_task_is_timing (found) ? "timing" : "stopped");
@@ -635,18 +675,57 @@ handle_cli_annotations (GTimerCLIOptions *opts, GTimerDBManager *db)
 }
 
 static gboolean
+handle_cli_tags (GTimerCLIOptions *opts, GTimerDBManager *db)
+{
+  if (opts->add_tag && opts->add_tag_task_id > 0) {
+    gtimer_db_manager_add_tag_to_task (db, opts->add_tag_task_id, opts->add_tag);
+    g_print ("Added tag '%s' to task %d\n", opts->add_tag, opts->add_tag_task_id);
+    return TRUE;
+  }
+
+  if (opts->remove_tag && opts->remove_tag_task_id > 0) {
+    gtimer_db_manager_remove_tag_from_task (db, opts->remove_tag_task_id, opts->remove_tag);
+    g_print ("Removed tag '%s' from task %d\n", opts->remove_tag, opts->remove_tag_task_id);
+    return TRUE;
+  }
+
+  if (opts->list_tags) {
+    GList *tags = gtimer_db_manager_get_all_tags (db);
+    if (opts->output_json) {
+      g_print ("[\n");
+      for (GList *l = tags; l != NULL; l = l->next) {
+        g_autofree char *etag = json_escape ((const char *)l->data);
+        g_print ("  \"%s\"", etag);
+        if (l->next) g_print (",");
+        g_print ("\n");
+      }
+      g_print ("]\n");
+    } else {
+      for (GList *l = tags; l != NULL; l = l->next)
+        g_print ("%s\n", (const char *)l->data);
+      g_print ("\n%d tags total.\n", g_list_length (tags));
+    }
+    g_list_free_full (tags, g_free);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+static gboolean
 handle_cli_data_ops (GTimerCLIOptions *opts, GTimerDBManager *db, const char *db_path)
 {
   if (opts->export_csv) {
     GList *tasks = gtimer_db_manager_get_all_tasks (db);
-    GString *csv = g_string_new ("task_id,task_name,project,is_timing,is_hidden,total_seconds,today_seconds\n");
+    GString *csv = g_string_new ("task_id,task_name,project,tags,is_timing,is_hidden,total_seconds,today_seconds\n");
     int count = g_list_length (tasks);
 
     for (GList *l = tasks; l != NULL; l = l->next) {
       GTimerTask *task = GTIMER_TASK (l->data);
       const char *project = gtimer_task_get_project_name (task) ? gtimer_task_get_project_name (task) : "";
-      g_string_append_printf (csv, "%d,\"%s\",\"%s\",%d,%d,%ld,%ld\n",
-          gtimer_task_get_id (task), gtimer_task_get_name (task), project,
+      const char *tags = gtimer_task_get_tags (task) ? gtimer_task_get_tags (task) : "";
+      g_string_append_printf (csv, "%d,\"%s\",\"%s\",\"%s\",%d,%d,%ld,%ld\n",
+          gtimer_task_get_id (task), gtimer_task_get_name (task), project, tags,
           gtimer_task_is_timing (task) ? 1 : 0, gtimer_task_is_hidden (task) ? 1 : 0,
           gtimer_task_get_total_time (task), gtimer_task_get_today_time (task));
     }
@@ -691,6 +770,19 @@ handle_cli_data_ops (GTimerCLIOptions *opts, GTimerDBManager *db, const char *db
           gtimer_task_get_total_time (task), gtimer_task_get_today_time (task),
           gtimer_task_is_timing (task) ? "true" : "false",
           gtimer_task_is_hidden (task) ? "true" : "false");
+
+      /* Tags */
+      const char *tags = gtimer_task_get_tags (task);
+      if (tags && tags[0]) {
+        g_string_append (out, ", \"tags\": [");
+        g_auto(GStrv) tag_arr = g_strsplit (tags, ", ", -1);
+        for (int ti = 0; tag_arr[ti]; ti++) {
+          g_autofree char *etag = json_escape (tag_arr[ti]);
+          if (ti > 0) g_string_append (out, ", ");
+          g_string_append_printf (out, "\"%s\"", etag);
+        }
+        g_string_append (out, "]");
+      }
 
       GList *annotations = gtimer_db_manager_get_annotations (db, task_id);
       if (annotations) {
@@ -851,13 +943,14 @@ handle_cli_utility (GTimerCLIOptions *opts, GTimerDBManager *db)
 static void
 handle_cli_options (GTimerCLIOptions *opts, GTimerDBManager *db, const char *db_path)
 {
-  if (opts->list_tasks) { list_all_tasks (db, opts->output_json); return; }
+  if (opts->list_tasks) { list_all_tasks (db, opts->output_json, opts->filter_tag); return; }
   if (opts->show_status) { print_status (db, opts->output_json); return; }
   if (handle_cli_timer_control (opts, db)) return;
   if (handle_cli_task_management (opts, db)) return;
   if (handle_cli_reports (opts, db)) return;
   if (handle_cli_project_management (opts, db)) return;
   if (handle_cli_annotations (opts, db)) return;
+  if (handle_cli_tags (opts, db)) return;
   if (handle_cli_data_ops (opts, db, db_path)) return;
   if (handle_cli_utility (opts, db)) return;
 }
@@ -1399,6 +1492,13 @@ main (int argc, char **argv)
     { "annotate-task", 0, 0, G_OPTION_ARG_INT, &cli_opts.annotate_task_id, "Task ID to annotate", "ID" },
     { "list-annotations", 0, 0, G_OPTION_ARG_INT, &cli_opts.list_annotations_id, "List annotations for task", "ID" },
     { "note", 0, 0, G_OPTION_ARG_STRING, &cli_opts.note_text, "Add note to current task", "TEXT" },
+    /* Tags */
+    { "add-tag", 0, 0, G_OPTION_ARG_STRING, &cli_opts.add_tag, "Add tag to task", "TAG" },
+    { "add-tag-task", 0, 0, G_OPTION_ARG_INT, &cli_opts.add_tag_task_id, "Task ID for --add-tag", "ID" },
+    { "remove-tag", 0, 0, G_OPTION_ARG_STRING, &cli_opts.remove_tag, "Remove tag from task", "TAG" },
+    { "remove-tag-task", 0, 0, G_OPTION_ARG_INT, &cli_opts.remove_tag_task_id, "Task ID for --remove-tag", "ID" },
+    { "list-tags", 0, 0, G_OPTION_ARG_NONE, &cli_opts.list_tags, "List all tags", NULL },
+    { "tag", 0, 0, G_OPTION_ARG_STRING, &cli_opts.filter_tag, "Filter tasks by tag", "TAG" },
     /* Data/export */
     { "json", 'j', 0, G_OPTION_ARG_NONE, &cli_opts.output_json, "Output in JSON format", NULL },
     { "export-json", 'J', 0, G_OPTION_ARG_STRING, &cli_opts.export_json, "Export all data to JSON file", "FILENAME" },
@@ -1464,7 +1564,8 @@ main (int argc, char **argv)
       cli_opts.reset_task_id > 0 || cli_opts.duplicate_task_id > 0 ||
       cli_opts.list_projects || cli_opts.add_project || cli_opts.delete_project_id > 0 ||
       cli_opts.rename_project_id > 0 || cli_opts.annotate_text || cli_opts.list_annotations_id > 0 ||
-      cli_opts.note_text || cli_opts.backup_file || cli_opts.restore_file || cli_opts.export_sqlite ||
+      cli_opts.note_text || cli_opts.add_tag || cli_opts.remove_tag || cli_opts.list_tags ||
+      cli_opts.backup_file || cli_opts.restore_file || cli_opts.export_sqlite ||
       cli_opts.show_total_time || cli_opts.show_active_time || cli_opts.show_summary ||
       cli_opts.merge_source_id > 0 || cli_opts.vacuum_db) {
     if (!cli_opts.quiet) {

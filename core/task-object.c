@@ -11,6 +11,7 @@ struct _GTimerTask {
   gboolean is_hidden;
   gint64 last_start_time;
   gint64 created_at;
+  char *tags;
 };
 G_DEFINE_TYPE ( GTimerTask, gtimer_task, G_TYPE_OBJECT )
 enum {
@@ -24,6 +25,7 @@ enum {
   PROP_IS_HIDDEN,
   PROP_LAST_START_TIME,
   PROP_CREATED_AT,
+  PROP_TAGS,
   N_PROPERTIES
 };
 static GParamSpec *properties[N_PROPERTIES] = { NULL, };
@@ -33,6 +35,7 @@ static void gtimer_task_finalize ( GObject * object )
   GTimerTask *self = GTIMER_TASK ( object );
   g_free ( self->name );
   g_free ( self->project_name );
+  g_free ( self->tags );
   G_OBJECT_CLASS ( gtimer_task_parent_class )->finalize ( object );
 }
 
@@ -71,6 +74,9 @@ gtimer_task_get_property ( GObject * object,
       break;
     case PROP_CREATED_AT:
       g_value_set_int64 ( value, self->created_at );
+      break;
+    case PROP_TAGS:
+      g_value_set_string ( value, self->tags );
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID ( object, property_id, pspec );
@@ -116,6 +122,10 @@ gtimer_task_set_property ( GObject * object,
     case PROP_CREATED_AT:
       self->created_at = g_value_get_int64 ( value );
       break;
+    case PROP_TAGS:
+      g_free ( self->tags );
+      self->tags = g_value_dup_string ( value );
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID ( object, property_id, pspec );
       break;
@@ -159,6 +169,9 @@ static void gtimer_task_class_init ( GTimerTaskClass * klass )
       g_param_spec_int64 ( "created-at", "Created At",
       "Unix timestamp of creation", 0, G_MAXINT64, 0,
       G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY );
+  properties[PROP_TAGS] =
+      g_param_spec_string ( "tags", "Tags",
+      "Comma-separated tag names", NULL, G_PARAM_READWRITE );
   g_object_class_install_properties ( object_class, N_PROPERTIES,
       properties );
 }
@@ -295,4 +308,16 @@ void gtimer_task_set_created_at ( GTimerTask * self, gint64 created_at )
 {
   self->created_at = created_at;
   g_object_notify_by_pspec ( G_OBJECT ( self ), properties[PROP_CREATED_AT] );
+}
+
+const char *gtimer_task_get_tags ( GTimerTask * self )
+{
+  return self->tags;
+}
+
+void gtimer_task_set_tags ( GTimerTask * self, const char *tags )
+{
+  g_free ( self->tags );
+  self->tags = g_strdup ( tags );
+  g_object_notify_by_pspec ( G_OBJECT ( self ), properties[PROP_TAGS] );
 }

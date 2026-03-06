@@ -89,10 +89,11 @@ Hamster's "activity@category #tag" and Watson's "watson start project +tag" allo
 
 ### Priority 1: High Value, Moderate Effort
 
-**1.1 Tags/Labels System**
+**1.1 Tags/Labels System** -- DONE (core + CLI; UI pending)
 Add optional tags to tasks (stored in DB). Display as pills/chips in the UI. Filter task list and reports by tag. CLI: `gtimer start --tag meeting`.
 - *Why*: Universal feature across competitors. Enables cross-project categorization.
 - *Effort*: DB schema change + UI for tag entry/display + report filtering.
+- *Implemented*: `tags` and `task_tags` tables in DB schema. DB functions: add/remove/get tags per task, get all tags, get tasks by tag. Task object has `tags` property (comma-separated). CLI: `--add-tag TAG --add-tag-task ID`, `--remove-tag TAG --remove-tag-task ID`, `--list-tags`, `--tag TAG` filter for `--list-tasks`. Tags appear in `--list-tasks`, `--task-details`, `--export-csv`, `--export-json`. UI tag entry in dialogs still TODO.
 
 **1.2 Charts and Data Visualization**
 Add a "Statistics" view (accessible from hamburger menu) with:
