@@ -52,19 +52,52 @@ test_idle_init_exe = executable('test-idle-init',
   dependencies: [core_dep, gtk_dep]
 )
 
-test_cli_sources = files(
-  'test-cli.c'
+test_db_manager_sources = files(
+  'test-db-manager.c'
+)
+
+test_db_manager_exe = executable('test-db-manager',
+  test_db_manager_sources,
+  dependencies: [core_dep, gtk_dep]
+)
+
+test_objects_exe = executable('test-objects',
+  'test-objects.c',
+  dependencies: [core_dep, gtk_dep]
 )
 
 test_cli_exe = executable('test-cli',
-  test_cli_sources,
-  dependencies: [core_dep, gtk_dep]
+  'test-cli.c',
+  dependencies: [core_dep, gtk_dep],
+  c_args: ['-DGTIMER_BINARY="' + gtimer_exe.full_path() + '"']
+)
+
+# Mock Idle Monitor Test
+mock_idle_monitor_sources = files(
+  'mock-idle-monitor.c',
+  'test-idle-logic.c',
+  '../core/db-manager.c',
+  '../core/task-object.c',
+  '../core/project-object.c',
+  '../core/task-list-model.c',
+  '../core/report-generator.c',
+  '../core/timer-utils.c',
+  '../core/timer-service.c'
+)
+
+test_idle_logic_exe = executable('test-idle-logic',
+  mock_idle_monitor_sources,
+  dependencies: [sqlite_dep, glib_dep, gtk_dep], # Manual deps since we're not using core_dep
+  c_args: ['-I' + meson.project_source_root() + '/core']
 )
 
 test('basic', test_exe)
 test('db', test_db_exe)
+test('db-manager', test_db_manager_exe)
 test('model', test_model_exe)
 test('utils', test_utils_exe)
 test('service', test_service_exe)
 test('idle-init', test_idle_init_exe)
+test('objects', test_objects_exe)
 test('cli', test_cli_exe)
+test('idle-logic', test_idle_logic_exe)

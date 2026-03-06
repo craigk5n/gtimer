@@ -134,7 +134,7 @@ Prioritized list of issues found during comprehensive code review.
 
 Current: 35 tests across 9 files. Key gaps:
 
-- [ ] **`task-object` / `project-object`** — 0 unit tests for any getter/setter/property notification
+- [x] **`task-object` / `project-object`** — 0 unit tests for any getter/setter/property notification
 - [ ] **`update_task` / `update_project`** — core edit operations completely untested
 - [ ] **`report-generator`** — only text daily format tested via CLI; weekly/monthly/yearly and HTML never tested
 - [ ] **`timer-service` state machine** — `pause()`, `resume()`, `remove_time()`, `get_elapsed()` untested
