@@ -352,11 +352,136 @@ test_db_migration_schema(void)
   g_free(db_path);
 }
 
+static void
+test_db_get_hidden_tasks(void)
+{
+  GError *error = NULL;
+
+  /* Create two tasks, hide one */
+  gtimer_db_manager_create_task(db, "Visible Task", -1, &error);
+  g_assert_no_error(error);
+  gtimer_db_manager_create_task(db, "Hidden Task", -1, &error);
+  g_assert_no_error(error);
+
+  /* Find the task to hide */
+  GList *tasks = gtimer_db_manager_get_all_tasks(db);
+  int hidden_id = 0;
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *t = l->data;
+    if (g_strcmp0(gtimer_task_get_name(t), "Hidden Task") == 0)
+      hidden_id = gtimer_task_get_id(t);
+  }
+  g_list_free_full(tasks, g_object_unref);
+  g_assert_cmpint(hidden_id, >, 0);
+
+  gtimer_db_manager_hide_task(db, hidden_id, TRUE, &error);
+  g_assert_no_error(error);
+
+  /* get_hidden_tasks should return only hidden tasks */
+  GList *hidden = gtimer_db_manager_get_hidden_tasks(db);
+  g_assert_nonnull(hidden);
+
+  gboolean found = FALSE;
+  for (GList *l = hidden; l != NULL; l = l->next) {
+    GTimerTask *t = l->data;
+    g_assert_true(gtimer_task_is_hidden(t));
+    if (gtimer_task_get_id(t) == hidden_id)
+      found = TRUE;
+  }
+  g_list_free_full(hidden, g_object_unref);
+  g_assert_true(found);
+
+  /* Unhide for cleanup */
+  gtimer_db_manager_hide_task(db, hidden_id, FALSE, &error);
+  g_assert_no_error(error);
+}
+
+static void
+test_db_task_time_queries(void)
+{
+  GError *error = NULL;
+
+  gtimer_db_manager_create_task(db, "Time Query Task", -1, &error);
+  g_assert_no_error(error);
+
+  /* Find the task ID */
+  GList *tasks = gtimer_db_manager_get_all_tasks(db);
+  int task_id = 0;
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *t = l->data;
+    if (g_strcmp0(gtimer_task_get_name(t), "Time Query Task") == 0)
+      task_id = gtimer_task_get_id(t);
+  }
+  g_list_free_full(tasks, g_object_unref);
+  g_assert_cmpint(task_id, >, 0);
+
+  /* No time yet */
+  g_assert_cmpint(gtimer_db_manager_get_task_total_time(db, task_id), ==, 0);
+  g_assert_cmpint(gtimer_db_manager_get_task_today_time(db, task_id), ==, 0);
+
+  /* Add time for today */
+  gtimer_db_manager_add_task_time(db, task_id, 3600);
+  g_assert_cmpint(gtimer_db_manager_get_task_today_time(db, task_id), ==, 3600);
+  g_assert_cmpint(gtimer_db_manager_get_task_total_time(db, task_id), ==, 3600);
+
+  /* Add more time for today (accumulates) */
+  gtimer_db_manager_add_task_time(db, task_id, 1800);
+  g_assert_cmpint(gtimer_db_manager_get_task_today_time(db, task_id), ==, 5400);
+  g_assert_cmpint(gtimer_db_manager_get_task_total_time(db, task_id), ==, 5400);
+
+  /* Add time for a different date (only affects total, not today) */
+  gtimer_db_manager_add_task_time_for_date(db, task_id, "2020-01-01", 900);
+  g_assert_cmpint(gtimer_db_manager_get_task_today_time(db, task_id), ==, 5400);
+  g_assert_cmpint(gtimer_db_manager_get_task_total_time(db, task_id), ==, 6300);
+
+  /* set_task_today_time overwrites (not accumulates) */
+  gtimer_db_manager_set_task_today_time(db, task_id, 100);
+  g_assert_cmpint(gtimer_db_manager_get_task_today_time(db, task_id), ==, 100);
+  g_assert_cmpint(gtimer_db_manager_get_task_total_time(db, task_id), ==, 1000);
+
+  /* Nonexistent task returns 0 */
+  g_assert_cmpint(gtimer_db_manager_get_task_total_time(db, 99999), ==, 0);
+  g_assert_cmpint(gtimer_db_manager_get_task_today_time(db, 99999), ==, 0);
+}
+
+static void
+test_db_start_stop_timing(void)
+{
+  GError *error = NULL;
+
+  gtimer_db_manager_create_task(db, "Timing Task", -1, &error);
+  g_assert_no_error(error);
+
+  GList *tasks = gtimer_db_manager_get_all_tasks(db);
+  int task_id = 0;
+  for (GList *l = tasks; l != NULL; l = l->next) {
+    GTimerTask *t = l->data;
+    if (g_strcmp0(gtimer_task_get_name(t), "Timing Task") == 0)
+      task_id = gtimer_task_get_id(t);
+  }
+  g_list_free_full(tasks, g_object_unref);
+  g_assert_cmpint(task_id, >, 0);
+
+  /* Not timing initially */
+  g_assert_false(gtimer_db_manager_is_task_timing(db, task_id));
+
+  /* Start timing */
+  gtimer_db_manager_start_task_timing(db, task_id);
+  g_assert_true(gtimer_db_manager_is_task_timing(db, task_id));
+
+  /* Stop timing */
+  gtimer_db_manager_stop_task_timing(db, task_id);
+  g_assert_false(gtimer_db_manager_is_task_timing(db, task_id));
+
+  /* Nonexistent task returns FALSE */
+  g_assert_false(gtimer_db_manager_is_task_timing(db, 99999));
+}
+
 int
 main(int argc, char **argv)
 {
   g_test_init(&argc, &argv, NULL);
-  
+
   GError *error = NULL;
   db = gtimer_db_manager_new(":memory:", &error);
   g_assert_no_error(error);
@@ -371,6 +496,9 @@ main(int argc, char **argv)
   g_test_add_func("/db/midnight_rollover", test_db_midnight_rollover);
   g_test_add_func("/db/project_deletion_fk", test_db_project_deletion_fk);
   g_test_add_func("/db/migration_schema", test_db_migration_schema);
+  g_test_add_func("/db/get_hidden_tasks", test_db_get_hidden_tasks);
+  g_test_add_func("/db/task_time_queries", test_db_task_time_queries);
+  g_test_add_func("/db/start_stop_timing", test_db_start_stop_timing);
   
   int result = g_test_run();
   
