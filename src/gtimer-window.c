@@ -995,11 +995,8 @@ static void gtimer_window_dispose (GObject *object) { GTimerWindow *self = GTIME
 static void gtimer_window_class_init (GTimerWindowClass *klass) { GObjectClass *object_class = G_OBJECT_CLASS (klass); object_class->dispose = gtimer_window_dispose; }
 
 static void
-gtimer_window_init (GTimerWindow *self)
+setup_actions (GTimerWindow *self)
 {
-  GtkWidget *main_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-  adw_application_window_set_content (ADW_APPLICATION_WINDOW (self), main_box);
-
   const GActionEntry entries[] = {
     { .name = "start-stop", .activate = on_start_stop_action },
     { .name = "stop-all", .activate = on_stop_all_action },
@@ -1020,13 +1017,36 @@ gtimer_window_init (GTimerWindow *self)
     { .name = "shortcuts", .activate = on_shortcuts_action },
   };
   g_action_map_add_action_entries (G_ACTION_MAP (self), entries, G_N_ELEMENTS (entries), self);
+}
 
+static void
+setup_header_bar (GTimerWindow *self, GtkWidget *main_box)
+{
   self->header_bar = ADW_HEADER_BAR (adw_header_bar_new ());
   gtk_box_append (GTK_BOX (main_box), GTK_WIDGET (self->header_bar));
   self->window_title = ADW_WINDOW_TITLE (adw_window_title_new ("GTimer", ""));
   adw_header_bar_set_title_widget (self->header_bar, GTK_WIDGET (self->window_title));
 
-  // Secondary Toolbar (Action Bar) below title bar
+  GtkWidget *header_start_stop = gtk_button_new_from_icon_name ("media-playback-start-symbolic");
+  gtk_actionable_set_action_name (GTK_ACTIONABLE (header_start_stop), "win.start-stop");
+  gtk_widget_set_tooltip_text (header_start_stop, "Start/Stop Timing");
+  adw_header_bar_pack_start (self->header_bar, header_start_stop);
+
+  self->search_entry = GTK_SEARCH_ENTRY (gtk_search_entry_new ());
+  gtk_widget_set_hexpand (GTK_WIDGET (self->search_entry), TRUE);
+  gtk_widget_set_halign (GTK_WIDGET (self->search_entry), GTK_ALIGN_CENTER);
+  gtk_widget_set_size_request (GTK_WIDGET (self->search_entry), 250, -1);
+  adw_header_bar_set_title_widget (self->header_bar, GTK_WIDGET (self->search_entry));
+
+  self->new_task_button = gtk_button_new_from_icon_name ("list-add-symbolic");
+  gtk_actionable_set_action_name (GTK_ACTIONABLE (self->new_task_button), "win.new-task");
+  gtk_widget_set_tooltip_text (self->new_task_button, "New Task");
+  adw_header_bar_pack_end (self->header_bar, self->new_task_button);
+}
+
+static void
+setup_toolbar (GTimerWindow *self, GtkWidget *main_box)
+{
   GtkWidget *action_bar = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
   gtk_widget_add_css_class (action_bar, "toolbar");
   gtk_widget_set_margin_start (action_bar, 6);
@@ -1049,33 +1069,19 @@ gtimer_window_init (GTimerWindow *self)
     gtk_actionable_set_action_name (GTK_ACTIONABLE (btn), bar_buttons[i].action);
     gtk_widget_set_tooltip_text (btn, bar_buttons[i].tooltip);
     gtk_box_append (GTK_BOX (action_bar), btn);
-    
-    // Track some buttons to update sensitivity/icons
+
     if (g_strcmp0 (bar_buttons[i].action, "win.start-stop") == 0) self->start_stop_button = btn;
     if (g_strcmp0 (bar_buttons[i].action, "win.stop-all") == 0) self->stop_all_button = btn;
     if (g_strcmp0 (bar_buttons[i].action, "win.edit-task") == 0) self->edit_task_button = btn;
     if (g_strcmp0 (bar_buttons[i].action, "win.annotate") == 0) self->annotate_button = btn;
   }
+}
 
-  // Header Bar primary buttons
-  GtkWidget *header_start_stop = gtk_button_new_from_icon_name ("media-playback-start-symbolic");
-  gtk_actionable_set_action_name (GTK_ACTIONABLE (header_start_stop), "win.start-stop");
-  gtk_widget_set_tooltip_text (header_start_stop, "Start/Stop Timing");
-  adw_header_bar_pack_start (self->header_bar, header_start_stop);
-
-  // Search Entry in center
-  self->search_entry = GTK_SEARCH_ENTRY (gtk_search_entry_new ());
-  gtk_widget_set_hexpand (GTK_WIDGET (self->search_entry), TRUE);
-  gtk_widget_set_halign (GTK_WIDGET (self->search_entry), GTK_ALIGN_CENTER);
-  gtk_widget_set_size_request (GTK_WIDGET (self->search_entry), 250, -1);
-  adw_header_bar_set_title_widget (self->header_bar, GTK_WIDGET (self->search_entry));
-
-  self->new_task_button = gtk_button_new_from_icon_name ("list-add-symbolic");
-  gtk_actionable_set_action_name (GTK_ACTIONABLE (self->new_task_button), "win.new-task");
-  gtk_widget_set_tooltip_text (self->new_task_button, "New Task");
-  adw_header_bar_pack_end (self->header_bar, self->new_task_button);
-
+static void
+setup_menus (GTimerWindow *self)
+{
   GMenu *menu = g_menu_new ();
+
   GMenu *task_section = g_menu_new ();
   g_menu_append (task_section, _("Start Timing"), "win.start-stop");
   g_menu_append (task_section, _("Stop All Timing"), "win.stop-all");
@@ -1085,7 +1091,7 @@ gtimer_window_init (GTimerWindow *self)
   g_menu_append (task_section, _("Unhide..."), "win.unhide-tasks");
   g_menu_append (task_section, _("Delete"), "win.delete-task");
   g_menu_append_section (menu, _("Task"), G_MENU_MODEL (task_section));
-  
+
   GMenu *report_section = g_menu_new ();
   g_menu_append (report_section, _("Daily Report..."), "app.report");
   g_menu_append_section (menu, _("Data"), G_MENU_MODEL (report_section));
@@ -1099,29 +1105,37 @@ gtimer_window_init (GTimerWindow *self)
   g_menu_append (time_section, _("-30 Minutes"), "win.adjust-time(-1800)");
   g_menu_append (time_section, _("Set to Zero"), "win.set-zero");
   g_menu_append_section (menu, _("Time Adjustment"), G_MENU_MODEL (time_section));
+
   GMenu *edit_section = g_menu_new ();
   g_menu_append (edit_section, _("Cut Time"), "win.cut-time");
   g_menu_append (edit_section, _("Copy Time"), "win.copy-time");
   g_menu_append (edit_section, _("Paste Time"), "win.paste-time");
   g_menu_append (edit_section, _("Clear Buffer"), "win.clear-buffer");
   g_menu_append_section (menu, _("Edit"), G_MENU_MODEL (edit_section));
+
   GMenu *project_section = g_menu_new ();
   g_menu_append (project_section, _("New Project..."), "win.new-project");
   g_menu_append (project_section, _("Edit Project..."), "win.edit-project");
   g_menu_append_section (menu, _("Project"), G_MENU_MODEL (project_section));
+
   GMenu *app_section = g_menu_new ();
   g_menu_append (app_section, _("Keyboard Shortcuts"), "win.shortcuts");
   g_menu_append (app_section, _("About GTimer"), "app.about");
   g_menu_append_section (menu, NULL, G_MENU_MODEL (app_section));
-  
+
   GtkMenuButton *menu_button = GTK_MENU_BUTTON (gtk_menu_button_new ());
   gtk_menu_button_set_icon_name (menu_button, "view-more-symbolic");
   gtk_menu_button_set_menu_model (menu_button, G_MENU_MODEL (menu));
   adw_header_bar_pack_end (self->header_bar, GTK_WIDGET (menu_button));
+}
 
+static void
+setup_column_view (GTimerWindow *self, GtkWidget *main_box)
+{
   self->toast_overlay = ADW_TOAST_OVERLAY (adw_toast_overlay_new ());
   gtk_widget_set_vexpand (GTK_WIDGET (self->toast_overlay), TRUE);
   gtk_box_append (GTK_BOX (main_box), GTK_WIDGET (self->toast_overlay));
+
   GtkWidget *scrolled = gtk_scrolled_window_new ();
   adw_toast_overlay_set_child (self->toast_overlay, scrolled);
   self->column_view = GTK_COLUMN_VIEW (gtk_column_view_new (NULL));
@@ -1133,6 +1147,7 @@ gtimer_window_init (GTimerWindow *self)
   g_signal_connect (right_click, "pressed", G_CALLBACK (on_right_click_cb), self);
   gtk_widget_add_controller (GTK_WIDGET (self->column_view), GTK_EVENT_CONTROLLER (right_click));
 
+  /* Project column */
   GtkListItemFactory *factory = gtk_signal_list_item_factory_new ();
   g_signal_connect (factory, "setup", G_CALLBACK (setup_project_cb), NULL);
   g_signal_connect (factory, "bind", G_CALLBACK (bind_project_cb), NULL);
@@ -1144,6 +1159,8 @@ gtimer_window_init (GTimerWindow *self)
   gtk_column_view_column_set_sorter (col, GTK_SORTER (string_sorter));
   g_object_unref (string_sorter);
   gtk_column_view_append_column (self->column_view, col);
+
+  /* Task column */
   factory = gtk_signal_list_item_factory_new ();
   g_signal_connect (factory, "setup", G_CALLBACK (setup_label_cb), NULL);
   g_signal_connect (factory, "bind", G_CALLBACK (bind_task_name_cb), NULL);
@@ -1155,6 +1172,8 @@ gtimer_window_init (GTimerWindow *self)
   gtk_column_view_column_set_sorter (col, GTK_SORTER (string_sorter));
   g_object_unref (string_sorter);
   gtk_column_view_append_column (self->column_view, col);
+
+  /* Today column */
   factory = gtk_signal_list_item_factory_new ();
   g_signal_connect (factory, "setup", G_CALLBACK (setup_time_label_cb), NULL);
   g_signal_connect (factory, "bind", G_CALLBACK (bind_today_time_cb), NULL);
@@ -1166,6 +1185,8 @@ gtimer_window_init (GTimerWindow *self)
   gtk_column_view_column_set_sorter (col, GTK_SORTER (num_sorter));
   g_object_unref (num_sorter);
   gtk_column_view_append_column (self->column_view, col);
+
+  /* Total column */
   factory = gtk_signal_list_item_factory_new ();
   g_signal_connect (factory, "setup", G_CALLBACK (setup_time_label_cb), NULL);
   g_signal_connect (factory, "bind", G_CALLBACK (bind_total_time_cb), NULL);
@@ -1178,7 +1199,7 @@ gtimer_window_init (GTimerWindow *self)
   g_object_unref (num_sorter);
   gtk_column_view_append_column (self->column_view, col);
 
-  // Created Column
+  /* Created column */
   factory = gtk_signal_list_item_factory_new ();
   g_signal_connect (factory, "setup", G_CALLBACK (setup_date_label_cb), NULL);
   g_signal_connect (factory, "bind", G_CALLBACK (bind_created_at_cb), NULL);
@@ -1190,7 +1211,11 @@ gtimer_window_init (GTimerWindow *self)
   gtk_column_view_column_set_sorter (col, GTK_SORTER (num_sorter));
   g_object_unref (num_sorter);
   gtk_column_view_append_column (self->column_view, col);
+}
 
+static void
+setup_footer (GTimerWindow *self, GtkWidget *main_box)
+{
   GtkWidget *footer_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
   gtk_widget_set_margin_start (footer_box, 12); gtk_widget_set_margin_end (footer_box, 12);
   gtk_widget_set_margin_top (footer_box, 6); gtk_widget_set_margin_bottom (footer_box, 6);
@@ -1199,9 +1224,22 @@ gtimer_window_init (GTimerWindow *self)
   gtk_widget_set_hexpand (GTK_WIDGET (self->footer_label), TRUE);
   gtk_label_set_xalign (self->footer_label, 1.0);
   gtk_box_append (GTK_BOX (footer_box), GTK_WIDGET (self->footer_label));
+}
+
+static void
+gtimer_window_init (GTimerWindow *self)
+{
+  GtkWidget *main_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+  adw_application_window_set_content (ADW_APPLICATION_WINDOW (self), main_box);
+
+  setup_actions (self);
+  setup_header_bar (self, main_box);
+  setup_toolbar (self, main_box);
+  setup_menus (self);
+  setup_column_view (self, main_box);
+  setup_footer (self, main_box);
 
   self->tick_timeout_id = g_timeout_add_seconds (1, on_tick, self);
-
   gtk_window_set_icon_name (GTK_WINDOW (self), "us.k5n.GTimer");
 
   GSettings *settings = g_settings_new ("us.k5n.GTimer");

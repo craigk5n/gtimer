@@ -145,7 +145,7 @@ Current: 35 tests across 9 files. Key gaps:
 ### P3: Code Quality
 
 - [x] **Decompose `handle_cli_options()`** — `main.c`, 600+ lines. Split into per-operation handler functions.
-- [ ] **Decompose `gtimer_window_init()`** — `gtimer-window.c`, 217 lines. Extract `setup_actions()`, `setup_header_bar()`, `setup_menus()`, `setup_column_view()`, etc.
+- [x] **Decompose `gtimer_window_init()`** — `gtimer-window.c`, 217 lines. Extract `setup_actions()`, `setup_header_bar()`, `setup_menus()`, `setup_column_view()`, etc.
 - [ ] **Cache GSettings on window instance** — `save_window_state()`, `gtimer_window_init()`, `on_timer_service_resumed()` each create a new GSettings object. Store once on self.
 - [ ] **Replace `g_object_set_data()` with typed structs** — extensive string-keyed data on widgets (e.g., `"project-id"`) has no type safety.
 - [ ] **Idle monitor: static `handler_id`** — `idle-monitor.c:162`. Shared across all instances; only one idle monitor can work correctly.
