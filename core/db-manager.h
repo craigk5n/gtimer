@@ -64,6 +64,8 @@ void gtimer_db_manager_set_task_today_time(GTimerDBManager *self,
 void gtimer_db_manager_start_task_timing(GTimerDBManager *self,
 					  int task_id);
 void gtimer_db_manager_stop_task_timing(GTimerDBManager *self, int task_id);
+void gtimer_db_manager_flush_task_elapsed(GTimerDBManager *self, int task_id,
+					   gint64 start_time, gint64 end_time);
 gboolean gtimer_db_manager_is_task_timing(GTimerDBManager *self, int task_id);
 
 typedef struct {

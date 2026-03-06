@@ -4,6 +4,7 @@
 #include "../core/timer-service.h"
 #include "../core/timer-utils.h"
 #include "../core/db-manager.h"
+#include <sqlite3.h>
 #include <time.h>
 #include <string.h>
 #include <glib/gi18n.h>
@@ -29,7 +30,6 @@ struct _GTimerWindow
   AdwApplicationWindow parent_instance;
 
   AdwHeaderBar *header_bar;
-  AdwWindowTitle *window_title;
   AdwToastOverlay *toast_overlay;
   GtkColumnView *column_view;
   GtkLabel *footer_label;
@@ -187,15 +187,17 @@ update_window_title (GTimerWindow *self)
   }
 
   if (running_count == 0) {
-    adw_window_title_set_subtitle (self->window_title, "");
+    gtk_window_set_title (GTK_WINDOW (self), "GTimer");
     gtk_widget_set_sensitive (self->stop_all_button, FALSE);
   } else if (running_count == 1) {
-    adw_window_title_set_subtitle (self->window_title, last_running_name);
+    char *title = g_strdup_printf ("GTimer — %s", last_running_name);
+    gtk_window_set_title (GTK_WINDOW (self), title);
+    g_free (title);
     gtk_widget_set_sensitive (self->stop_all_button, TRUE);
   } else {
-    char *subtitle = g_strdup_printf ("%d tasks running", running_count);
-    adw_window_title_set_subtitle (self->window_title, subtitle);
-    g_free (subtitle);
+    char *title = g_strdup_printf ("GTimer — %d tasks running", running_count);
+    gtk_window_set_title (GTK_WINDOW (self), title);
+    g_free (title);
     gtk_widget_set_sensitive (self->stop_all_button, TRUE);
   }
   g_free (last_running_name);
@@ -1219,6 +1221,85 @@ static void on_task_activated (GtkColumnView *column_view, guint position, gpoin
   g_object_unref (task); 
 }
 
+/* Exit confirmation when tasks are running */
+enum {
+  EXIT_RESPONSE_CANCEL = 0,
+  EXIT_RESPONSE_KEEP_QUIT = 1,
+  EXIT_RESPONSE_STOP_QUIT = 2,
+};
+
+static void
+on_exit_dialog_response (GtkDialog *dialog, int response_id, gpointer user_data)
+{
+  GTimerWindow *self = GTIMER_WINDOW (user_data);
+  gtk_window_destroy (GTK_WINDOW (dialog));
+
+  if (response_id == EXIT_RESPONSE_STOP_QUIT) {
+    GListModel *model = gtimer_task_list_model_get_model (self->model);
+    guint n = g_list_model_get_n_items (model);
+    for (guint i = 0; i < n; i++) {
+      GTimerTask *t = GTIMER_TASK (g_list_model_get_item (model, i));
+      if (gtimer_task_is_timing (t))
+        gtimer_db_manager_stop_task_timing (self->db_manager, gtimer_task_get_id (t));
+      g_object_unref (t);
+    }
+    gtk_window_destroy (GTK_WINDOW (self));
+  } else if (response_id == EXIT_RESPONSE_KEEP_QUIT) {
+    gtk_window_destroy (GTK_WINDOW (self));
+  }
+  /* CANCEL — do nothing, window stays open */
+}
+
+static gboolean
+on_close_request (GtkWindow *window, gpointer user_data)
+{
+  (void)user_data;
+  GTimerWindow *self = GTIMER_WINDOW (window);
+  if (!self->model) return FALSE;
+
+  GListModel *model = gtimer_task_list_model_get_model (self->model);
+  guint n = g_list_model_get_n_items (model);
+  int running = 0;
+  for (guint i = 0; i < n; i++) {
+    GTimerTask *t = GTIMER_TASK (g_list_model_get_item (model, i));
+    if (gtimer_task_is_timing (t)) running++;
+    g_object_unref (t);
+  }
+
+  if (running == 0) return FALSE;  /* Allow close */
+
+  char *body = g_strdup_printf (
+    _("%d task(s) are being timed. What would you like to do?"), running);
+  GtkWidget *dialog = gtk_dialog_new_with_buttons (
+    _("Tasks Still Running"), GTK_WINDOW (self),
+    GTK_DIALOG_MODAL | GTK_DIALOG_USE_HEADER_BAR,
+    _("Cancel"), EXIT_RESPONSE_CANCEL,
+    _("Quit (timers resume later)"), EXIT_RESPONSE_KEEP_QUIT,
+    _("Stop All & Quit"), EXIT_RESPONSE_STOP_QUIT,
+    NULL);
+
+  GtkWidget *content = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+  gtk_box_set_spacing (GTK_BOX (content), 12);
+  gtk_widget_set_margin_start (content, 12);
+  gtk_widget_set_margin_end (content, 12);
+  gtk_widget_set_margin_top (content, 12);
+  gtk_widget_set_margin_bottom (content, 12);
+  GtkWidget *label = gtk_label_new (body);
+  gtk_label_set_wrap (GTK_LABEL (label), TRUE);
+  gtk_box_append (GTK_BOX (content), label);
+  g_free (body);
+
+  GtkWidget *stop_btn = gtk_dialog_get_widget_for_response (
+    GTK_DIALOG (dialog), EXIT_RESPONSE_STOP_QUIT);
+  if (stop_btn)
+    gtk_widget_add_css_class (stop_btn, "destructive-action");
+
+  g_signal_connect (dialog, "response", G_CALLBACK (on_exit_dialog_response), self);
+  gtk_widget_show (dialog);
+
+  return TRUE;  /* Prevent default close */
+}
+
 static void gtimer_window_dispose (GObject *object) { GTimerWindow *self = GTIMER_WINDOW (object); if (self->tick_timeout_id) { g_source_remove (self->tick_timeout_id); self->tick_timeout_id = 0; } clear_undo (self); g_clear_pointer (&self->view_date, g_date_time_unref); g_clear_object (&self->settings); G_OBJECT_CLASS (gtimer_window_parent_class)->dispose (object); }
 static void gtimer_window_class_init (GTimerWindowClass *klass) { GObjectClass *object_class = G_OBJECT_CLASS (klass); object_class->dispose = gtimer_window_dispose; }
 
@@ -1477,8 +1558,6 @@ setup_header_bar (GTimerWindow *self, GtkWidget *main_box)
 {
   self->header_bar = ADW_HEADER_BAR (adw_header_bar_new ());
   gtk_box_append (GTK_BOX (main_box), GTK_WIDGET (self->header_bar));
-  self->window_title = ADW_WINDOW_TITLE (adw_window_title_new ("GTimer", ""));
-  adw_header_bar_set_title_widget (self->header_bar, GTK_WIDGET (self->window_title));
 
   GtkWidget *header_start_stop = gtk_button_new_from_icon_name ("media-playback-start-symbolic");
   gtk_actionable_set_action_name (GTK_ACTIONABLE (header_start_stop), "win.start-stop");
@@ -1761,6 +1840,7 @@ gtimer_window_init (GTimerWindow *self)
 
   g_signal_connect (self, "notify::default-width", G_CALLBACK (on_window_size_notify), NULL);
   g_signal_connect (self, "notify::default-height", G_CALLBACK (on_window_size_notify), NULL);
+  g_signal_connect (self, "close-request", G_CALLBACK (on_close_request), NULL);
 }
 
 void
@@ -1876,6 +1956,149 @@ gtimer_window_set_timer_service (GTimerWindow *self, GTimerTimerService *service
   
   g_signal_connect (service, "paused", G_CALLBACK (on_timer_service_paused), self);
   g_signal_connect (service, "resumed", G_CALLBACK (on_timer_service_resumed), self);
+}
+
+/* Stale timer data for the review dialog */
+typedef struct {
+  int task_id;
+  char *task_name;
+  gint64 last_start;
+  gint64 elapsed;
+} StaleTimerInfo;
+
+enum {
+  STALE_RESPONSE_DISCARD = 0,
+  STALE_RESPONSE_KEEP = 1,
+};
+
+static void
+on_stale_timer_response (GtkDialog *dialog, int response_id, gpointer user_data)
+{
+  GTimerWindow *self = GTIMER_WINDOW (user_data);
+  GArray *stale = g_object_get_data (G_OBJECT (dialog), "stale-timers");
+  gtk_window_destroy (GTK_WINDOW (dialog));
+
+  gint64 now = (gint64)time (NULL);
+
+  if (response_id == STALE_RESPONSE_KEEP) {
+    for (guint i = 0; i < stale->len; i++) {
+      StaleTimerInfo *info = &g_array_index (stale, StaleTimerInfo, i);
+      gtimer_db_manager_flush_task_elapsed (self->db_manager, info->task_id,
+                                             info->last_start, now);
+    }
+    show_toast (self, _("Time kept and distributed across days"));
+  } else {
+    show_toast (self, _("Stale time discarded"));
+  }
+
+  for (guint i = 0; i < stale->len; i++)
+    g_free (g_array_index (stale, StaleTimerInfo, i).task_name);
+
+  gtimer_task_list_model_refresh (self->model);
+  update_window_title (self);
+}
+
+void
+gtimer_window_check_stale_timers (GTimerWindow *self)
+{
+  g_return_if_fail (GTIMER_IS_WINDOW (self));
+  if (!self->db_manager) return;
+
+  sqlite3 *db = gtimer_db_manager_get_db (self->db_manager);
+  sqlite3_stmt *stmt;
+  gint64 now = (gint64)time (NULL);
+  const gint64 one_hour = 3600;
+
+  const char *sql =
+    "SELECT t.id, t.name, t.last_start_time FROM tasks t "
+    "WHERE t.is_timing = 1 AND t.last_start_time > 0;";
+
+  if (sqlite3_prepare_v2 (db, sql, -1, &stmt, NULL) != SQLITE_OK)
+    return;
+
+  GArray *stale = g_array_new (FALSE, FALSE, sizeof (StaleTimerInfo));
+  while (sqlite3_step (stmt) == SQLITE_ROW) {
+    gint64 last_start = sqlite3_column_int64 (stmt, 2);
+    gint64 elapsed = now - last_start;
+    if (elapsed >= one_hour) {
+      StaleTimerInfo info = {
+        .task_id = sqlite3_column_int (stmt, 0),
+        .task_name = g_strdup ((const char *)sqlite3_column_text (stmt, 1)),
+        .last_start = last_start,
+        .elapsed = elapsed,
+      };
+      g_array_append_val (stale, info);
+    }
+  }
+  sqlite3_finalize (stmt);
+
+  if (stale->len == 0) {
+    g_array_free (stale, TRUE);
+    return;
+  }
+
+  /* Reset last_start_time to now immediately so auto_save won't flush
+   * the stale elapsed time before the user responds to the dialog. */
+  for (guint i = 0; i < stale->len; i++) {
+    StaleTimerInfo *info = &g_array_index (stale, StaleTimerInfo, i);
+    sqlite3_stmt *upd;
+    const char *upd_sql = "UPDATE tasks SET last_start_time = ? WHERE id = ?;";
+    if (sqlite3_prepare_v2 (db, upd_sql, -1, &upd, NULL) == SQLITE_OK) {
+      sqlite3_bind_int64 (upd, 1, now);
+      sqlite3_bind_int (upd, 2, info->task_id);
+      sqlite3_step (upd);
+      sqlite3_finalize (upd);
+    }
+  }
+
+  /* Build dialog body */
+  GString *body = g_string_new (
+    _("The following tasks were running while GTimer was closed:\n\n"));
+
+  for (guint i = 0; i < stale->len; i++) {
+    StaleTimerInfo *info = &g_array_index (stale, StaleTimerInfo, i);
+    char *duration = gtimer_utils_format_duration (info->elapsed);
+    GDateTime *dt = g_date_time_new_from_unix_local (info->last_start);
+    char *since = g_date_time_format (dt, "%a %b %d, %H:%M");
+    g_date_time_unref (dt);
+    g_string_append_printf (body, "  • %s — %s (since %s)\n",
+                            info->task_name, duration, since);
+    g_free (duration);
+    g_free (since);
+  }
+
+  g_string_append (body,
+    _("\nKeeping the time will distribute it across the correct calendar days."));
+
+  GtkWidget *dialog = gtk_dialog_new_with_buttons (
+    _("Tasks Were Running in Background"), GTK_WINDOW (self),
+    GTK_DIALOG_MODAL | GTK_DIALOG_USE_HEADER_BAR,
+    _("Discard Time"), STALE_RESPONSE_DISCARD,
+    _("Keep Time"), STALE_RESPONSE_KEEP,
+    NULL);
+
+  GtkWidget *content = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+  gtk_box_set_spacing (GTK_BOX (content), 12);
+  gtk_widget_set_margin_start (content, 12);
+  gtk_widget_set_margin_end (content, 12);
+  gtk_widget_set_margin_top (content, 12);
+  gtk_widget_set_margin_bottom (content, 12);
+  GtkWidget *label = gtk_label_new (body->str);
+  gtk_label_set_wrap (GTK_LABEL (label), TRUE);
+  gtk_box_append (GTK_BOX (content), label);
+  g_string_free (body, TRUE);
+
+  GtkWidget *discard_btn = gtk_dialog_get_widget_for_response (
+    GTK_DIALOG (dialog), STALE_RESPONSE_DISCARD);
+  if (discard_btn)
+    gtk_widget_add_css_class (discard_btn, "destructive-action");
+
+  gtk_dialog_set_default_response (GTK_DIALOG (dialog), STALE_RESPONSE_KEEP);
+
+  g_object_set_data_full (G_OBJECT (dialog), "stale-timers", stale,
+                          (GDestroyNotify)g_array_unref);
+  g_signal_connect (dialog, "response", G_CALLBACK (on_stale_timer_response), self);
+  gtk_widget_show (dialog);
 }
 
 GTimerWindow *

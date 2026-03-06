@@ -1017,6 +1017,9 @@ activate (GtkApplication *app,
 
   gtimer_task_list_model_refresh (gtimer_app->task_list_model);
 
+  /* Check for tasks that ran for a long time while app was closed */
+  gtimer_window_check_stale_timers (window);
+
   gtk_window_present (GTK_WINDOW (window));
 }
 
@@ -1437,20 +1440,11 @@ on_quit_action (GSimpleAction *action,
   (void)action;
   (void)parameter;
   GtkApplication *app = GTK_APPLICATION (user_data);
-  GTimerApp *gtimer_app = g_object_get_data (G_OBJECT (app), "gtimer-app");
-  
-  // Stop all timers
-  GListModel *model = gtimer_task_list_model_get_model (gtimer_app->task_list_model);
-  guint n_items = g_list_model_get_n_items (model);
-  for (guint i = 0; i < n_items; i++) {
-    GTimerTask *task = GTIMER_TASK (g_list_model_get_item (model, i));
-    if (gtimer_task_is_timing (task)) {
-      gtimer_db_manager_stop_task_timing (gtimer_app->db_manager, gtimer_task_get_id (task));
-    }
-    g_object_unref (task);
-  }
-  
-  g_application_quit (G_APPLICATION (app));
+  GtkWindow *window = gtk_application_get_active_window (app);
+  if (window)
+    gtk_window_close (window);  /* Routes through close-request handler */
+  else
+    g_application_quit (G_APPLICATION (app));
 }
 
 int

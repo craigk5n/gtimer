@@ -597,6 +597,51 @@ void gtimer_db_manager_start_task_timing(GTimerDBManager *self, int task_id)
 	}
 }
 
+void gtimer_db_manager_flush_task_elapsed(GTimerDBManager *self, int task_id,
+					   gint64 start_time, gint64 end_time)
+{
+	g_return_if_fail(GTIMER_IS_DB_MANAGER(self));
+	if (start_time <= 0 || end_time <= start_time)
+		return;
+
+	struct tm start_tm, end_tm;
+	localtime_r((time_t *)&start_time, &start_tm);
+	localtime_r((time_t *)&end_time, &end_tm);
+
+	if (start_tm.tm_mday == end_tm.tm_mday &&
+	    start_tm.tm_mon == end_tm.tm_mon &&
+	    start_tm.tm_year == end_tm.tm_year) {
+		gtimer_db_manager_add_task_time(self, task_id,
+						end_time - start_time);
+	} else {
+		gint64 current = start_time;
+		while (TRUE) {
+			struct tm cur_tm;
+			localtime_r((time_t *)&current, &cur_tm);
+			char date_str[11];
+			strftime(date_str, sizeof(date_str),
+				 "%Y-%m-%d", &cur_tm);
+
+			cur_tm.tm_hour = 23;
+			cur_tm.tm_min = 59;
+			cur_tm.tm_sec = 59;
+			gint64 end_of_day = mktime(&cur_tm);
+
+			if (end_of_day >= end_time) {
+				gtimer_db_manager_add_task_time_for_date(
+					self, task_id, date_str,
+					end_time - current);
+				break;
+			} else {
+				gtimer_db_manager_add_task_time_for_date(
+					self, task_id, date_str,
+					end_of_day - current + 1);
+				current = end_of_day + 1;
+			}
+		}
+	}
+}
+
 void gtimer_db_manager_stop_task_timing(GTimerDBManager *self, int task_id)
 {
 	g_return_if_fail(GTIMER_IS_DB_MANAGER(self));
@@ -615,46 +660,9 @@ void gtimer_db_manager_stop_task_timing(GTimerDBManager *self, int task_id)
 		sqlite3_finalize(stmt);
 	}
 
-	if (last_start > 0) {
-		gint64 now = time(NULL);
-
-		struct tm start_tm, now_tm;
-		localtime_r((time_t *)&last_start, &start_tm);
-		localtime_r((time_t *)&now, &now_tm);
-
-		if (start_tm.tm_mday == now_tm.tm_mday &&
-		    start_tm.tm_mon == now_tm.tm_mon &&
-		    start_tm.tm_year == now_tm.tm_year) {
-			gtimer_db_manager_add_task_time(self, task_id,
-						       now - last_start);
-		} else {
-			gint64 current = last_start;
-			while (TRUE) {
-				struct tm cur_tm;
-				localtime_r((time_t *)&current, &cur_tm);
-				char date_str[11];
-				strftime(date_str, sizeof(date_str),
-					 "%Y-%m-%d", &cur_tm);
-
-				cur_tm.tm_hour = 23;
-				cur_tm.tm_min = 59;
-				cur_tm.tm_sec = 59;
-				gint64 end_of_day = mktime(&cur_tm);
-
-				if (end_of_day >= now) {
-					gtimer_db_manager_add_task_time_for_date(
-						self, task_id, date_str,
-						now - current);
-					break;
-				} else {
-					gtimer_db_manager_add_task_time_for_date(
-						self, task_id, date_str,
-						end_of_day - current + 1);
-					current = end_of_day + 1;
-				}
-			}
-		}
-	}
+	if (last_start > 0)
+		gtimer_db_manager_flush_task_elapsed(self, task_id,
+						      last_start, time(NULL));
 
 	const char *update_sql =
 		"UPDATE tasks SET is_timing = 0, last_start_time = NULL WHERE id = ?;";

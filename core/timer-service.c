@@ -46,8 +46,9 @@ static void gtimer_timer_service_auto_save ( GTimerTimerService * self )
       gint64 elapsed = now - last_start;
 
       if ( elapsed > 0 ) {
-        // Flush elapsed to daily_time
-        gtimer_db_manager_add_task_time ( self->db_manager, id, elapsed );
+        // Flush elapsed to daily_time, splitting across days if needed
+        gtimer_db_manager_flush_task_elapsed ( self->db_manager, id,
+                                               last_start, now );
         // Update last_start_time to now so we don't double count
         sqlite3_stmt *upd;
         const char *upd_sql =
