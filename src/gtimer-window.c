@@ -35,6 +35,30 @@ struct _GTimerWindow
 
 G_DEFINE_TYPE (GTimerWindow, gtimer_window, ADW_TYPE_APPLICATION_WINDOW)
 
+/* Typed structs for dialog data (replaces string-keyed g_object_set_data) */
+typedef struct {
+  GtkWidget *entry;
+  GtkDropDown *dropdown;
+  GListStore *id_model;
+  GTimerTask *task;  /* NULL for new-task dialog */
+} TaskDialogData;
+
+typedef struct {
+  GtkTextView *text_view;
+  GTimerTask *task;
+} AnnotateDialogData;
+
+typedef struct {
+  GtkWidget *entry;
+  GtkDropDown *dropdown;
+  GListStore *id_model;
+} ProjectDialogData;
+
+typedef struct {
+  GtkWidget *check;
+  int task_id;
+} UnhideRowData;
+
 static void
 show_toast (GTimerWindow *self, const char *format, ...)
 {
@@ -133,29 +157,30 @@ toggle_task_timer (GTimerWindow *self, GTimerTask *task)
   update_window_title (self);
 }
 
+static int
+get_selected_project_id (GtkDropDown *dropdown, GListStore *id_model)
+{
+  guint selected = gtk_drop_down_get_selected (dropdown);
+  if (selected == GTK_INVALID_LIST_POSITION)
+    return -1;
+  GObject *item = g_list_model_get_item (G_LIST_MODEL (id_model), selected);
+  int project_id;
+  if (g_object_get_data (item, "is-none"))
+    project_id = -1;
+  else
+    project_id = GPOINTER_TO_INT (g_object_get_data (item, "project-id"));
+  g_object_unref (item);
+  return project_id;
+}
+
 static void
 on_add_task_response (GtkDialog *dialog, int response_id, gpointer user_data)
 {
   GTimerWindow *self = GTIMER_WINDOW (user_data);
   if (response_id == GTK_RESPONSE_OK) {
-    GtkWidget *content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
-    GtkWidget *entry = g_object_get_data (G_OBJECT (content_area), "entry");
-    GtkDropDown *dropdown = g_object_get_data (G_OBJECT (content_area), "dropdown");
-    
-    const char *name = gtk_editable_get_text (GTK_EDITABLE (entry));
-    int project_id = -1;
-    
-    guint selected = gtk_drop_down_get_selected (dropdown);
-    if (selected != GTK_INVALID_LIST_POSITION) {
-      GListModel *id_model = g_object_get_data (G_OBJECT (dropdown), "id-model");
-      GObject *item = g_list_model_get_item (id_model, selected);
-      if (g_object_get_data (item, "is-none")) {
-        project_id = -1;
-      } else {
-        project_id = GPOINTER_TO_INT (g_object_get_data (item, "project-id"));
-      }
-      g_object_unref (item);
-    }
+    TaskDialogData *data = g_object_get_data (G_OBJECT (dialog), "dialog-data");
+    const char *name = gtk_editable_get_text (GTK_EDITABLE (data->entry));
+    int project_id = get_selected_project_id (data->dropdown, data->id_model);
 
     if (name && strlen (name) > 0) {
       gtimer_db_manager_create_task (self->db_manager, name, project_id, NULL);
@@ -217,12 +242,16 @@ on_new_task_dialog (GTimerWindow *self)
   gtk_box_append (GTK_BOX (content_area), entry);
   gtk_entry_set_activates_default (GTK_ENTRY (entry), TRUE);
   
-  g_object_set_data (G_OBJECT (content_area), "entry", entry);
-  g_object_set_data (G_OBJECT (content_area), "dropdown", dropdown);
-  g_object_set_data_full (G_OBJECT (dropdown), "id-model", project_obj_store, g_object_unref);
+  TaskDialogData *data = g_new0 (TaskDialogData, 1);
+  data->entry = entry;
+  data->dropdown = dropdown;
+  data->id_model = project_obj_store;
+  g_object_set_data_full (G_OBJECT (dialog), "dialog-data", data, g_free);
+  /* Keep id_model alive with the dialog */
+  g_object_set_data_full (G_OBJECT (dialog), "id-model-ref", g_object_ref (project_obj_store), g_object_unref);
 
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
-  
+
   g_signal_connect (dialog, "response", G_CALLBACK (on_add_task_response), self);
   gtk_widget_show (dialog);
 }
@@ -271,28 +300,12 @@ on_edit_task_response (GtkDialog *dialog, int response_id, gpointer user_data)
 {
   GTimerWindow *self = GTIMER_WINDOW (user_data);
   if (response_id == GTK_RESPONSE_OK) {
-    GtkWidget *content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
-    GtkWidget *entry = g_object_get_data (G_OBJECT (content_area), "entry");
-    GtkDropDown *dropdown = g_object_get_data (G_OBJECT (content_area), "dropdown");
-    GTimerTask *task = g_object_get_data (G_OBJECT (content_area), "task");
-    
-    const char *name = gtk_editable_get_text (GTK_EDITABLE (entry));
-    int project_id = -1;
-    
-    guint selected = gtk_drop_down_get_selected (dropdown);
-    if (selected != GTK_INVALID_LIST_POSITION) {
-      GListModel *id_model = g_object_get_data (G_OBJECT (dropdown), "id-model");
-      GObject *item = g_list_model_get_item (id_model, selected);
-      if (g_object_get_data (item, "is-none")) {
-        project_id = -1;
-      } else {
-        project_id = GPOINTER_TO_INT (g_object_get_data (item, "project-id"));
-      }
-      g_object_unref (item);
-    }
+    TaskDialogData *data = g_object_get_data (G_OBJECT (dialog), "dialog-data");
+    const char *name = gtk_editable_get_text (GTK_EDITABLE (data->entry));
+    int project_id = get_selected_project_id (data->dropdown, data->id_model);
 
     if (name && strlen (name) > 0) {
-      gtimer_db_manager_update_task (self->db_manager, gtimer_task_get_id (task), name, project_id, NULL);
+      gtimer_db_manager_update_task (self->db_manager, gtimer_task_get_id (data->task), name, project_id, NULL);
       show_toast (self, "Task '%s' updated", name);
       gtimer_task_list_model_refresh (self->model);
       update_window_title (self);
@@ -360,10 +373,13 @@ on_edit_task_action (GSimpleAction *action, GVariant *parameter, gpointer user_d
     gtk_box_append (GTK_BOX (content_area), entry);
     gtk_entry_set_activates_default (GTK_ENTRY (entry), TRUE);
     
-    g_object_set_data (G_OBJECT (content_area), "entry", entry);
-    g_object_set_data (G_OBJECT (content_area), "dropdown", dropdown);
-    g_object_set_data_full (G_OBJECT (dropdown), "id-model", project_obj_store, g_object_unref);
-    g_object_set_data (G_OBJECT (content_area), "task", task);
+    TaskDialogData *data = g_new0 (TaskDialogData, 1);
+    data->entry = entry;
+    data->dropdown = dropdown;
+    data->id_model = project_obj_store;
+    data->task = task;
+    g_object_set_data_full (G_OBJECT (dialog), "dialog-data", data, g_free);
+    g_object_set_data_full (G_OBJECT (dialog), "id-model-ref", g_object_ref (project_obj_store), g_object_unref);
 
     gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
     g_signal_connect (dialog, "response", G_CALLBACK (on_edit_task_response), self);
@@ -376,9 +392,9 @@ on_annotate_response (GtkDialog *dialog, int response_id, gpointer user_data)
 {
   GTimerWindow *self = GTIMER_WINDOW (user_data);
   if (response_id == GTK_RESPONSE_OK) {
-    GtkWidget *content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
-    GtkTextView *text_view = g_object_get_data (G_OBJECT (content_area), "text-view");
-    GTimerTask *task = g_object_get_data (G_OBJECT (content_area), "task");
+    AnnotateDialogData *data = g_object_get_data (G_OBJECT (dialog), "dialog-data");
+    GtkTextView *text_view = data->text_view;
+    GTimerTask *task = data->task;
     GtkTextBuffer *buffer = gtk_text_view_get_buffer (text_view);
     GtkTextIter start, end;
     gtk_text_buffer_get_bounds (buffer, &start, &end);
@@ -417,8 +433,10 @@ on_annotate_action (GSimpleAction *action, GVariant *parameter, gpointer user_da
     GtkWidget *text_view = gtk_text_view_new ();
     gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (text_view), GTK_WRAP_WORD_CHAR);
     gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolled), text_view);
-    g_object_set_data (G_OBJECT (content_area), "text-view", text_view);
-    g_object_set_data (G_OBJECT (content_area), "task", task);
+    AnnotateDialogData *ann_data = g_new0 (AnnotateDialogData, 1);
+    ann_data->text_view = GTK_TEXT_VIEW (text_view);
+    ann_data->task = task;
+    g_object_set_data_full (G_OBJECT (dialog), "dialog-data", ann_data, g_free);
     gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
     g_signal_connect (dialog, "response", G_CALLBACK (on_annotate_response), self);
     gtk_widget_show (dialog);
@@ -499,14 +517,12 @@ on_unhide_response (GtkDialog *dialog, int response_id, gpointer user_data)
 {
   GTimerWindow *self = GTIMER_WINDOW (user_data);
   if (response_id == GTK_RESPONSE_OK) {
-    GtkWidget *content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
-    GtkListBox *list_box = g_object_get_data (G_OBJECT (content_area), "list-box");
+    GtkListBox *list_box = g_object_get_data (G_OBJECT (dialog), "list-box");
     GtkWidget *row = gtk_widget_get_first_child (GTK_WIDGET (list_box));
     while (row) {
-      GtkWidget *check = g_object_get_data (G_OBJECT (row), "check");
-      if (gtk_check_button_get_active (GTK_CHECK_BUTTON (check))) {
-        int task_id = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (row), "task-id"));
-        gtimer_db_manager_hide_task (self->db_manager, task_id, FALSE, NULL);
+      UnhideRowData *rd = g_object_get_data (G_OBJECT (row), "row-data");
+      if (rd && gtk_check_button_get_active (GTK_CHECK_BUTTON (rd->check))) {
+        gtimer_db_manager_hide_task (self->db_manager, rd->task_id, FALSE, NULL);
       }
       row = gtk_widget_get_next_sibling (row);
     }
@@ -552,12 +568,14 @@ on_unhide_tasks_action (GSimpleAction *action, GVariant *parameter, gpointer use
     gtk_box_append (GTK_BOX (row), gtk_label_new (label_text));
     g_free (label_text);
     gtk_list_box_append (GTK_LIST_BOX (list_box), row);
-    g_object_set_data (G_OBJECT (row), "check", check);
-    g_object_set_data (G_OBJECT (row), "task-id", GINT_TO_POINTER (gtimer_task_get_id (task)));
+    UnhideRowData *rd = g_new0 (UnhideRowData, 1);
+    rd->check = check;
+    rd->task_id = gtimer_task_get_id (task);
+    g_object_set_data_full (G_OBJECT (row), "row-data", rd, g_free);
     g_object_unref (task);
   }
   g_list_free (hidden_tasks);
-  g_object_set_data (G_OBJECT (content_area), "list-box", list_box);
+  g_object_set_data (G_OBJECT (dialog), "list-box", list_box);
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
   g_signal_connect (dialog, "response", G_CALLBACK (on_unhide_response), self);
   gtk_widget_show (dialog);
@@ -627,8 +645,7 @@ on_new_project_response (GtkDialog *dialog, int response_id, gpointer user_data)
 {
   GTimerWindow *self = GTIMER_WINDOW (user_data);
   if (response_id == GTK_RESPONSE_OK) {
-    GtkWidget *content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
-    GtkWidget *entry = g_object_get_data (G_OBJECT (content_area), "entry");
+    GtkWidget *entry = g_object_get_data (G_OBJECT (dialog), "entry");
     const char *name = gtk_editable_get_text (GTK_EDITABLE (entry));
     if (name && strlen (name) > 0) {
       gtimer_db_manager_create_project (self->db_manager, name, NULL);
@@ -650,7 +667,7 @@ on_new_project_action (GSimpleAction *action, GVariant *parameter, gpointer user
   gtk_widget_set_margin_start (entry, 12); gtk_widget_set_margin_end (entry, 12); gtk_widget_set_margin_top (entry, 12); gtk_widget_set_margin_bottom (entry, 12);
   gtk_box_append (GTK_BOX (content_area), entry);
   gtk_entry_set_activates_default (GTK_ENTRY (entry), TRUE);
-  g_object_set_data (G_OBJECT (content_area), "entry", entry);
+  g_object_set_data (G_OBJECT (dialog), "entry", entry);
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
   g_signal_connect (dialog, "response", G_CALLBACK (on_new_project_response), self);
   gtk_widget_show (dialog);
@@ -661,14 +678,11 @@ on_edit_project_response (GtkDialog *dialog, int response_id, gpointer user_data
 {
   GTimerWindow *self = GTIMER_WINDOW (user_data);
   if (response_id == GTK_RESPONSE_OK) {
-    GtkWidget *content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
-    GtkWidget *entry = g_object_get_data (G_OBJECT (content_area), "entry");
-    GtkDropDown *dropdown = g_object_get_data (G_OBJECT (content_area), "dropdown");
-    const char *name = gtk_editable_get_text (GTK_EDITABLE (entry));
-    guint selected = gtk_drop_down_get_selected (dropdown);
+    ProjectDialogData *data = g_object_get_data (G_OBJECT (dialog), "dialog-data");
+    const char *name = gtk_editable_get_text (GTK_EDITABLE (data->entry));
+    guint selected = gtk_drop_down_get_selected (data->dropdown);
     if (selected != GTK_INVALID_LIST_POSITION && name && strlen (name) > 0) {
-      GListModel *id_model = g_object_get_data (G_OBJECT (dropdown), "id-model");
-      GObject *item = g_list_model_get_item (id_model, selected);
+      GObject *item = g_list_model_get_item (G_LIST_MODEL (data->id_model), selected);
       int project_id = GPOINTER_TO_INT (g_object_get_data (item, "project-id"));
       g_object_unref (item);
       gtimer_db_manager_update_project (self->db_manager, project_id, name, NULL);
@@ -708,9 +722,12 @@ on_edit_project_action (GSimpleAction *action, GVariant *parameter, gpointer use
   gtk_box_append (GTK_BOX (content_area), gtk_label_new ("New Name:"));
   gtk_box_append (GTK_BOX (content_area), entry);
   gtk_entry_set_activates_default (GTK_ENTRY (entry), TRUE);
-  g_object_set_data (G_OBJECT (content_area), "entry", entry);
-  g_object_set_data (G_OBJECT (content_area), "dropdown", dropdown);
-  g_object_set_data_full (G_OBJECT (dropdown), "id-model", project_obj_store, g_object_unref);
+  ProjectDialogData *pdata = g_new0 (ProjectDialogData, 1);
+  pdata->entry = entry;
+  pdata->dropdown = dropdown;
+  pdata->id_model = project_obj_store;
+  g_object_set_data_full (G_OBJECT (dialog), "dialog-data", pdata, g_free);
+  g_object_set_data_full (G_OBJECT (dialog), "id-model-ref", g_object_ref (project_obj_store), g_object_unref);
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
   g_signal_connect (dialog, "response", G_CALLBACK (on_edit_project_response), self);
   gtk_widget_show (dialog);
