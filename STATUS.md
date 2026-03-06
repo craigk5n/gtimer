@@ -136,7 +136,7 @@ Current: 35 tests across 9 files. Key gaps:
 
 - [x] **`task-object` / `project-object`** — 0 unit tests for any getter/setter/property notification
 - [x] **`update_task` / `update_project`** — core edit operations completely untested
-- [ ] **`report-generator`** — only text daily format tested via CLI; weekly/monthly/yearly and HTML never tested
+- [x] **`report-generator`** — only text daily format tested via CLI; weekly/monthly/yearly and HTML never tested
 - [ ] **`timer-service` state machine** — `pause()`, `resume()`, `remove_time()`, `get_elapsed()` untested
 - [ ] **`db-manager` query functions** — `get_hidden_tasks`, `get_task_total_time`, `get_task_today_time`, `start_task_timing`, `is_task_timing` untested
 - [ ] **Concurrent task timing** — multiple simultaneous tasks is a supported feature with zero tests

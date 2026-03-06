@@ -66,6 +66,11 @@ test_objects_exe = executable('test-objects',
   dependencies: [core_dep, gtk_dep]
 )
 
+test_report_exe = executable('test-report',
+  'test-report.c',
+  dependencies: [core_dep, gtk_dep]
+)
+
 test_cli_exe = executable('test-cli',
   'test-cli.c',
   dependencies: [core_dep, gtk_dep],
@@ -99,5 +104,6 @@ test('utils', test_utils_exe)
 test('service', test_service_exe)
 test('idle-init', test_idle_init_exe)
 test('objects', test_objects_exe)
+test('report', test_report_exe)
 test('cli', test_cli_exe)
 test('idle-logic', test_idle_logic_exe)
