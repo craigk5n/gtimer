@@ -104,10 +104,11 @@ Use Cairo drawing or a lightweight charting approach.
 - *Why*: Visual feedback is the #1 reason users choose Toggl/Clockify over simpler tools.
 - *Effort*: New view + Cairo rendering. No external dependencies.
 
-**1.3 Quick Entry Bar**
+**1.3 Quick Entry Bar** -- DONE
 Add a text entry (Ctrl+Space or similar) that accepts "task@project" format for rapid task creation and timing start, without opening a dialog.
 - *Why*: Reduces friction for power users. Hamster's key UX advantage.
 - *Effort*: Moderate. Parse input, match existing tasks/projects, create if new.
+- *Implemented*: Ctrl+Space toggles quick entry bar. Format: `task@project #tag1 #tag2`. Case-insensitive match of existing tasks/projects; creates new if not found. Tags applied via `sync_task_tags()`. Starts timing immediately. Escape dismisses.
 
 ### Priority 2: Medium Value, Lower Effort
 

@@ -44,6 +44,8 @@ struct _GTimerWindow
   GtkWidget *annotate_button;
   GtkSearchEntry *search_entry;
   GtkStringFilter *string_filter;
+  GtkWidget *quick_entry_bar;
+  GtkWidget *quick_entry;
 
   GSettings *settings;
   gint64 time_buffer;
@@ -1216,6 +1218,158 @@ static void on_task_activated (GtkColumnView *column_view, guint position, gpoin
 static void gtimer_window_dispose (GObject *object) { GTimerWindow *self = GTIMER_WINDOW (object); if (self->tick_timeout_id) { g_source_remove (self->tick_timeout_id); self->tick_timeout_id = 0; } clear_undo (self); g_clear_object (&self->settings); G_OBJECT_CLASS (gtimer_window_parent_class)->dispose (object); }
 static void gtimer_window_class_init (GTimerWindowClass *klass) { GObjectClass *object_class = G_OBJECT_CLASS (klass); object_class->dispose = gtimer_window_dispose; }
 
+/* Quick Entry: parse "task@project #tag1 #tag2" and start timing */
+static void
+on_quick_entry_activate (GtkEntry *entry, gpointer user_data)
+{
+  GTimerWindow *self = GTIMER_WINDOW (user_data);
+  const char *text = gtk_editable_get_text (GTK_EDITABLE (entry));
+
+  if (!text || !text[0]) {
+    gtk_widget_set_visible (self->quick_entry_bar, FALSE);
+    return;
+  }
+
+  /* Extract tags (#tag1 #tag2) from end of input */
+  g_autofree char *input = g_strdup (text);
+  GString *tags = g_string_new (NULL);
+  /* Collect #tags by scanning for # preceded by space or at start */
+  char *tag_start = NULL;
+  for (char *s = input; *s; s++) {
+    if (*s == '#' && (s == input || *(s - 1) == ' ')) {
+      tag_start = s;
+      break;
+    }
+  }
+  if (tag_start) {
+    /* Everything from first # onward is tags */
+    g_auto(GStrv) parts = g_strsplit (tag_start, "#", -1);
+    for (int i = 0; parts[i]; i++) {
+      g_strstrip (parts[i]);
+      if (parts[i][0]) {
+        if (tags->len > 0)
+          g_string_append (tags, ", ");
+        g_string_append (tags, parts[i]);
+      }
+    }
+    *tag_start = '\0';  /* Truncate input before tags */
+    g_strstrip (input);
+  }
+
+  /* Parse "task@project" or just "task" */
+  char *at = strchr (input, '@');
+  const char *task_name = NULL;
+  const char *project_name = NULL;
+  g_autofree char *task_part = NULL;
+  g_autofree char *proj_part = NULL;
+
+  if (at) {
+    task_part = g_strndup (input, at - input);
+    proj_part = g_strdup (at + 1);
+    g_strstrip (task_part);
+    g_strstrip (proj_part);
+    task_name = task_part;
+    project_name = (proj_part[0]) ? proj_part : NULL;
+  } else {
+    task_name = input;
+  }
+
+  if (!task_name[0]) {
+    g_string_free (tags, TRUE);
+    gtk_widget_set_visible (self->quick_entry_bar, FALSE);
+    return;
+  }
+
+  /* Find or create project */
+  int project_id = -1;
+  if (project_name) {
+    GList *projects = gtimer_db_manager_get_projects (self->db_manager);
+    for (GList *l = projects; l; l = l->next) {
+      GTimerProject *proj = l->data;
+      if (g_ascii_strcasecmp (gtimer_project_get_name (proj), project_name) == 0) {
+        project_id = gtimer_project_get_id (proj);
+        break;
+      }
+    }
+    g_list_free_full (projects, g_object_unref);
+
+    if (project_id == -1) {
+      gtimer_db_manager_create_project (self->db_manager, project_name, NULL);
+      /* Re-query to get the new ID */
+      projects = gtimer_db_manager_get_projects (self->db_manager);
+      for (GList *l = projects; l; l = l->next) {
+        GTimerProject *proj = l->data;
+        if (g_ascii_strcasecmp (gtimer_project_get_name (proj), project_name) == 0) {
+          project_id = gtimer_project_get_id (proj);
+          break;
+        }
+      }
+      g_list_free_full (projects, g_object_unref);
+    }
+  }
+
+  /* Find existing task by name (and project if specified) or create new */
+  int task_id = -1;
+  GList *tasks = gtimer_db_manager_get_all_tasks (self->db_manager);
+  for (GList *l = tasks; l; l = l->next) {
+    GTimerTask *t = l->data;
+    if (g_ascii_strcasecmp (gtimer_task_get_name (t), task_name) == 0) {
+      if (project_id == -1 || gtimer_task_get_project_id (t) == project_id) {
+        task_id = gtimer_task_get_id (t);
+        break;
+      }
+    }
+  }
+  g_list_free_full (tasks, g_object_unref);
+
+  if (task_id == -1) {
+    gtimer_db_manager_create_task (self->db_manager, task_name, project_id, NULL);
+    task_id = get_last_task_id (self->db_manager);
+  }
+
+  /* Apply tags */
+  if (tags->len > 0)
+    sync_task_tags (self->db_manager, task_id, tags->str);
+  g_string_free (tags, TRUE);
+
+  /* Start timing */
+  gtimer_db_manager_start_task_timing (self->db_manager, task_id);
+  if (self->tick_timeout_id == 0)
+    self->tick_timeout_id = g_timeout_add_seconds (1, on_tick, self);
+
+  gtimer_task_list_model_refresh (self->model);
+  update_window_title (self);
+  show_toast (self, "Started timing '%s'", task_name);
+
+  gtk_editable_set_text (GTK_EDITABLE (entry), "");
+  gtk_widget_set_visible (self->quick_entry_bar, FALSE);
+}
+
+static gboolean
+on_quick_entry_key_pressed (GtkEventControllerKey *controller, guint keyval,
+                            guint keycode, GdkModifierType state, gpointer user_data)
+{
+  (void)controller; (void)keycode; (void)state;
+  if (keyval == GDK_KEY_Escape) {
+    GTimerWindow *self = GTIMER_WINDOW (user_data);
+    gtk_editable_set_text (GTK_EDITABLE (self->quick_entry), "");
+    gtk_widget_set_visible (self->quick_entry_bar, FALSE);
+    return TRUE;
+  }
+  return FALSE;
+}
+
+static void
+on_quick_entry_action (GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+  (void)action; (void)parameter;
+  GTimerWindow *self = GTIMER_WINDOW (user_data);
+  gboolean visible = gtk_widget_get_visible (self->quick_entry_bar);
+  gtk_widget_set_visible (self->quick_entry_bar, !visible);
+  if (!visible)
+    gtk_widget_grab_focus (self->quick_entry);
+}
+
 static void
 setup_actions (GTimerWindow *self)
 {
@@ -1238,6 +1392,7 @@ setup_actions (GTimerWindow *self)
     { .name = "edit-project", .activate = on_edit_project_action },
     { .name = "shortcuts", .activate = on_shortcuts_action },
     { .name = "undo", .activate = on_undo_action },
+    { .name = "quick-entry", .activate = on_quick_entry_action },
   };
   g_action_map_add_action_entries (G_ACTION_MAP (self), entries, G_N_ELEMENTS (entries), self);
 }
@@ -1472,6 +1627,28 @@ gtimer_window_init (GTimerWindow *self)
   setup_header_bar (self, main_box);
   setup_toolbar (self, main_box);
   setup_menus (self);
+
+  /* Quick entry bar (hidden by default) */
+  self->quick_entry_bar = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+  gtk_widget_add_css_class (self->quick_entry_bar, "toolbar");
+  gtk_widget_set_visible (self->quick_entry_bar, FALSE);
+  gtk_box_append (GTK_BOX (main_box), self->quick_entry_bar);
+
+  GtkWidget *qe_label = gtk_label_new (_("Quick:"));
+  gtk_widget_set_margin_start (qe_label, 6);
+  gtk_box_append (GTK_BOX (self->quick_entry_bar), qe_label);
+
+  self->quick_entry = gtk_entry_new ();
+  gtk_entry_set_placeholder_text (GTK_ENTRY (self->quick_entry), _("task@project #tag1 #tag2"));
+  gtk_widget_set_hexpand (self->quick_entry, TRUE);
+  gtk_widget_set_margin_end (self->quick_entry, 6);
+  gtk_box_append (GTK_BOX (self->quick_entry_bar), self->quick_entry);
+  g_signal_connect (self->quick_entry, "activate", G_CALLBACK (on_quick_entry_activate), self);
+
+  GtkEventController *key_ctrl = gtk_event_controller_key_new ();
+  g_signal_connect (key_ctrl, "key-pressed", G_CALLBACK (on_quick_entry_key_pressed), self);
+  gtk_widget_add_controller (self->quick_entry, key_ctrl);
+
   setup_column_view (self, main_box);
   setup_footer (self, main_box);
 

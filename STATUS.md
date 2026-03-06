@@ -169,6 +169,11 @@ Current: 35 tests across 9 files. Key gaps:
 - [x] UI: Tags entry in new/edit task dialogs
 - [x] UI: Tags column in main column view (sortable, ellipsized)
 
+### P1.3: Quick Entry Bar ✅
+- [x] Ctrl+Space toggles quick entry bar above column view
+- [x] Format: `task@project #tag1 #tag2` — matches existing or creates new
+- [x] Starts timing immediately, Escape dismisses
+
 ### P2.2: Tracking Reminders ✅
 - [x] GSettings: `enable-tracking-reminder` and `tracking-reminder-interval`
 - [x] GNotification sent when no task running for N minutes (repeats at interval)

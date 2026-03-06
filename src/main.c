@@ -1650,6 +1650,7 @@ main (int argc, char **argv)
     { "win.cut-time", { "<Control>x", NULL } },
     { "win.copy-time", { "<Control>c", NULL } },
     { "win.paste-time", { "<Control>v", NULL } },
+    { "win.quick-entry", { "<Control>space", NULL } },
   };
 
   for (guint i = 0; i < G_N_ELEMENTS (accels); i++) {
