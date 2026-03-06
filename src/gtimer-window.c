@@ -1149,33 +1149,42 @@ on_right_click_cb (GtkGestureClick *gesture,
 
     GMenu *menu = g_menu_new ();
 
+    /* Primary actions */
+    GMenu *primary = g_menu_new ();
+    g_menu_append (primary, _("Start/Stop"), "win.start-stop");
+    g_menu_append (primary, _("Edit..."), "win.edit-task");
+    g_menu_append (primary, _("Annotate..."), "win.annotate");
+    g_menu_append_section (menu, NULL, G_MENU_MODEL (primary));
 
+    /* Time adjustments with submenus */
+    GMenu *time_section = g_menu_new ();
+    GMenu *add_time = g_menu_new ();
+    g_menu_append (add_time, _("+1 Minute"), "win.adjust-time(60)");
+    g_menu_append (add_time, _("+5 Minutes"), "win.adjust-time(300)");
+    g_menu_append (add_time, _("+30 Minutes"), "win.adjust-time(1800)");
+    g_menu_append_submenu (time_section, _("Add Time"), G_MENU_MODEL (add_time));
+    GMenu *remove_time = g_menu_new ();
+    g_menu_append (remove_time, _("-1 Minute"), "win.adjust-time(-60)");
+    g_menu_append (remove_time, _("-5 Minutes"), "win.adjust-time(-300)");
+    g_menu_append (remove_time, _("-30 Minutes"), "win.adjust-time(-1800)");
+    g_menu_append_submenu (time_section, _("Remove Time"), G_MENU_MODEL (remove_time));
+    g_menu_append (time_section, _("Set to Zero"), "win.set-zero");
+    g_menu_append_section (menu, NULL, G_MENU_MODEL (time_section));
 
-    g_menu_append (menu, _("Start/Stop"), "win.start-stop");
+    /* Clipboard */
+    GMenu *clip_section = g_menu_new ();
+    g_menu_append (clip_section, _("Cut Time"), "win.cut-time");
+    g_menu_append (clip_section, _("Copy Time"), "win.copy-time");
+    g_menu_append (clip_section, _("Paste Time"), "win.paste-time");
+    g_menu_append_section (menu, NULL, G_MENU_MODEL (clip_section));
 
+    /* Destructive */
+    GMenu *danger_section = g_menu_new ();
+    g_menu_append (danger_section, _("Hide"), "win.hide-task");
+    g_menu_append (danger_section, _("Delete"), "win.delete-task");
+    g_menu_append_section (menu, NULL, G_MENU_MODEL (danger_section));
 
-
-    g_menu_append (menu, _("Edit..."), "win.edit-task");
-
-
-
-    g_menu_append (menu, _("Annotate..."), "win.annotate");
-
-
-
-    g_menu_append (menu, _("Hide"), "win.hide-task");
-
-
-
-    g_menu_append (menu, _("Delete"), "win.delete-task");
-
-
-
-  
-
-
-
-  GtkWidget *popover = gtk_popover_menu_new_from_model (G_MENU_MODEL (menu));
+    GtkWidget *popover = gtk_popover_menu_new_from_model (G_MENU_MODEL (menu));
 
   gtk_widget_set_parent (popover, GTK_WIDGET (self->column_view));
 
@@ -1274,9 +1283,10 @@ on_close_request (GtkWindow *window, gpointer user_data)
     _("Tasks Still Running"), GTK_WINDOW (self),
     GTK_DIALOG_MODAL | GTK_DIALOG_USE_HEADER_BAR,
     _("Cancel"), EXIT_RESPONSE_CANCEL,
-    _("Quit (timers resume later)"), EXIT_RESPONSE_KEEP_QUIT,
-    _("Stop All & Quit"), EXIT_RESPONSE_STOP_QUIT,
+    _("Keep Running"), EXIT_RESPONSE_KEEP_QUIT,
+    _("Stop & Quit"), EXIT_RESPONSE_STOP_QUIT,
     NULL);
+  gtk_window_set_default_size (GTK_WINDOW (dialog), 360, -1);
 
   GtkWidget *content = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
   gtk_box_set_spacing (GTK_BOX (content), 12);
@@ -1612,51 +1622,23 @@ setup_toolbar (GTimerWindow *self, GtkWidget *main_box)
 static void
 setup_menus (GTimerWindow *self)
 {
+  /* Hamburger menu: app-level actions only (GNOME HIG) */
   GMenu *menu = g_menu_new ();
 
-  GMenu *task_section = g_menu_new ();
-  g_menu_append (task_section, _("Start Timing"), "win.start-stop");
-  g_menu_append (task_section, _("Stop All Timing"), "win.stop-all");
-  g_menu_append (task_section, _("Edit Task..."), "win.edit-task");
-  g_menu_append (task_section, _("Annotate..."), "win.annotate");
-  g_menu_append (task_section, _("Hide"), "win.hide-task");
-  g_menu_append (task_section, _("Unhide..."), "win.unhide-tasks");
-  g_menu_append (task_section, _("Delete"), "win.delete-task");
-  g_menu_append_section (menu, _("Task"), G_MENU_MODEL (task_section));
-
-  GMenu *report_section = g_menu_new ();
-  g_menu_append (report_section, _("Daily Report..."), "app.report");
-  g_menu_append_section (menu, _("Data"), G_MENU_MODEL (report_section));
-
-  GMenu *time_section = g_menu_new ();
-  g_menu_append (time_section, _("+1 Minute"), "win.adjust-time(60)");
-  g_menu_append (time_section, _("+5 Minutes"), "win.adjust-time(300)");
-  g_menu_append (time_section, _("+30 Minutes"), "win.adjust-time(1800)");
-  g_menu_append (time_section, _("-1 Minute"), "win.adjust-time(-60)");
-  g_menu_append (time_section, _("-5 Minutes"), "win.adjust-time(-300)");
-  g_menu_append (time_section, _("-30 Minutes"), "win.adjust-time(-1800)");
-  g_menu_append (time_section, _("Set to Zero"), "win.set-zero");
-  g_menu_append_section (menu, _("Time Adjustment"), G_MENU_MODEL (time_section));
-
-  GMenu *edit_section = g_menu_new ();
-  g_menu_append (edit_section, _("Cut Time"), "win.cut-time");
-  g_menu_append (edit_section, _("Copy Time"), "win.copy-time");
-  g_menu_append (edit_section, _("Paste Time"), "win.paste-time");
-  g_menu_append (edit_section, _("Clear Buffer"), "win.clear-buffer");
-  g_menu_append_section (menu, _("Edit"), G_MENU_MODEL (edit_section));
-
-  GMenu *project_section = g_menu_new ();
-  g_menu_append (project_section, _("New Project..."), "win.new-project");
-  g_menu_append (project_section, _("Edit Project..."), "win.edit-project");
-  g_menu_append_section (menu, _("Project"), G_MENU_MODEL (project_section));
+  GMenu *manage_section = g_menu_new ();
+  g_menu_append (manage_section, _("New Project..."), "win.new-project");
+  g_menu_append (manage_section, _("Edit Project..."), "win.edit-project");
+  g_menu_append (manage_section, _("Unhide Tasks..."), "win.unhide-tasks");
+  g_menu_append_section (menu, NULL, G_MENU_MODEL (manage_section));
 
   GMenu *app_section = g_menu_new ();
+  g_menu_append (app_section, _("Preferences"), "app.preferences");
   g_menu_append (app_section, _("Keyboard Shortcuts"), "win.shortcuts");
   g_menu_append (app_section, _("About GTimer"), "app.about");
   g_menu_append_section (menu, NULL, G_MENU_MODEL (app_section));
 
   GtkMenuButton *menu_button = GTK_MENU_BUTTON (gtk_menu_button_new ());
-  gtk_menu_button_set_icon_name (menu_button, "view-more-symbolic");
+  gtk_menu_button_set_icon_name (menu_button, "open-menu-symbolic");
   gtk_menu_button_set_menu_model (menu_button, G_MENU_MODEL (menu));
   adw_header_bar_pack_end (self->header_bar, GTK_WIDGET (menu_button));
 }
@@ -1859,9 +1841,14 @@ gtimer_window_set_task_list_model (GTimerWindow *self, GTimerTaskListModel *mode
   GtkStringFilter *proj_filter = gtk_string_filter_new (proj_expr);
   gtk_multi_filter_append (GTK_MULTI_FILTER (any_filter), GTK_FILTER (proj_filter));
 
+  GtkExpression *tags_expr = gtk_property_expression_new (GTIMER_TYPE_TASK, NULL, "tags");
+  GtkStringFilter *tags_filter = gtk_string_filter_new (tags_expr);
+  gtk_multi_filter_append (GTK_MULTI_FILTER (any_filter), GTK_FILTER (tags_filter));
+
   // Connect search entry to filter strings
   g_object_bind_property (self->search_entry, "text", name_filter, "search", G_BINDING_SYNC_CREATE);
   g_object_bind_property (self->search_entry, "text", proj_filter, "search", G_BINDING_SYNC_CREATE);
+  g_object_bind_property (self->search_entry, "text", tags_filter, "search", G_BINDING_SYNC_CREATE);
 
   GtkFilterListModel *filter_model = gtk_filter_list_model_new (gtimer_task_list_model_get_model (model), GTK_FILTER (any_filter));
   

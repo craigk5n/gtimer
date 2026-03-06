@@ -68,7 +68,9 @@ void gtimer_task_list_model_refresh ( GTimerTaskListModel * self )
       "SELECT t.id, t.name, t.project_id, p.name, t.is_timing, t.is_hidden, "
       "  (SELECT seconds FROM daily_time WHERE task_id = t.id AND date = ?) as today_time, "
       "  (SELECT SUM(seconds) FROM daily_time WHERE task_id = t.id) as total_time, "
-      "  t.last_start_time, t.created_at "
+      "  t.last_start_time, t.created_at, "
+      "  (SELECT GROUP_CONCAT(tg.name, ', ') FROM task_tags tt "
+      "   JOIN tags tg ON tt.tag_id = tg.id WHERE tt.task_id = t.id) as tags "
       "FROM tasks t "
       "LEFT JOIN projects p ON t.project_id = p.id " "WHERE t.is_hidden = 0;";
 
@@ -94,6 +96,7 @@ void gtimer_task_list_model_refresh ( GTimerTaskListModel * self )
     gint64 db_total_time = sqlite3_column_int64 ( stmt, 7 );
     gint64 last_start = sqlite3_column_int64 ( stmt, 8 );
     gint64 created_at = sqlite3_column_int64 ( stmt, 9 );
+    const char *tags = ( const char * ) sqlite3_column_text ( stmt, 10 );
 
     gint64 today_time = db_today_time;
     gint64 total_time = db_total_time;
@@ -130,11 +133,13 @@ void gtimer_task_list_model_refresh ( GTimerTaskListModel * self )
       gtimer_task_set_is_hidden ( task, is_hidden );
       gtimer_task_set_last_start_time ( task, last_start );
       gtimer_task_set_created_at ( task, created_at );
+      gtimer_task_set_tags ( task, tags );
       g_object_unref ( task );
     } else {
       task =
           gtimer_task_new ( id, name, project_id, project_name, today_time,
           total_time, is_timing, is_hidden, last_start, created_at );
+      gtimer_task_set_tags ( task, tags );
       g_list_store_append ( self->store, task );
       g_object_unref ( task );
     }
