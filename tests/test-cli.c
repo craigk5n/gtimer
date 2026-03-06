@@ -1,124 +1,435 @@
+#include <glib.h>
+#include <glib/gstdio.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "../core/db-manager.h"
 #include "../core/task-object.h"
-#include "../core/project-object.h"
-#include <glib.h>
-#include <stdio.h>
 
-static GTimerDBManager *db = NULL;
+/* GTIMER_BINARY is defined in meson.build */
 
-static void
-test_cli_add_project(void)
+static gboolean
+run_gtimer (const char *args, char **output, int *exit_status)
 {
-  GError *error = NULL;
-  int count_before = g_list_length(gtimer_db_manager_get_projects(db));
-  
-  gtimer_db_manager_create_project(db, "CLI Test Project", &error);
-  g_assert_no_error(error);
-  
-  GList *projects = gtimer_db_manager_get_projects(db);
-  int count_after = g_list_length(projects);
-  
-  g_assert_cmpint(count_after, ==, count_before + 1);
-  
-  g_list_free_full(projects, g_object_unref);
-}
-
-static void
-test_cli_add_task(void)
-{
-  GError *error = NULL;
-  int count_before = g_list_length(gtimer_db_manager_get_all_tasks(db));
-  
-  gtimer_db_manager_create_task(db, "CLI Test Task", -1, &error);
-  g_assert_no_error(error);
-  
-  GList *tasks = gtimer_db_manager_get_all_tasks(db);
-  int count_after = g_list_length(tasks);
-  
-  g_assert_cmpint(count_after, ==, count_before + 1);
-  
-  g_list_free_full(tasks, g_object_unref);
-}
-
-static void
-test_cli_hide_unhide_task(void)
-{
+  char *command = g_strdup_printf ("%s %s", GTIMER_BINARY, args);
+  char *stdout_text = NULL;
+  char *stderr_text = NULL;
   GError *error = NULL;
   
-  /* Create a task first */
-  gtimer_db_manager_create_task(db, "Hide Test Task", -1, &error);
-  g_assert_no_error(error);
+  gboolean success = g_spawn_command_line_sync (command, &stdout_text, &stderr_text, exit_status, &error);
+  g_free (command);
   
-  GList *tasks = gtimer_db_manager_get_all_tasks(db);
-  GTimerTask *task = GTIMER_TASK(tasks->data);
-  int task_id = gtimer_task_get_id(task);
-  g_list_free_full(tasks, g_object_unref);
-  
-  /* Hide it */
-  gtimer_db_manager_hide_task(db, task_id, TRUE, &error);
-  g_assert_no_error(error);
-  
-  tasks = gtimer_db_manager_get_all_tasks(db);
-  gboolean found = FALSE;
-  for (GList *l = tasks; l != NULL; l = l->next) {
-    GTimerTask *t = GTIMER_TASK(l->data);
-    if (gtimer_task_get_id(t) == task_id) {
-      found = TRUE;
-      g_assert_true(gtimer_task_is_hidden(t));
-    }
-    g_object_unref(t);
+  if (error) {
+    g_printerr ("Spawn error: %s\n", error->message);
+    g_error_free (error);
+    return FALSE;
   }
-  g_list_free(tasks);
-  g_assert_true(found);
   
-  /* Unhide it */
-  gtimer_db_manager_hide_task(db, task_id, FALSE, &error);
-  g_assert_no_error(error);
+  /* Combine output */
+  GString *combined = g_string_new (NULL);
+  if (stdout_text) g_string_append (combined, stdout_text);
+  if (stderr_text) g_string_append (combined, stderr_text);
+  
+  *output = g_string_free (combined, FALSE);
+  g_free (stdout_text);
+  g_free (stderr_text);
+  
+  return success;
 }
 
 static void
-test_cli_annotations(void)
+test_cli_version (void)
 {
+  char *output = NULL;
+  int status = 0;
+  
+  g_assert_true (run_gtimer ("--version", &output, &status));
+  g_assert_cmpint (status, ==, 0);
+  g_assert_nonnull (strstr (output, "GTimer"));
+  g_free (output);
+}
+
+static void
+test_cli_help (void)
+{
+  char *output = NULL;
+  int status = 0;
+  
+  g_assert_true (run_gtimer ("--help", &output, &status));
+  g_assert_cmpint (status, ==, 0);
+  g_assert_nonnull (strstr (output, "Usage:"));
+  g_free (output);
+}
+
+static void
+test_cli_database_override (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-test.db", NULL);
+  
+  /* Remove if exists */
+  g_remove (db_path);
+  
+  char *args = g_strdup_printf ("--database %s --add-project 'Test Project'", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_free (output);
+  
+  /* Verify file exists */
+  g_assert_true (g_file_test (db_path, G_FILE_TEST_EXISTS));
+  
+  /* Verify project was added */
+  args = g_strdup_printf ("--database %s --list-projects", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_assert_nonnull (strstr (output, "Test Project"));
+  g_free (output);
+  
+  g_remove (db_path);
+  g_free (db_path);
+}
+
+static void
+test_cli_add_list_task (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-test-tasks.db", NULL);
+  g_remove (db_path);
+  
+  /* Add task */
+  char *args = g_strdup_printf ("--database %s --add-task 'New Task'", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args);
+  g_free (output);
+  
+  /* List tasks */
+  args = g_strdup_printf ("--database %s --list-tasks", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args);
+  g_assert_nonnull (strstr (output, "New Task"));
+  g_free (output);
+  
+  g_remove (db_path);
+  g_free (db_path);
+}
+
+static void
+test_cli_seed_and_list (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-seed-test.db", NULL);
+  g_remove (db_path);
+
+  /* Seed the database using DB manager */
   GError *error = NULL;
+  GTimerDBManager *db = gtimer_db_manager_new (db_path, &error);
+  g_assert_no_error (error);
   
-  /* Create a task */
-  gtimer_db_manager_create_task(db, "Annotation Test Task", -1, &error);
-  g_assert_no_error(error);
+  gtimer_db_manager_create_project (db, "Seeded Project", &error);
+  g_assert_no_error (error);
   
-  GList *tasks = gtimer_db_manager_get_all_tasks(db);
-  GTimerTask *task = GTIMER_TASK(tasks->data);
-  int task_id = gtimer_task_get_id(task);
-  g_list_free_full(tasks, g_object_unref);
+  gtimer_db_manager_create_task (db, "Seeded Task", 1, &error);
+  g_assert_no_error (error);
   
+  g_object_unref (db);
+
+  /* Verify with CLI */
+  char *args = g_strdup_printf ("--database %s --list-tasks", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_assert_nonnull (strstr (output, "Seeded Task"));
+  g_assert_nonnull (strstr (output, "Seeded Project"));
+  g_free (output);
+
+  /* Verify project listing */
+  args = g_strdup_printf ("--database %s --list-projects", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_assert_nonnull (strstr (output, "Seeded Project"));
+  g_free (output);
+
+  g_remove (db_path);
+  g_free (db_path);
+}
+
+static void
+test_cli_task_management (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-mgmt-test.db", NULL);
+  g_remove (db_path);
+
+  /* Create task */
+  char *args = g_strdup_printf ("--database %s --add-task 'To Be Deleted'", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  /* Get task ID (it should be 1) */
+  args = g_strdup_printf ("--database %s --list-tasks", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args);
+  g_assert_nonnull (strstr (output, "1"));
+  g_free (output);
+
+  /* Delete task */
+  args = g_strdup_printf ("--database %s --delete-task 1", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  /* Verify deleted */
+  args = g_strdup_printf ("--database %s --list-tasks", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args);
+  g_assert_null (strstr (output, "To Be Deleted"));
+  g_free (output);
+
+  g_remove (db_path);
+  g_free (db_path);
+}
+
+static void
+test_cli_json_output (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-json-test.db", NULL);
+  g_remove (db_path);
+
+  /* Add task */
+  char *args = g_strdup_printf ("--database %s --add-task 'JSON Task'", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  /* List tasks in JSON */
+  args = g_strdup_printf ("--database %s --list-tasks --json", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_assert_nonnull (strstr (output, "["));
+  g_assert_nonnull (strstr (output, "\"name\": \"JSON Task\""));
+  g_assert_nonnull (strstr (output, "]"));
+  g_free (output);
+
+  g_remove (db_path);
+  g_free (db_path);
+}
+
+static void
+test_cli_report (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-report-test.db", NULL);
+  g_remove (db_path);
+
+  /* Add some data */
+  char *args = g_strdup_printf ("--database %s --add-task 'Report Task'", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  /* Seed time so it shows in report */
+  GError *error = NULL;
+  GTimerDBManager *db = gtimer_db_manager_new (db_path, &error);
+  gtimer_db_manager_add_task_time (db, 1, 3600);
+  g_object_unref (db);
+
+  /* Generate daily report */
+  args = g_strdup_printf ("--database %s --report daily", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_assert_nonnull (strstr (output, "Report Task"));
+  g_free (output);
+
+  g_remove (db_path);
+  g_free (db_path);
+}
+
+static void
+test_cli_csv_export (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-csv-test.db", NULL);
+  char *csv_path = g_build_filename (g_get_tmp_dir (), "gtimer-export.csv", NULL);
+  g_remove (db_path);
+  g_remove (csv_path);
+
+  /* Add task */
+  char *args = g_strdup_printf ("--database %s --add-task 'CSV Task'", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  /* Export to CSV */
+  args = g_strdup_printf ("--database %s --export-csv %s", db_path, csv_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_free (output);
+
+  /* Verify CSV file */
+  g_assert_true (g_file_test (csv_path, G_FILE_TEST_EXISTS));
+  char *csv_content = NULL;
+  g_file_get_contents (csv_path, &csv_content, NULL, NULL);
+  g_assert_nonnull (strstr (csv_content, "CSV Task"));
+  g_free (csv_content);
+
+  g_remove (db_path);
+  g_remove (csv_path);
+  g_free (db_path);
+  g_free (csv_path);
+}
+
+static void
+test_cli_annotations (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-ann-test.db", NULL);
+  g_remove (db_path);
+
+  /* Add task */
+  char *args = g_strdup_printf ("--database %s --add-task 'Ann Task'", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
   /* Add annotation */
-  gtimer_db_manager_add_annotation(db, task_id, "Test annotation");
+  args = g_strdup_printf ("--database %s --annotate 'Test Note' --annotate-task 1", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args); g_free (output);
+
+  /* List annotations */
+  args = g_strdup_printf ("--database %s --list-annotations 1", db_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_nonnull (strstr (output, "Test Note"));
+  g_free (output);
+
+  g_remove (db_path);
+  g_free (db_path);
+}
+
+static void
+test_cli_backup_restore (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-orig.db", NULL);
+  char *bak_path = g_build_filename (g_get_tmp_dir (), "gtimer-bak.db", NULL);
+  g_remove (db_path);
+  g_remove (bak_path);
+
+  /* Create and add task to original */
+  char *args = g_strdup_printf ("--database %s --add-task 'Orig Task'", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args); g_free (output);
+
+  /* Backup */
+  args = g_strdup_printf ("--database %s --backup %s", db_path, bak_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args); g_free (output);
+  g_assert_true (g_file_test (bak_path, G_FILE_TEST_EXISTS));
+
+  /* Delete original and restore */
+  g_remove (db_path);
+  args = g_strdup_printf ("--database %s --restore %s", db_path, bak_path);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args); g_free (output);
   
-  /* Get annotations */
-  GList *annotations = gtimer_db_manager_get_annotations(db, task_id);
-  g_assert_nonnull(annotations);
-  g_assert_cmpint(g_list_length(annotations), >, 0);
+  /* Verify restored task */
+  args = g_strdup_printf ("--database %s --list-tasks", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args);
+  g_assert_nonnull (strstr (output, "Orig Task"));
+  g_free (output);
+
+  g_remove (db_path);
+  g_remove (bak_path);
+  g_free (db_path);
+  g_free (bak_path);
+}
+
+static void
+test_cli_datadir_override (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *tmp_dir = g_dir_make_tmp ("gtimer-datadir-XXXXXX", NULL);
   
-  g_list_free_full(annotations, (GDestroyNotify)gtimer_annotation_free);
+  /* Running with --datadir <tmp_dir> should create <tmp_dir>/gtimer/gtimer.db */
+  char *args = g_strdup_printf ("--datadir %s --add-task 'Datadir Task'", tmp_dir);
+  g_assert_true (run_gtimer (args, &output, &status));
+  g_free (args);
+  g_assert_cmpint (status, ==, 0);
+  g_free (output);
+  
+  char *expected_db = g_build_filename (tmp_dir, "gtimer", "gtimer.db", NULL);
+  g_assert_true (g_file_test (expected_db, G_FILE_TEST_EXISTS));
+  
+  /* Cleanup */
+  g_remove (expected_db);
+  char *gtimer_dir = g_build_filename (tmp_dir, "gtimer", NULL);
+  g_rmdir (gtimer_dir);
+  g_rmdir (tmp_dir);
+  
+  g_free (expected_db);
+  g_free (gtimer_dir);
+  g_free (tmp_dir);
+}
+
+static void
+test_cli_negative_cases (void)
+{
+  char *output = NULL;
+  int status = 0;
+  char *db_path = g_build_filename (g_get_tmp_dir (), "gtimer-neg-test.db", NULL);
+  g_remove (db_path);
+
+  /* Delete non-existent task */
+  char *args = g_strdup_printf ("--database %s --delete-task 999", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args);
+  /* Current implementation reports success even if ID not found (SQL DELETE is idempotent-ish) */
+  g_assert_nonnull (strstr (output, "Deleted task ID 999"));
+  g_free (output);
+
+  /* Restore non-existent file */
+  args = g_strdup_printf ("--database %s --restore /non/existent/file.db", db_path);
+  run_gtimer (args, &output, &status);
+  g_free (args);
+  g_assert_nonnull (strstr (output, "Restore failed"));
+  g_free (output);
+
+  g_remove (db_path);
+  g_free (db_path);
 }
 
 int
-main(int argc, char **argv)
+main (int argc, char **argv)
 {
-  g_test_init(&argc, &argv, NULL);
+  g_test_init (&argc, &argv, NULL);
   
-  GError *error = NULL;
-  db = gtimer_db_manager_new(":memory:", &error);
-  g_assert_no_error(error);
-  g_assert_nonnull(db);
+  g_test_add_func ("/cli/version", test_cli_version);
+  g_test_add_func ("/cli/help", test_cli_help);
+  g_test_add_func ("/cli/database-override", test_cli_database_override);
+  g_test_add_func ("/cli/datadir-override", test_cli_datadir_override);
+  g_test_add_func ("/cli/add-list-task", test_cli_add_list_task);
+  g_test_add_func ("/cli/seed-and-list", test_cli_seed_and_list);
+  g_test_add_func ("/cli/task-management", test_cli_task_management);
+  g_test_add_func ("/cli/json-output", test_cli_json_output);
+  g_test_add_func ("/cli/report", test_cli_report);
+  g_test_add_func ("/cli/csv-export", test_cli_csv_export);
+  g_test_add_func ("/cli/annotations", test_cli_annotations);
+  g_test_add_func ("/cli/backup-restore", test_cli_backup_restore);
+  g_test_add_func ("/cli/negative", test_cli_negative_cases);
   
-  g_test_add_func("/cli/add_project", test_cli_add_project);
-  g_test_add_func("/cli/add_task", test_cli_add_task);
-  g_test_add_func("/cli/hide_unhide_task", test_cli_hide_unhide_task);
-  g_test_add_func("/cli/annotations", test_cli_annotations);
-  
-  int result = g_test_run();
-  
-  g_object_unref(db);
-  
-  return result;
+  return g_test_run ();
 }

@@ -12,11 +12,15 @@ struct _GTimerIdleMonitor {
   GDBusProxy *proxy;
   guint idle_watch_id;
   guint active_watch_id;
+  gulong dbus_signal_handler_id;
   gboolean is_idle;
 
   // X11 Fallback
   guint x11_timeout_id;
   guint x11_threshold_ms;
+#ifdef HAVE_XSS
+  Display *x11_display;
+#endif
 };
 
 G_DEFINE_TYPE ( GTimerIdleMonitor, gtimer_idle_monitor, G_TYPE_OBJECT )
@@ -32,7 +36,17 @@ static void gtimer_idle_monitor_finalize ( GObject * object )
 {
   GTimerIdleMonitor *self = GTIMER_IDLE_MONITOR ( object );
   gtimer_idle_monitor_stop ( self );
+  if ( self->proxy && self->dbus_signal_handler_id != 0 ) {
+    g_signal_handler_disconnect ( self->proxy, self->dbus_signal_handler_id );
+    self->dbus_signal_handler_id = 0;
+  }
   g_clear_object ( &self->proxy );
+#ifdef HAVE_XSS
+  if ( self->x11_display ) {
+    XCloseDisplay ( self->x11_display );
+    self->x11_display = NULL;
+  }
+#endif
   G_OBJECT_CLASS ( gtimer_idle_monitor_parent_class )->finalize ( object );
 }
 
@@ -96,12 +110,11 @@ on_dbus_signal ( GDBusProxy * proxy,
 static gboolean on_x11_tick ( gpointer user_data )
 {
   GTimerIdleMonitor *self = GTIMER_IDLE_MONITOR ( user_data );
-  Display *display = XOpenDisplay ( NULL );
-  if ( !display )
+  if ( !self->x11_display )
     return TRUE;
 
   XScreenSaverInfo *info = XScreenSaverAllocInfo (  );
-  XScreenSaverQueryInfo ( display, DefaultRootWindow ( display ), info );
+  XScreenSaverQueryInfo ( self->x11_display, DefaultRootWindow ( self->x11_display ), info );
 
   if ( info->idle >= self->x11_threshold_ms ) {
     if ( !self->is_idle ) {
@@ -116,7 +129,6 @@ static gboolean on_x11_tick ( gpointer user_data )
   }
 
   XFree ( info );
-  XCloseDisplay ( display );
   return TRUE;
 }
 #endif
@@ -159,15 +171,16 @@ gtimer_idle_monitor_start ( GTimerIdleMonitor * self, guint timeout_seconds )
       g_error_free ( error );
     }
 
-    static gulong handler_id = 0;
-    if ( handler_id == 0 ) {
-      handler_id =
+    if ( self->dbus_signal_handler_id == 0 ) {
+      self->dbus_signal_handler_id =
           g_signal_connect ( self->proxy, "g-signal",
           G_CALLBACK ( on_dbus_signal ), self );
     }
   } else {
     // X11 Fallback logic
 #ifdef HAVE_XSS
+    if ( !self->x11_display )
+      self->x11_display = XOpenDisplay ( NULL );
     self->x11_threshold_ms = timeout_seconds * 1000;
     self->x11_timeout_id = g_timeout_add_seconds ( 5, on_x11_tick, self );
 #else
@@ -209,11 +222,10 @@ gboolean gtimer_idle_monitor_is_available ( GTimerIdleMonitor * self )
     return TRUE;
 
 #ifdef HAVE_XSS
-  Display *display = XOpenDisplay ( NULL );
-  if ( display ) {
-    XCloseDisplay ( display );
+  if ( !self->x11_display )
+    self->x11_display = XOpenDisplay ( NULL );
+  if ( self->x11_display )
     return TRUE;
-  }
 #endif
   return FALSE;
 }
