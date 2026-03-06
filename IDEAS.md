@@ -130,10 +130,11 @@ Implement undo for: delete task, time adjustments, stop-all. Show "Undo" button 
 - *Effort*: Low-moderate. Buffer the previous state, revert on undo click.
 - *Implemented*: Undo for hide task (unhides), stop all (restarts previously-running timers), and time adjustments (reverses the change). Uses AdwToast with "Undo" button wired to `win.undo` action. Delete task retains confirmation dialog instead.
 
-**2.4 Day Navigation**
+**2.4 Day Navigation** -- DONE
 Add left/right arrows or date picker in footer/header to browse past days' data in the main task list view (showing that day's time column).
 - *Why*: Currently requires generating a report to see past data.
 - *Effort*: Moderate. Query DB for specific date, update column view.
+- *Implemented*: Footer navigation with prev/next/today buttons (Alt+Left, Alt+Right, Alt+Home). Task list model accepts a `view_date` — queries that date's daily_time. Column header and footer label update to show the viewed date. Elapsed time only added when viewing today.
 
 ### Priority 3: Nice to Have
 

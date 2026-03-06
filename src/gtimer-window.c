@@ -46,6 +46,9 @@ struct _GTimerWindow
   GtkStringFilter *string_filter;
   GtkWidget *quick_entry_bar;
   GtkWidget *quick_entry;
+  GtkLabel *date_label;
+  GtkColumnViewColumn *day_column;
+  GDateTime *view_date;  /* NULL means today */
 
   GSettings *settings;
   gint64 time_buffer;
@@ -198,7 +201,8 @@ update_window_title (GTimerWindow *self)
   g_free (last_running_name);
 
   char *total_str = gtimer_utils_format_duration (today_total);
-  char *footer_text = g_strdup_printf ("Today: %s", total_str);
+  const char *day_label = self->view_date ? _("Day") : _("Today");
+  char *footer_text = g_strdup_printf ("%s: %s", day_label, total_str);
   gtk_label_set_text (self->footer_label, footer_text);
   g_free (footer_text);
   g_free (total_str);
@@ -1215,7 +1219,7 @@ static void on_task_activated (GtkColumnView *column_view, guint position, gpoin
   g_object_unref (task); 
 }
 
-static void gtimer_window_dispose (GObject *object) { GTimerWindow *self = GTIMER_WINDOW (object); if (self->tick_timeout_id) { g_source_remove (self->tick_timeout_id); self->tick_timeout_id = 0; } clear_undo (self); g_clear_object (&self->settings); G_OBJECT_CLASS (gtimer_window_parent_class)->dispose (object); }
+static void gtimer_window_dispose (GObject *object) { GTimerWindow *self = GTIMER_WINDOW (object); if (self->tick_timeout_id) { g_source_remove (self->tick_timeout_id); self->tick_timeout_id = 0; } clear_undo (self); g_clear_pointer (&self->view_date, g_date_time_unref); g_clear_object (&self->settings); G_OBJECT_CLASS (gtimer_window_parent_class)->dispose (object); }
 static void gtimer_window_class_init (GTimerWindowClass *klass) { GObjectClass *object_class = G_OBJECT_CLASS (klass); object_class->dispose = gtimer_window_dispose; }
 
 /* Quick Entry: parse "task@project #tag1 #tag2" and start timing */
@@ -1370,6 +1374,74 @@ on_quick_entry_action (GSimpleAction *action, GVariant *parameter, gpointer user
     gtk_widget_grab_focus (self->quick_entry);
 }
 
+/* Day navigation helpers */
+static void
+update_day_view (GTimerWindow *self)
+{
+  if (self->view_date) {
+    char *date_str = g_date_time_format (self->view_date, "%Y-%m-%d");
+    char *display = g_date_time_format (self->view_date, "%a, %b %d %Y");
+    gtimer_task_list_model_set_view_date (self->model, date_str);
+    gtk_label_set_text (self->date_label, display);
+    gtk_column_view_column_set_title (self->day_column, display);
+    g_free (date_str);
+    g_free (display);
+  } else {
+    gtimer_task_list_model_set_view_date (self->model, NULL);
+    gtk_label_set_text (self->date_label, _("Today"));
+    gtk_column_view_column_set_title (self->day_column, _("Today"));
+  }
+  gtimer_task_list_model_refresh (self->model);
+  update_window_title (self);
+}
+
+static void
+on_prev_day_action (GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+  (void)action; (void)parameter;
+  GTimerWindow *self = GTIMER_WINDOW (user_data);
+  GDateTime *base = self->view_date ? self->view_date : g_date_time_new_now_local ();
+  GDateTime *prev = g_date_time_add_days (base, -1);
+  if (!self->view_date) g_date_time_unref (base);
+  g_clear_pointer (&self->view_date, g_date_time_unref);
+  self->view_date = prev;
+  update_day_view (self);
+}
+
+static void
+on_next_day_action (GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+  (void)action; (void)parameter;
+  GTimerWindow *self = GTIMER_WINDOW (user_data);
+  if (!self->view_date) return;  /* Already on today, don't go to future */
+  GDateTime *next = g_date_time_add_days (self->view_date, 1);
+  /* Check if next is today or later */
+  GDateTime *now = g_date_time_new_now_local ();
+  char *next_str = g_date_time_format (next, "%Y-%m-%d");
+  char *today_str = g_date_time_format (now, "%Y-%m-%d");
+  g_date_time_unref (now);
+
+  g_clear_pointer (&self->view_date, g_date_time_unref);
+  if (g_strcmp0 (next_str, today_str) >= 0) {
+    g_date_time_unref (next);
+    /* Back to today */
+  } else {
+    self->view_date = next;
+  }
+  g_free (next_str);
+  g_free (today_str);
+  update_day_view (self);
+}
+
+static void
+on_today_action (GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+  (void)action; (void)parameter;
+  GTimerWindow *self = GTIMER_WINDOW (user_data);
+  g_clear_pointer (&self->view_date, g_date_time_unref);
+  update_day_view (self);
+}
+
 static void
 setup_actions (GTimerWindow *self)
 {
@@ -1393,6 +1465,9 @@ setup_actions (GTimerWindow *self)
     { .name = "shortcuts", .activate = on_shortcuts_action },
     { .name = "undo", .activate = on_undo_action },
     { .name = "quick-entry", .activate = on_quick_entry_action },
+    { .name = "prev-day", .activate = on_prev_day_action },
+    { .name = "next-day", .activate = on_next_day_action },
+    { .name = "today", .activate = on_today_action },
   };
   g_action_map_add_action_entries (G_ACTION_MAP (self), entries, G_N_ELEMENTS (entries), self);
 }
@@ -1564,7 +1639,7 @@ setup_column_view (GTimerWindow *self, GtkWidget *main_box)
   g_object_unref (string_sorter);
   gtk_column_view_append_column (self->column_view, col);
 
-  /* Today column */
+  /* Today/Day column */
   factory = gtk_signal_list_item_factory_new ();
   g_signal_connect (factory, "setup", G_CALLBACK (setup_time_label_cb), NULL);
   g_signal_connect (factory, "bind", G_CALLBACK (bind_today_time_cb), NULL);
@@ -1576,6 +1651,7 @@ setup_column_view (GTimerWindow *self, GtkWidget *main_box)
   gtk_column_view_column_set_sorter (col, GTK_SORTER (num_sorter));
   g_object_unref (num_sorter);
   gtk_column_view_append_column (self->column_view, col);
+  self->day_column = col;
 
   /* Total column */
   factory = gtk_signal_list_item_factory_new ();
@@ -1607,10 +1683,33 @@ setup_column_view (GTimerWindow *self, GtkWidget *main_box)
 static void
 setup_footer (GTimerWindow *self, GtkWidget *main_box)
 {
-  GtkWidget *footer_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+  GtkWidget *footer_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
   gtk_widget_set_margin_start (footer_box, 12); gtk_widget_set_margin_end (footer_box, 12);
   gtk_widget_set_margin_top (footer_box, 6); gtk_widget_set_margin_bottom (footer_box, 6);
   gtk_box_append (GTK_BOX (main_box), footer_box);
+
+  /* Day navigation: < [date] > [Today] */
+  GtkWidget *prev_btn = gtk_button_new_from_icon_name ("go-previous-symbolic");
+  gtk_widget_set_tooltip_text (prev_btn, _("Previous Day"));
+  gtk_actionable_set_action_name (GTK_ACTIONABLE (prev_btn), "win.prev-day");
+  gtk_button_set_has_frame (GTK_BUTTON (prev_btn), FALSE);
+  gtk_box_append (GTK_BOX (footer_box), prev_btn);
+
+  self->date_label = GTK_LABEL (gtk_label_new (_("Today")));
+  gtk_widget_set_size_request (GTK_WIDGET (self->date_label), 140, -1);
+  gtk_box_append (GTK_BOX (footer_box), GTK_WIDGET (self->date_label));
+
+  GtkWidget *next_btn = gtk_button_new_from_icon_name ("go-next-symbolic");
+  gtk_widget_set_tooltip_text (next_btn, _("Next Day"));
+  gtk_actionable_set_action_name (GTK_ACTIONABLE (next_btn), "win.next-day");
+  gtk_button_set_has_frame (GTK_BUTTON (next_btn), FALSE);
+  gtk_box_append (GTK_BOX (footer_box), next_btn);
+
+  GtkWidget *today_btn = gtk_button_new_with_label (_("Today"));
+  gtk_actionable_set_action_name (GTK_ACTIONABLE (today_btn), "win.today");
+  gtk_button_set_has_frame (GTK_BUTTON (today_btn), FALSE);
+  gtk_box_append (GTK_BOX (footer_box), today_btn);
+
   self->footer_label = GTK_LABEL (gtk_label_new ("Today: 0:00:00"));
   gtk_widget_set_hexpand (GTK_WIDGET (self->footer_label), TRUE);
   gtk_label_set_xalign (self->footer_label, 1.0);

@@ -1651,6 +1651,9 @@ main (int argc, char **argv)
     { "win.copy-time", { "<Control>c", NULL } },
     { "win.paste-time", { "<Control>v", NULL } },
     { "win.quick-entry", { "<Control>space", NULL } },
+    { "win.prev-day", { "<Alt>Left", NULL } },
+    { "win.next-day", { "<Alt>Right", NULL } },
+    { "win.today", { "<Alt>Home", NULL } },
   };
 
   for (guint i = 0; i < G_N_ELEMENTS (accels); i++) {

@@ -174,6 +174,12 @@ Current: 35 tests across 9 files. Key gaps:
 - [x] Format: `task@project #tag1 #tag2` — matches existing or creates new
 - [x] Starts timing immediately, Escape dismisses
 
+### P2.4: Day Navigation ✅
+- [x] Task list model `view_date` field — queries any date's daily_time
+- [x] Footer: prev/next/today buttons (Alt+Left, Alt+Right, Alt+Home)
+- [x] Column header and footer total update to show viewed date
+- [x] Elapsed time only added when viewing today
+
 ### P2.2: Tracking Reminders ✅
 - [x] GSettings: `enable-tracking-reminder` and `tracking-reminder-interval`
 - [x] GNotification sent when no task running for N minutes (repeats at interval)

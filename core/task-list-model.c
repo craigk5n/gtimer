@@ -8,6 +8,7 @@ struct _GTimerTaskListModel {
 
   GTimerDBManager *db_manager;
   GListStore *store;
+  char *view_date;  /* NULL means "today" */
 };
 
 G_DEFINE_TYPE ( GTimerTaskListModel, gtimer_task_list_model, G_TYPE_OBJECT )
@@ -16,6 +17,7 @@ static void gtimer_task_list_model_finalize ( GObject * object )
   GTimerTaskListModel *self = GTIMER_TASK_LIST_MODEL ( object );
   g_clear_object ( &self->db_manager );
   g_object_unref ( self->store );
+  g_free ( self->view_date );
   G_OBJECT_CLASS ( gtimer_task_list_model_parent_class )->finalize ( object );
 }
 
@@ -58,6 +60,10 @@ void gtimer_task_list_model_refresh ( GTimerTaskListModel * self )
   gint64 now = g_date_time_to_unix ( now_dt );
   g_date_time_unref ( now_dt );
 
+  const char *query_date = self->view_date ? self->view_date : today;
+  gboolean is_today = (self->view_date == NULL ||
+                        g_strcmp0 (self->view_date, today) == 0);
+
   const char *sql =
       "SELECT t.id, t.name, t.project_id, p.name, t.is_timing, t.is_hidden, "
       "  (SELECT seconds FROM daily_time WHERE task_id = t.id AND date = ?) as today_time, "
@@ -72,7 +78,7 @@ void gtimer_task_list_model_refresh ( GTimerTaskListModel * self )
     return;
   }
 
-  sqlite3_bind_text ( stmt, 1, today, -1, SQLITE_TRANSIENT );
+  sqlite3_bind_text ( stmt, 1, query_date, -1, SQLITE_TRANSIENT );
 
   GHashTable *found_ids = g_hash_table_new ( g_direct_hash, g_direct_equal );
 
@@ -91,7 +97,7 @@ void gtimer_task_list_model_refresh ( GTimerTaskListModel * self )
 
     gint64 today_time = db_today_time;
     gint64 total_time = db_total_time;
-    if ( is_timing && last_start > 0 ) {
+    if ( is_today && is_timing && last_start > 0 ) {
       gint64 elapsed = now - last_start;
       if ( elapsed > 0 ) {
         today_time += elapsed;
@@ -150,4 +156,18 @@ void gtimer_task_list_model_refresh ( GTimerTaskListModel * self )
   g_hash_table_destroy ( found_ids );
   sqlite3_finalize ( stmt );
   g_free ( today );
+}
+
+void
+gtimer_task_list_model_set_view_date (GTimerTaskListModel *self,
+                                      const char *date)
+{
+  g_free (self->view_date);
+  self->view_date = g_strdup (date);
+}
+
+const char *
+gtimer_task_list_model_get_view_date (GTimerTaskListModel *self)
+{
+  return self->view_date;
 }

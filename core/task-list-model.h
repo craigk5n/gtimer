@@ -10,5 +10,7 @@ G_DECLARE_FINAL_TYPE (GTimerTaskListModel, gtimer_task_list_model, GTIMER, TASK_
 GTimerTaskListModel *gtimer_task_list_model_new (GTimerDBManager *db_manager);
 GListModel *gtimer_task_list_model_get_model (GTimerTaskListModel *self);
 void gtimer_task_list_model_refresh (GTimerTaskListModel *self);
+void gtimer_task_list_model_set_view_date (GTimerTaskListModel *self, const char *date);
+const char *gtimer_task_list_model_get_view_date (GTimerTaskListModel *self);
 
 #endif
