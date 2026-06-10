@@ -12,8 +12,8 @@ Build-Depends: debhelper-compat (= 13),
                gettext
 Standards-Version: 4.6.0
 Homepage: http://www.k5n.us/gtimer.php
-Vcs-Browser: https://github.com/k5n/gtimer
-Vcs-Git: https://github.com/k5n/gtimer.git
+Vcs-Browser: https://github.com/craigk5n/gtimer
+Vcs-Git: https://github.com/craigk5n/gtimer.git
 
 Package: gtimer
 Architecture: any

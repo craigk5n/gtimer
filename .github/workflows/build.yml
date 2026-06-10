@@ -39,7 +39,7 @@ jobs:
   flatpak:
     runs-on: ubuntu-latest
     container:
-      image: bilelmoussaoui/flatpak-github-actions:freedesktop-23.08
+      image: bilelmoussaoui/flatpak-github-actions:gnome-45
       options: --privileged
     steps:
     - uses: actions/checkout@v4

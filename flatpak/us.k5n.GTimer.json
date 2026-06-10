@@ -19,9 +19,8 @@
             "buildsystem": "meson",
             "sources": [
                 {
-                    "type": "git",
-                    "url": "https://github.com/k5n/gtimer.git",
-                    "tag": "v3.1.0"
+                    "type": "dir",
+                    "path": ".."
                 }
             ]
         }

@@ -96,14 +96,20 @@ test_idle_logic_exe = executable('test-idle-logic',
   c_args: ['-I' + meson.project_source_root() + '/core']
 )
 
-test('basic', test_exe)
-test('db', test_db_exe)
-test('db-manager', test_db_manager_exe)
-test('model', test_model_exe)
-test('utils', test_utils_exe)
-test('service', test_service_exe)
-test('idle-init', test_idle_init_exe)
-test('objects', test_objects_exe)
-test('report', test_report_exe)
-test('cli', test_cli_exe)
-test('idle-logic', test_idle_logic_exe)
+# Tests that exercise timer-service need the GSettings schema, which is
+# compiled into the build dir (see data/meson.build). Point all tests at it
+# so they run on systems where the schema is not installed (e.g. CI).
+test_env = environment()
+test_env.set('GSETTINGS_SCHEMA_DIR', meson.project_build_root() / 'data')
+
+test('basic', test_exe, env: test_env)
+test('db', test_db_exe, env: test_env)
+test('db-manager', test_db_manager_exe, env: test_env)
+test('model', test_model_exe, env: test_env)
+test('utils', test_utils_exe, env: test_env)
+test('service', test_service_exe, env: test_env)
+test('idle-init', test_idle_init_exe, env: test_env)
+test('objects', test_objects_exe, env: test_env)
+test('report', test_report_exe, env: test_env)
+test('cli', test_cli_exe, env: test_env)
+test('idle-logic', test_idle_logic_exe, env: test_env)
