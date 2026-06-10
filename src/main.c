@@ -1590,6 +1590,27 @@ main (int argc, char **argv)
     return 0;
   }
 
+  /* The GUI requires the GSettings schema. g_settings_new() aborts the
+   * process if it is missing, so check up front and give a useful hint. */
+  GSettingsSchemaSource *schema_source = g_settings_schema_source_get_default ();
+  GSettingsSchema *schema = schema_source != NULL
+    ? g_settings_schema_source_lookup (schema_source, "us.k5n.GTimer", TRUE)
+    : NULL;
+  if (schema == NULL) {
+    g_printerr ("Error: GSettings schema 'us.k5n.GTimer' is not installed.\n"
+                "\n"
+                "If running from the build directory without installing, use:\n"
+                "  GSETTINGS_SCHEMA_DIR=build/data ./build/src/gtimer\n"
+                "\n"
+                "Or install the application first:\n"
+                "  sudo meson install -C build\n");
+    g_object_unref (gtimer_app.db_manager);
+    g_free (db_path);
+    g_free (gtimer_dir);
+    return 1;
+  }
+  g_settings_schema_unref (schema);
+
   app = adw_application_new ("us.k5n.GTimer", G_APPLICATION_FLAGS_NONE);
 
   const GActionEntry app_entries[] = {

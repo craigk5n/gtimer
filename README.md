@@ -35,10 +35,11 @@ meson compile -C build
 
 ### Run Locally
 
-For the application to find its GSettings schema when running from the build directory:
+For the application to find its GSettings schema when running from the build
+directory (the schema is compiled into `build/data` automatically during the build):
 
 ```bash
-GSETTINGS_SCHEMA_DIR=data ./build/src/gtimer
+GSETTINGS_SCHEMA_DIR=build/data ./build/src/gtimer
 ```
 
 ### Install

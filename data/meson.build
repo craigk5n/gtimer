@@ -24,6 +24,13 @@ install_data('us.k5n.GTimer.gschema.xml',
   install_dir: get_option('datadir') / 'glib-2.0' / 'schemas'
 )
 
+# Compile the schema into the build directory so the app can run uninstalled
+# via GSETTINGS_SCHEMA_DIR=build/data (see README.md).
+gnome.compile_schemas(
+  build_by_default: true,
+  depend_files: 'us.k5n.GTimer.gschema.xml'
+)
+
 compile_schemas = find_program('glib-compile-schemas', required: false)
 if compile_schemas.found()
   test('Validate schema', compile_schemas,

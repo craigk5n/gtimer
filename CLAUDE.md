@@ -20,8 +20,8 @@ meson test -C build <test-name>
 # Run tests with verbose output
 meson test -C build --verbose
 
-# Run the application (needs schema dir for GSettings)
-GSETTINGS_SCHEMA_DIR=data ./build/src/gtimer
+# Run the application (needs schema dir for GSettings; compiled into build/data by the build)
+GSETTINGS_SCHEMA_DIR=build/data ./build/src/gtimer
 ```
 
 ## Architecture
