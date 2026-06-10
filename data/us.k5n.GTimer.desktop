@@ -8,5 +8,4 @@ Type=Application
 Categories=Office;Utility;GTK;
 StartupNotify=true
 StartupWMClass=us.k5n.GTimer
-DBusActivatable=true
 X-GNOME-UsesNotifications=true
