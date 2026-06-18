@@ -2,11 +2,19 @@
 
 > This file tracks the current status of GTimer development. It is the source of truth for project progress.
 >
-> Last updated: 2026-02-11
+> Last updated: 2026-06-18
 
 ## Project Overview
 
-GTimer is a GTK 4 + Libadwaita time tracking application. Current phase: **Project Complete**
+GTimer is a GTK 4 + Libadwaita time tracking application. Current phase: **Released & Maintained**
+
+## Releases
+
+| Version | Date | Notes |
+|---------|------------|-------|
+| **3.1.1** | 2026-06-18 | Patch: compile GSettings schema into the install prefix via `gnome.post_install` so an installed GUI no longer aborts at startup (#10); document `XDG_DATA_DIRS`/`GSETTINGS_SCHEMA_DIR` for non-standard prefixes. |
+| **3.1.0** | 2026-06-18 | CLI interface, JSON output, tags, quick-entry bar, day navigation, tracking reminders, exit confirmation, undo. Fixed schema-missing startup crash for uninstalled runs (#9). |
+| **3.0.0** | 2026-02-09 | Complete rewrite with GTK 4 and Libadwaita. |
 
 ## Epics and Tasks
 
@@ -173,6 +181,15 @@ Current: 35 tests across 9 files. Key gaps:
 - [x] Ctrl+Space toggles quick entry bar above column view
 - [x] Format: `task@project #tag1 #tag2` — matches existing or creates new
 - [x] Starts timing immediately, Escape dismisses
+
+### P1.2: Charts and Data Visualization 🚧
+- [ ] DB queries: `get_project_totals_for_range()`, `get_daily_totals_for_range()`
+- [ ] `stats-window.c/h` with Cairo drawing areas
+- [ ] Horizontal bar chart (time per project)
+- [ ] Line/area chart (daily totals over time)
+- [ ] Period presets (This Week, Last Week, This Month, Last Month, This Year)
+- [ ] Toolbar button to open statistics window
+- [ ] Tests for DB queries
 
 ### P2.4: Day Navigation ✅
 - [x] Task list model `view_date` field — queries any date's daily_time
