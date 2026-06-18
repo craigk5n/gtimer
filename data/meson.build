@@ -24,7 +24,15 @@ install_data('us.k5n.GTimer.gschema.xml',
   install_dir: get_option('datadir') / 'glib-2.0' / 'schemas'
 )
 
-# Compile the schema into the build directory so the app can run uninstalled
+# Compile the schema in the install prefix after installation so the installed
+# app finds 'gschemas.compiled'. Without this, only the .xml is installed and
+# the GUI aborts at startup (see issues #9 and #10). For a standard --prefix=/usr
+# this is all that is needed; for a non-standard prefix the schema dir must also
+# be on the runtime search path (XDG_DATA_DIRS or GSETTINGS_SCHEMA_DIR) -- see
+# the "Running" section of README.md.
+gnome.post_install(glib_compile_schemas: true)
+
+# Compile the schema into the build directory too, so the app can run uninstalled
 # via GSETTINGS_SCHEMA_DIR=build/data (see README.md).
 gnome.compile_schemas(
   build_by_default: true,

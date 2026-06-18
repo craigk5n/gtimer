@@ -48,6 +48,26 @@ GSETTINGS_SCHEMA_DIR=build/data ./build/src/gtimer
 sudo meson install -C build
 ```
 
+Installation compiles the GSettings schema into the prefix's
+`share/glib-2.0/schemas/` directory automatically, so a standard
+`--prefix=/usr` install just works.
+
+If you install to a **non-standard prefix** (e.g. `meson setup build
+--prefix=$HOME/.local` or some other location), GLib will not search that
+prefix by default and the GUI will abort at startup with a missing-schema
+error. Put the prefix's data directory on the runtime search path:
+
+```bash
+# add to ~/.profile, a wrapper script, or the launching shell
+export XDG_DATA_DIRS="<prefix>/share:$XDG_DATA_DIRS"
+```
+
+Alternatively point `GSETTINGS_SCHEMA_DIR` directly at the compiled schema:
+
+```bash
+export GSETTINGS_SCHEMA_DIR="<prefix>/share/glib-2.0/schemas"
+```
+
 ## Command Line Usage
 
 GTimer supports command line options for scripting and automation:
