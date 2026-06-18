@@ -1,5 +1,5 @@
 project('gtimer', 'c',
-  version: '3.1.0',
+  version: '3.1.1',
   meson_version: '>= 0.61.0',
   default_options: [
     'warning_level=2',

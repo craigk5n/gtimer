@@ -39,6 +39,16 @@
   </screenshots>
   <url type="homepage">https://www.k5n.us/gtimer.php</url>
   <releases>
+    <release version="3.1.1" date="2026-06-18">
+      <description>
+        <p>Fix installed app aborting at startup due to uncompiled GSettings schema</p>
+      </description>
+    </release>
+    <release version="3.1.0" date="2026-02-13">
+      <description>
+        <p>Command line interface, JSON output, tags, and quality improvements</p>
+      </description>
+    </release>
     <release version="3.0.0" date="2026-02-09">
       <description>
         <p>Complete rewrite with GTK 4 and Libadwaita</p>
