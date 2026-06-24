@@ -68,6 +68,23 @@ Alternatively point `GSETTINGS_SCHEMA_DIR` directly at the compiled schema:
 export GSETTINGS_SCHEMA_DIR="<prefix>/share/glib-2.0/schemas"
 ```
 
+To avoid setting an environment variable in every shell, you can install a
+small wrapper script inside the prefix and put it on your `$PATH` instead of
+`<prefix>/bin`. Create `<prefix>/wrap/gtimer` with:
+
+```sh
+#!/bin/sh
+DIR=$(dirname "$0") && cd "$DIR" && cd ..
+export GSETTINGS_SCHEMA_DIR="./share/glib-2.0/schemas/"
+exec ./bin/gtimer
+```
+
+Make it executable (`chmod +x <prefix>/wrap/gtimer`) and add `<prefix>/wrap` to
+your `$PATH`. The wrapper resolves the schema directory relative to its own
+location, so it keeps working even if the prefix is moved.
+(Thanks to [@sedererdj](https://github.com/sedererdj) for this approach — see
+[#10](https://github.com/craigk5n/gtimer/issues/10).)
+
 ## Command Line Usage
 
 GTimer supports command line options for scripting and automation:
